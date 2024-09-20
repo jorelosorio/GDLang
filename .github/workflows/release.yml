@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: ["linux", "windows", "darwin"]
+        arch: ["amd64", "386", "arm64", "arm"]
+        exclude:
+          - os: "darwin"
+            arch: "386"
+          - os: "darwin"
+            arch: "arm"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          cache-dependency-path: |
+            **/go.sum
+            **/go.mod
+          go-version-file: go.mod
+      - run: go version
+
+      - name: Create dist and bin directories
+        run: |
+          mkdir -p ./dist
+          mkdir -p ./bin
+
+      - name: Set Build Number, Version and environment variables
+        id: get_info
+        run: |
+          BUILD_NUMBER=${{ github.run_number }}
+          VERSION=${{ github.ref_name }}
+          OS=${{ matrix.os }}
+          ARCH=${{ matrix.arch }}
+          FILE_NAME=gdlang-${VERSION}-${OS}-${ARCH}
+          OUTPUT_FILE=$FILE_NAME.tar.gz
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "OS=$OS" >> $GITHUB_ENV
+          echo "ARCH=$ARCH" >> $GITHUB_ENV
+          echo "OUTPUT_FILE=$OUTPUT_FILE" >> $GITHUB_ENV
+
+      - name: Build
+        run: |
+          ./scripts/build-tools.sh go release ${{ matrix.os }} ${{ matrix.arch }} $VERSION $BUILD_NUMBER ./bin ./dist
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./dist/${{ env.OUTPUT_FILE }}
