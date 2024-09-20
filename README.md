@@ -9,7 +9,6 @@ GDLang is a fun, easy-to-learn, and type-safe programming language for modern de
 - 🙂 **Super Syntax**: The syntax is designed to be exceptionally friendly and easy to read and write. Inspired by `Swift`, `TypeScript`, and `Go`, it combines modern, expressive syntax with a robust statically typed design.
 - 🚀 **Fast and Efficient**: GDLang compiles code into `bytecode` that runs on an optimized `Virtual Machine (VM)`. The binaries are incredibly lightweight, occupying minimal space while ensuring high performance and fast execution across various environments.
 - 🎉 **Single Binary, No Hassle**: The `VM` is a single binary with a size of just less than ~1.7MB and a basic `binary program` is ~163 bytes.
-- 
 - 💪🏽 **Powered by [GoLang](https://golang.org)**: Built on the robust GoLang ecosystem, GDLang inherits Go's performance, reliability and networking capabilities.
 
 ## Why a new language?
