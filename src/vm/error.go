@@ -32,7 +32,7 @@ func (c VmErr) Error() string { return c.msg }
 var (
 	EOFErr         = VmErr{"EOF"}
 	InvalidTypeErr = func(expected string, got runtime.GDTypable) VmErr {
-		return VmErr{"Invalid type. Expected " + expected + "`, got " + got.ToString()}
+		return VmErr{"Invalid type. Expected " + expected + ", got `" + got.ToString() + "`"}
 	}
 	InvalidObjErr = func(expected string, got runtime.GDObject) VmErr {
 		return VmErr{"Invalid object. Expected " + expected + ", got " + got.ToString()}
@@ -48,7 +48,7 @@ var (
 )
 
 // Error template for different runtime exceptions
-var errorTemplate = "`[ERROR]` Runtime Exception: `%@`\n" +
+var errorTemplate = "`Runtime error`: %@\n" +
 	"Instruction:	`%@` (code: `%@`)\n" +
 	"Byte Offset:	`%@`\n"
 
