@@ -38,7 +38,7 @@ var (
 		return VmErr{"Invalid object. Expected " + expected + ", got " + got.ToString()}
 	}
 	InvalidTypeCodeReadingObjectErr = func(code byte) VmErr {
-		return VmErr{"Invalid type code: " + runtime.GDTypeCodeMap[code] + " reading object"}
+		return VmErr{"Invalid type code: `" + runtime.GDTypeCodeMap[code] + "` reading object"}
 	}
 	RuntimeErr = func(err error, inst cpu.GDInst, instOff uint) VmErr {
 		errMsg := formatRuntimeError(err.Error(), cpu.GetCPUInstName(inst), uint(inst), instOff)
