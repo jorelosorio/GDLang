@@ -11,7 +11,8 @@
         "-pkg",
         "${workspaceFolder}/examples/playground",
       ],
-      "showLog": false
+      "showLog": false,
+      "buildFlags": "-tags=debug"
     },
     {
       "name": "gdc",
@@ -23,7 +24,8 @@
         "-pkg",
         "${workspaceFolder}/examples/playground",
       ],
-      "showLog": false
+      "showLog": false,
+      "buildFlags": "-tags=debug"
     },
     {
       "name": "gdvm",
@@ -35,7 +37,8 @@
         "-gdbin",
         "${workspaceFolder}/examples/playground/playground.gdbin",
       ],
-      "showLog": false
+      "showLog": false,
+      "buildFlags": "-tags=debug"
     }
   ]
 }
