@@ -51,4 +51,4 @@ for file in $(find "$TARGET_PATH" -name "*.go"); do
     update_header "$file"
 done
 
-go fmt $TARGET_PATH
+go fmt $TARGET_PATH/...
