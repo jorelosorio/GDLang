@@ -20,5 +20,5 @@
 package runtime
 
 type GDAttributableType interface {
-	GetAttrType(ident GDIdentType) (GDTypable, error)
+	GetAttrType(ident GDIdent) (GDTypable, error)
 }

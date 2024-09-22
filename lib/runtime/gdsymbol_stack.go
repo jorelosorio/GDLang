@@ -34,7 +34,7 @@ const (
 type GDSymbolStack struct {
 	Parent  *GDSymbolStack
 	Ctx     StackContext
-	Symbols map[GDIdentType]*GDSymbol
+	Symbols map[any]*GDSymbol
 	Attrs   map[string]any
 	Buffer  *GDBuffer
 }
@@ -49,25 +49,25 @@ func (s *GDSymbolStack) NewSymbolStack(ctx StackContext) *GDSymbolStack {
 	return &GDSymbolStack{
 		s,
 		ctx,
-		make(map[GDIdentType]*GDSymbol),
+		make(map[any]*GDSymbol),
 		make(map[string]any),
 		nil,
 	}
 }
 
-func (s *GDSymbolStack) AddSymbolStack(ident GDIdentType, symbol *GDSymbol) error {
-	_, ok := s.Symbols[ident]
+func (s *GDSymbolStack) AddSymbolStack(ident GDIdent, symbol *GDSymbol) error {
+	_, ok := s.Symbols[ident.GetRawValue()]
 	if ok {
 		return DuplicatedObjectCreationErr(ident)
 	}
 
-	s.Symbols[ident] = symbol
+	s.Symbols[ident.GetRawValue()] = symbol
 
 	return nil
 }
 
-func (s *GDSymbolStack) AddSymbol(ident GDIdentType, isPub, isConst bool, typ GDTypable, object GDObject) (*GDSymbol, error) {
-	_, ok := s.Symbols[ident]
+func (s *GDSymbolStack) AddSymbol(ident GDIdent, isPub, isConst bool, typ GDTypable, object GDObject) (*GDSymbol, error) {
+	_, ok := s.Symbols[ident.GetRawValue()]
 	if ok {
 		return nil, DuplicatedObjectCreationErr(ident)
 	}
@@ -84,16 +84,16 @@ func (s *GDSymbolStack) AddSymbol(ident GDIdentType, isPub, isConst bool, typ GD
 		symbol = &GDSymbol{isPub, isConst, typ, GDZNil}
 	}
 
-	s.Symbols[ident] = symbol
+	s.Symbols[ident.GetRawValue()] = symbol
 
 	return symbol, nil
 }
 
-func (s *GDSymbolStack) AddOrSetSymbol(ident GDIdentType, object GDObject) error {
-	symbol, ok := s.Symbols[ident]
+func (s *GDSymbolStack) AddOrSetSymbol(ident GDIdent, object GDObject) error {
+	symbol, ok := s.Symbols[ident.GetRawValue()]
 	if !ok {
 		symbol := NewGDSymbol(false, false, object.GetType(), object)
-		s.Symbols[ident] = symbol
+		s.Symbols[ident.GetRawValue()] = symbol
 
 		return nil
 	}
@@ -104,7 +104,7 @@ func (s *GDSymbolStack) AddOrSetSymbol(ident GDIdentType, object GDObject) error
 	return nil
 }
 
-func (s *GDSymbolStack) SetSymbol(ident GDIdentType, object GDObject, stack *GDSymbolStack) error {
+func (s *GDSymbolStack) SetSymbol(ident GDIdent, object GDObject, stack *GDSymbolStack) error {
 	symbol, err := s.GetSymbol(ident)
 	if err != nil {
 		return err
@@ -118,8 +118,8 @@ func (s *GDSymbolStack) SetSymbol(ident GDIdentType, object GDObject, stack *GDS
 	return nil
 }
 
-func (s *GDSymbolStack) GetSymbol(ident GDIdentType) (*GDSymbol, error) {
-	symbol, ok := s.Symbols[ident]
+func (s *GDSymbolStack) GetSymbol(ident GDIdent) (*GDSymbol, error) {
+	symbol, ok := s.Symbols[ident.GetRawValue()]
 	if ok {
 		return symbol, nil
 	}
@@ -170,7 +170,7 @@ func NewGDSymbolStack() *GDSymbolStack {
 	return &GDSymbolStack{
 		nil,
 		GlobalCtx,
-		make(map[GDIdentType]*GDSymbol),
+		make(map[any]*GDSymbol),
 		make(map[string]any),
 		nil,
 	}
@@ -180,7 +180,7 @@ func NewRootGDSymbolStack() *GDSymbolStack {
 	return &GDSymbolStack{
 		nil,
 		GlobalCtx,
-		make(map[GDIdentType]*GDSymbol),
+		make(map[any]*GDSymbol),
 		make(map[string]any),
 		nil,
 	}

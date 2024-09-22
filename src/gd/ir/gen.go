@@ -33,9 +33,9 @@ const (
 	genLength     = 4
 )
 
-func NewStrIdent() runtime.GDIdentType {
+func NewStrIdent() runtime.GDIdent {
 	ident := randomAlphaString(genLength)
-	return runtime.GDIdentType(runtime.GDStringIdentType(ident))
+	return runtime.NewGDStringIdent(ident)
 }
 
 func randomAlphaString(length int) string {

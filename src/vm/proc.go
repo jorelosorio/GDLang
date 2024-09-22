@@ -33,7 +33,7 @@ type GDVMProc struct {
 }
 
 type GDVMDisc struct {
-	ident          runtime.GDIdentType
+	ident          runtime.GDIdent
 	isPub, isConst bool
 }
 
@@ -146,7 +146,7 @@ func (p *GDVMProc) evalDisc() (*GDVMDisc, error) {
 		return nil, err
 	}
 
-	ident, err := p.ReadIdentType()
+	ident, err := p.ReadIdent()
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ walk:
 
 func (p *GDVMProc) evalLambda(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	// Read lambda type
-	typ, err := p.ReadType()
+	typ, err := p.ReadType(stack)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +315,7 @@ func (p *GDVMProc) evalSet(stack *runtime.GDSymbolStack) (runtime.GDObject, erro
 		return nil, err
 	}
 
-	typ, err := p.ReadType()
+	typ, err := p.ReadType(stack)
 	if err != nil {
 		return nil, err
 	}
@@ -335,47 +335,59 @@ func (p *GDVMProc) evalSet(stack *runtime.GDSymbolStack) (runtime.GDObject, erro
 }
 
 func (p *GDVMProc) evalMove(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	ident, err := p.ReadIdentType()
+	// Read the target where the expression will be stored
+	target, err := p.ReadType(stack)
 	if err != nil {
 		return nil, err
 	}
 
-	expr, err := p.ReadObject(stack)
-	if err != nil {
-		return nil, err
+	ident, isIdent := target.(runtime.GDIdent)
+	if !isIdent {
+		return nil, InvalidTypeErr("an `ident` object", target)
 	}
 
-	// Check if the ident is a byte or a string
-	switch ident := ident.(type) {
-	case runtime.GDByteIdentType:
+	switch ident.GetMode() {
+	case runtime.GDByteIdentMode:
 		byte := ident.GetRawValue().(byte)
 		switch cpu.GDReg(byte) {
 		case cpu.RPop:
 			obj := stack.PopBuffer()
-			switch obj := obj.(type) {
-			case *runtime.GDAttrIdObject:
-				err := obj.SetAttr(obj.Ident, expr)
-				if err != nil {
-					return nil, err
-				}
-			default:
-				return nil, InvalidTypeErr("an `attr` object", obj.GetType())
-			}
-		default:
-			err := stack.AddOrSetSymbol(ident, expr)
+
+			// Value must be captured after the pop from the stack
+			// it is because value also might require to be popped
+			value, err := p.ReadObject(stack)
 			if err != nil {
 				return nil, err
 			}
 
-			return nil, nil
+			switch obj := obj.(type) {
+			case *runtime.GDAttrIdObject:
+				err := obj.SetAttr(obj.Ident, value)
+				if err != nil {
+					return nil, err
+				}
+			}
+		default:
+			value, err := p.ReadObject(stack)
+			if err != nil {
+				return nil, err
+			}
+
+			err = stack.AddOrSetSymbol(ident, value)
+			if err != nil {
+				return nil, err
+			}
 		}
-	case runtime.GDStringIdentType:
-		err := stack.SetSymbol(ident, expr, stack)
+	case runtime.GDStringIdentMode, runtime.GDUInt16IdentMode:
+		value, err := p.ReadObject(stack)
 		if err != nil {
 			return nil, err
 		}
 
-		return nil, nil
+		err = stack.SetSymbol(ident, value, stack)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return nil, nil
@@ -427,7 +439,7 @@ func (p *GDVMProc) evalTypeAlias(stack *runtime.GDSymbolStack) (runtime.GDObject
 		return nil, err
 	}
 
-	typ, err := p.ReadType()
+	typ, err := p.ReadType(stack)
 	if err != nil {
 		return nil, err
 	}
@@ -441,7 +453,7 @@ func (p *GDVMProc) evalTypeAlias(stack *runtime.GDSymbolStack) (runtime.GDObject
 }
 
 func (p *GDVMProc) evalCastObj(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	typ, err := p.ReadType()
+	typ, err := p.ReadType(stack)
 	if err != nil {
 		return nil, err
 	}

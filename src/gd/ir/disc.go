@@ -28,12 +28,12 @@ import (
 
 type GDIRDiscoverable struct {
 	isPub, isConst bool
-	ident          runtime.GDIdentType
+	ident          runtime.GDIdent
 	GDIRBaseNode
 }
 
 func (d *GDIRDiscoverable) IR(padding string) string {
-	return fmt.Sprintf("%s%s%s", tif(d.isPub, "pub ", ""), tif(d.isConst, "const ", ""), IRTypeToString(d.ident))
+	return fmt.Sprintf("%s%s%s", tif(d.isPub, "pub ", ""), tif(d.isConst, "const ", ""), d.ident.ToString())
 }
 
 func (d *GDIRDiscoverable) Bytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
@@ -45,7 +45,7 @@ func (d *GDIRDiscoverable) Bytecode(bytecode *bytes.Buffer, ctx *GDIRContext) er
 	return nil
 }
 
-func NewGDIRDiscoverable(isPub, isConst bool, ident runtime.GDIdentType) *GDIRDiscoverable {
+func NewGDIRDiscoverable(isPub, isConst bool, ident runtime.GDIdent) *GDIRDiscoverable {
 	// TODO: ZeroPos is not defined, it should use the position where the node is created
 	return &GDIRDiscoverable{isPub, isConst, ident, GDIRBaseNode{scanner.ZeroPos}}
 }

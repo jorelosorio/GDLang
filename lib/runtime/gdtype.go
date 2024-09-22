@@ -35,9 +35,8 @@ const (
 	GDUnionTypeCode
 	GDSpreadableTypeCode
 	GDUntypedTypeCode
-	GDByteIdentTypeCode
-	GDStringIdentTypeCode
-	GDUInt16IdentTypeCode
+	GDTypeRefTypeCode
+	GDObjRefTypeCode
 
 	// Number types ordered
 	// from lowest to highest precision
@@ -65,12 +64,12 @@ var GDTypeCodeMap = [...]string{
 	GDStructTypeCode: "struct",
 
 	// Internal Types
-	GDUnionTypeCode:       "unionType",
-	GDSpreadableTypeCode:  "spreadable",
-	GDUntypedTypeCode:     "untyped",
-	GDByteIdentTypeCode:   "byteId",
-	GDStringIdentTypeCode: "strId",
-	GDUInt16IdentTypeCode: "uint16Id",
+	GDUnionTypeCode:      "unionType",
+	GDSpreadableTypeCode: "spreadable",
+	GDUntypedTypeCode:    "untyped",
+
+	GDTypeRefTypeCode: "type_ref",
+	GDObjRefTypeCode:  "obj_ref",
 
 	// Number types
 	GDInt8TypeCode:       "int8",
@@ -112,28 +111,3 @@ var (
 
 func (t GDType) GetCode() GDTypableCode { return GDTypableCode(t) }
 func (t GDType) ToString() string       { return GDTypeCodeMap[t] }
-
-// Ident type
-
-type GDIdentType interface {
-	GetRawValue() any
-	GDTypable
-}
-
-type GDStringIdentType string
-
-func (i GDStringIdentType) GetCode() GDTypableCode { return GDStringIdentTypeCode }
-func (i GDStringIdentType) GetRawValue() any       { return i }
-func (i GDStringIdentType) ToString() string       { return string(i) }
-
-type GDByteIdentType byte
-
-func (i GDByteIdentType) GetCode() GDTypableCode   { return GDByteIdentTypeCode }
-func (i GDByteIdentType) GetRawValue() interface{} { return byte(i) }
-func (i GDByteIdentType) ToString() string         { return string(i) }
-
-type GDUInt16IdentType uint16
-
-func (i GDUInt16IdentType) GetCode() GDTypableCode   { return GDUInt16IdentTypeCode }
-func (i GDUInt16IdentType) GetRawValue() interface{} { return uint16(i) }
-func (i GDUInt16IdentType) ToString() string         { return string(rune(i)) }

@@ -47,7 +47,7 @@ func NewNodeTernaryIf(expr Node, then Node, elseNode Node) *NodeTernaryIf {
 type NodeIf struct {
 	Conds []Node
 	Block *NodeBlock
-	Ident runtime.GDIdentType
+	Ident runtime.GDIdent
 	BaseNode
 }
 

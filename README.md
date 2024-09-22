@@ -26,27 +26,19 @@ Here's a simple example of a GDLang program, that demonstrates the basic syntax,
 ```gdlang
 typealias route = {
     name: string,
-    handler: func() => string
+    handler: func() => string,
 }
 
-def index: route = {
+set index: route = {
     name: "/",
     handler: func() => string {
-        return "Hello, GDLang!"
-    }
-}
-
-/**
- * Get the name function
- * @return string
- */
-func getName() => string {
-    return name
+        return "GDLang!"
+    },
 }
 
 // Every program needs a main function
 pub func main() {
-    set message = "Hello, " + getName() + "!"
+    set message = "Hello, " + index.handler() + "!"
     println(message)
 }
 ```

@@ -19,7 +19,7 @@
 
 package runtime
 
-type GDLambdaArgType GDKeyValue[GDIdentType, GDTypable]
+type GDLambdaArgType GDKeyValue[GDIdent, GDTypable]
 
 type GDLambdaArgTypes []GDLambdaArgType
 

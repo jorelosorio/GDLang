@@ -276,8 +276,8 @@ func atan(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 }
 
 func atan2(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	yParam := runtime.GDStringIdentType("y")
-	xParam := runtime.GDStringIdentType("x")
+	yParam := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("y"))
+	xParam := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("x"))
 	funcType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
 			{Key: yParam, Value: runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType)},
@@ -386,7 +386,7 @@ func round(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 }
 
 func mathOp(stack *runtime.GDSymbolStack, opFunc func(num runtime.GDObject) (runtime.GDObject, error)) (runtime.GDObject, error) {
-	numParam := runtime.GDStringIdentType("num")
+	numParam := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("num"))
 	funcType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
 			{Key: numParam, Value: runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType, runtime.GDComplexType)},

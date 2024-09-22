@@ -30,12 +30,12 @@ import (
 type GDIRCompJump struct {
 	expr     GDIRNode
 	equalsTo GDIRNode
-	label    runtime.GDIdentType
+	label    runtime.GDIdent
 	GDIRBaseNode
 }
 
 func (i *GDIRCompJump) BuildAssembly(padding string) string {
-	return padding + fmt.Sprintf("%s %s %s then %s", cpu.GetCPUInstName(cpu.CompareJump), i.expr.BuildAssembly(""), i.equalsTo.BuildAssembly(""), IRTypeToString(i.label))
+	return padding + fmt.Sprintf("%s %s %s then %s", cpu.GetCPUInstName(cpu.CompareJump), i.expr.BuildAssembly(""), i.equalsTo.BuildAssembly(""), i.label.ToString())
 }
 
 func (i *GDIRCompJump) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
@@ -71,6 +71,6 @@ func (i *GDIRCompJump) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) e
 	return nil
 }
 
-func NewGDIRCompJump(conds GDIRNode, equalsTo GDIRNode, label runtime.GDIdentType, pos scanner.Position) *GDIRCompJump {
+func NewGDIRCompJump(conds GDIRNode, equalsTo GDIRNode, label runtime.GDIdent, pos scanner.Position) *GDIRCompJump {
 	return &GDIRCompJump{conds, equalsTo, label, GDIRBaseNode{pos}}
 }

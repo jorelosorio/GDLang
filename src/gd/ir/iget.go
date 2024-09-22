@@ -59,5 +59,5 @@ func (i *GDIRIGet) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error
 }
 
 func NewGDIRIGet(idx GDIRNode, isNilSafe bool, expr GDIRNode, pos scanner.Position) (*GDIRIGet, *GDIRObject) {
-	return &GDIRIGet{idx, isNilSafe, expr, GDIRBaseNode{pos}}, NewGDIRReg(cpu.RPop, pos)
+	return &GDIRIGet{idx, isNilSafe, expr, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
 }

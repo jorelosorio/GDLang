@@ -60,26 +60,26 @@ type Inferable interface {
 	SetInferredType(runtime.GDTypable)
 	InferredObject() runtime.GDObject
 	SetInferredObject(runtime.GDObject)
-	InferredIdent() runtime.GDIdentType
-	SetInferredIdent(runtime.GDIdentType)
+	InferredIdent() runtime.GDIdent
+	SetInferredIdent(runtime.GDIdent)
 }
 
 type BaseNode struct {
 	inferredType  runtime.GDTypable
 	inferredObj   runtime.GDObject
-	inferredIdent runtime.GDIdentType
+	inferredIdent runtime.GDIdent
 	nodeType      BaseNodeType
 	parent        Node
 }
 
 // Inferable interface implementation
 
-func (n *BaseNode) InferredType() runtime.GDTypable            { return n.inferredType }
-func (n *BaseNode) SetInferredType(typ runtime.GDTypable)      { n.inferredType = typ }
-func (n *BaseNode) InferredObject() runtime.GDObject           { return n.inferredObj }
-func (n *BaseNode) SetInferredObject(obj runtime.GDObject)     { n.inferredObj = obj }
-func (n *BaseNode) InferredIdent() runtime.GDIdentType         { return n.inferredIdent }
-func (n *BaseNode) SetInferredIdent(ident runtime.GDIdentType) { n.inferredIdent = ident }
+func (n *BaseNode) InferredType() runtime.GDTypable        { return n.inferredType }
+func (n *BaseNode) SetInferredType(typ runtime.GDTypable)  { n.inferredType = typ }
+func (n *BaseNode) InferredObject() runtime.GDObject       { return n.inferredObj }
+func (n *BaseNode) SetInferredObject(obj runtime.GDObject) { n.inferredObj = obj }
+func (n *BaseNode) InferredIdent() runtime.GDIdent         { return n.inferredIdent }
+func (n *BaseNode) SetInferredIdent(ident runtime.GDIdent) { n.inferredIdent = ident }
 
 // Node interface implementation
 

@@ -19,24 +19,9 @@
 
 package runtime
 
-type GDObject interface {
-	GetType() GDTypable
-	// The underlying type of the object.
-	// If the object is a number int then is a sub-type of int8, int16.
-	GetSubType() GDTypable
-	GDPrintable
-	GDCastable
-}
+type GDObjRefType struct{ GDIdent }
 
-type GDObjIdentifiable interface {
-	GetIdent() GDIdent
-	SetIdent(ident GDIdent)
-}
+func (t GDObjRefType) GetCode() GDTypableCode { return GDObjRefTypeCode }
+func (t GDObjRefType) ToString() string       { return t.GDIdent.ToString() }
 
-type GDPrintable interface {
-	ToString() string
-}
-
-type GDCastable interface {
-	CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error)
-}
+func NewGDObjRefType(ident GDIdent) GDObjRefType { return GDObjRefType{ident} }

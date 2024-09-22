@@ -190,7 +190,7 @@ func TestTypeInference(t *testing.T) {
 	func3 := runtime.NewGDLambdaType(runtime.GDLambdaArgTypes{}, runtime.GDIntType, false)
 
 	// Register a type alias
-	typeAliasIdent := runtime.GDStringIdentType("typ")
+	typeAliasIdent := runtime.NewGDStringIdent("typ")
 	_, err := stack.AddSymbol(typeAliasIdent, true, true, runtime.GDStringType, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -287,7 +287,7 @@ func TestTypeInference(t *testing.T) {
 		// set a: struct = untyped
 		{structType1, runtime.GDUntypedType, structType1, ""},
 		// set a: {a: untyped} = {a: int}
-		{runtime.NewGDStructType(runtime.GDStructAttrType{runtime.GDStringIdentType("a"), runtime.GDUntypedType}), runtime.NewGDStructType(runtime.GDStructAttrType{runtime.GDStringIdentType("a"), runtime.GDIntType}), runtime.NewGDStructType(runtime.GDStructAttrType{runtime.GDStringIdentType("a"), runtime.GDIntType}), ""},
+		{runtime.NewGDStructType(runtime.GDStructAttrType{runtime.NewGDStringIdent("a"), runtime.GDUntypedType}), runtime.NewGDStructType(runtime.GDStructAttrType{runtime.NewGDStringIdent("a"), runtime.GDIntType}), runtime.NewGDStructType(runtime.GDStructAttrType{runtime.NewGDStringIdent("a"), runtime.GDIntType}), ""},
 		// set a: struct = {untyped}
 		{structType1, runtime.NewGDStructType(), structType1, ""},
 		// set a: struct{a: int} = struct{b: int}
@@ -316,8 +316,8 @@ func TestTypeInference(t *testing.T) {
 		// set a func2 = func1
 		{func2, func1, nil, "expected `() => string` but got `() => any`"},
 		// string as type
-		{runtime.GDStringIdentType("typ"), runtime.GDStringType, runtime.GDStringIdentType("typ"), ""},
-		{runtime.GDStringIdentType("typ"), runtime.GDIntType, nil, "expected `typ` but got `int`"},
+		{runtime.NewGDIdentRefType(runtime.NewGDStringIdent("typ")), runtime.GDStringType, runtime.NewGDIdentRefType(runtime.NewGDStringIdent("typ")), ""},
+		{runtime.NewGDIdentRefType(runtime.NewGDStringIdent("typ")), runtime.GDIntType, nil, "expected `typ` but got `int`"},
 	}
 
 	TypeTests(t, tests, func(t *testing.T, test TypeTest) error {

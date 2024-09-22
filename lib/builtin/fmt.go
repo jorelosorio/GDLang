@@ -32,7 +32,7 @@ func println(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 }
 
 func printFunc(stack *runtime.GDSymbolStack, newLine bool) runtime.GDObject {
-	argIdent := runtime.GDStringIdentType("args")
+	argIdent := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("args"))
 	argType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
 			{Key: argIdent, Value: runtime.GDAnyType},

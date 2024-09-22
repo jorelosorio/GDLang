@@ -60,5 +60,5 @@ func (c *GDIRCall) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error
 }
 
 func NewGDIRCall(expr GDIRNode, args GDIRNode, pos scanner.Position) (*GDIRCall, *GDIRObject) {
-	return &GDIRCall{expr, args, GDIRBaseNode{pos}}, NewGDIRReg(cpu.RPop, pos)
+	return &GDIRCall{expr, args, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
 }

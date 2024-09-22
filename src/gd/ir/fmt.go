@@ -22,16 +22,14 @@ package ir
 import (
 	"fmt"
 	"gdlang/lib/runtime"
-	"gdlang/src/cpu"
 )
 
 func IRObjectWithTypeToString(obj runtime.GDObject) string {
-	objStr := IRObjectWithoutTypeToString(obj)
 	switch obj := obj.(type) {
 	case *runtime.GDIdObject:
-		return formatTypeToString(obj.Ident)
+		return IRObjectTypeToString(obj)
 	default:
-		return fmt.Sprintf("(%s: %s)", IRObjectTypeToString(obj), objStr)
+		return fmt.Sprintf("(%s: %s)", IRObjectTypeToString(obj), IRObjectWithoutTypeToString(obj))
 	}
 }
 
@@ -50,10 +48,10 @@ func IRObjectTypeToString(obj runtime.GDObject) string {
 func formatTypeToString(typ runtime.GDTypable) string {
 	typeCode := runtime.GDTypeCodeMap[typ.GetCode()]
 	switch typ := typ.(type) {
-	case runtime.GDByteIdentType:
-		return fmt.Sprintf("(%s: %s)", typeCode, cpu.GetCPURegName(cpu.GDReg(typ)))
-	case runtime.GDIdentType:
-		return fmt.Sprintf("(%s: %s)", typeCode, typ.GetRawValue())
+	case runtime.GDIdentRefType:
+		return fmt.Sprintf("(%s: %s)", typeCode, typ.ToString())
+	case runtime.GDObjRefType:
+		return fmt.Sprintf("(%s: %s)", typeCode, typ.ToString())
 	default:
 		return typ.ToString()
 	}
@@ -72,7 +70,12 @@ func IRObjectWithoutTypeToString(obj runtime.GDObject) string {
 	case *runtime.GDStruct:
 		strObjs := make([]string, len(obj.Type))
 		for i, attrType := range obj.Type {
-			strObjs[i] = IRObjectWithTypeToString(obj.Attrs[attrType.Ident].Object)
+			attr, err := obj.GetAttr(attrType.Ident)
+			if err != nil {
+				panic(err)
+			}
+
+			strObjs[i] = IRObjectWithTypeToString(attr.Object)
 		}
 		return fmt.Sprintf("{%s}", runtime.JoinSlice(strObjs, func(str string, _ int) string {
 			return str

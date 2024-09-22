@@ -34,6 +34,9 @@ var (
 	InvalidTypeErr = func(expected string, got runtime.GDTypable) VmErr {
 		return VmErr{"Invalid type. Expected " + expected + ", got `" + got.ToString() + "`"}
 	}
+	WrongTypeErr = func(msg string) VmErr {
+		return VmErr{"Wrong type. " + msg}
+	}
 	InvalidObjErr = func(expected string, got runtime.GDObject) VmErr {
 		return VmErr{"Invalid object. Expected " + expected + ", got " + got.ToString()}
 	}

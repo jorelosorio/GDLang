@@ -20,7 +20,7 @@
 package runtime
 
 type GDStruct struct {
-	Attrs map[GDIdentType]*GDSymbol
+	Attrs []GDKeyValue[GDIdent, *GDSymbol]
 	Type  GDStructType
 	stack *GDSymbolStack
 }
@@ -29,7 +29,12 @@ func (gd *GDStruct) GetType() GDTypable    { return gd.Type }
 func (gd *GDStruct) GetSubType() GDTypable { return nil }
 func (gd *GDStruct) ToString() string {
 	return "{" + JoinSlice(gd.Type, func(attrType GDStructAttrType, _ int) string {
-		attr := gd.Attrs[attrType.Ident]
+		attr, err := gd.GetAttr(attrType.Ident)
+		if err != nil {
+			// NOTE: If attribute is not found, then panic!
+			panic(err)
+		}
+
 		if attr.Object != nil {
 			return attrType.Ident.ToString() + ": " + ObjectToStringForInternalData(attr.Object)
 		} else {
@@ -45,19 +50,19 @@ func (gd *GDStruct) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, e
 			return GDString(gd.ToString()), nil
 		}
 	case GDStructType:
-		for ident, attr := range gd.Attrs {
-			typAttr, err := typ.GetAttrType(ident)
+		for _, attr := range gd.Attrs {
+			typAttr, err := typ.GetAttrType(attr.Key)
 			if err != nil {
 				return nil, TypeCastingWrongTypeWithHierarchyError(typ, gd.GetType(), err)
 			}
 
-			obj, err := attr.Object.CastToType(typAttr, stack)
+			obj, err := attr.Value.Object.CastToType(typAttr, stack)
 			if err != nil {
 				return nil, err
 			}
 
-			attr.Type = typAttr
-			attr.Object = obj
+			attr.Value.Type = typAttr
+			attr.Value.Object = obj
 		}
 		gd.Type = typ
 
@@ -69,21 +74,23 @@ func (gd *GDStruct) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, e
 
 func (gd *GDStruct) GetStack() *GDSymbolStack { return gd.stack }
 
-func (gd *GDStruct) GetAttr(ident GDIdentType) (*GDSymbol, error) {
-	if attr, ok := gd.Attrs[ident]; ok {
-		return attr, nil
+func (gd *GDStruct) GetAttr(ident GDIdent) (*GDSymbol, error) {
+	for _, attr := range gd.Attrs {
+		if attr.Key.GetRawValue() == ident.GetRawValue() {
+			return attr.Value, nil
+		}
 	}
 
 	return nil, AttributeNotFoundErr(ident.ToString())
 }
 
-func (gd *GDStruct) SetAttr(ident GDIdentType, object GDObject) error {
-	attr, ok := gd.Attrs[ident]
-	if !ok {
-		return AttributeNotFoundErr(ident.ToString())
+func (gd *GDStruct) SetAttr(ident GDIdent, object GDObject) error {
+	symbol, error := gd.GetAttr(ident)
+	if error != nil {
+		return error
 	}
 
-	err := attr.SetObject(object, gd.stack)
+	err := symbol.SetObject(object, gd.stack)
 	if err != nil {
 		return err
 	}
@@ -94,20 +101,21 @@ func (gd *GDStruct) SetAttr(ident GDIdentType, object GDObject) error {
 func NewGDStruct(structType GDStructType, stack *GDSymbolStack) (*GDStruct, error) {
 	structStack := stack.NewSymbolStack(StructCtx)
 
-	seen := make(map[GDIdentType]bool)
-	attrs := make(map[GDIdentType]*GDSymbol, len(structType))
-	for _, attr := range structType {
-		if seen[attr.Ident] {
+	seen := make(map[any]bool)
+	attrs := make([]GDKeyValue[GDIdent, *GDSymbol], len(structType))
+	for i, attr := range structType {
+		if seen[attr.Ident.GetRawValue()] {
 			return nil, AttributeAlreadyExistsErr(attr.Ident.ToString())
 		}
-		seen[attr.Ident] = true
+		seen[attr.Ident.GetRawValue()] = true
+
 		// Struct attributes are not constants
 		symbol, err := structStack.AddSymbol(attr.Ident, true, false, attr.Type, GDZNil)
 		if err != nil {
 			return nil, err
 		}
 
-		attrs[attr.Ident] = symbol
+		attrs[i] = GDKeyValue[GDIdent, *GDSymbol]{attr.Ident, symbol}
 	}
 
 	return &GDStruct{attrs, structType, structStack}, nil

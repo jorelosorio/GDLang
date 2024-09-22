@@ -25,7 +25,8 @@ func buildFuncType(args []Node, variadic bool, returnType runtime.GDTypable) *ru
 	funcArgTypes := make(runtime.GDLambdaArgTypes, len(args))
 	for index, arg := range args {
 		typeIdent := arg.(*NodeIdentWithType)
-		funcArgTypes[index] = runtime.GDLambdaArgType{Key: runtime.GDStringIdentType(typeIdent.Ident.Lit), Value: typeIdent.Type}
+		ident := runtime.NewGDStringIdent(typeIdent.Ident.Lit)
+		funcArgTypes[index] = runtime.GDLambdaArgType{Key: ident, Value: typeIdent.Type}
 	}
 
 	return runtime.NewGDLambdaType(funcArgTypes, returnType, variadic)

@@ -106,5 +106,47 @@ func TestStructCases(t *testing.T) {
 			set s = nU?.b.c
 			print(s)
 		}`, "nil", ""},
+		// Access struct fields
+		{`pub func main() {
+			set s = {
+				a: 1,
+				b: 2,
+			}
+			print(s.a, s.b)
+		}`, "12", ""},
+		// Access struct lambda fields
+		{`pub func main() {
+			set s: {
+				handler: func() => int,
+			} = {
+				handler: func() => int {
+					return 1
+				},
+			}
+			print(s.handler())
+		}`, "1", ""},
+		// Update a struct attribute
+		{`pub func main() {
+			set s = {
+				a: 1,
+				b: 2,
+			}
+			s.a = 3
+			print(s)
+		}`, "{a: 3, b: 2}", ""},
+		// Update a struct attribute with a lambda
+		{`pub func main() {
+			set s: {
+				handler: func() => int,
+			} = {
+				handler: func() => int {
+					return 1
+				},
+			}
+			s.handler = func() => int {
+				return 2
+			}
+			print(s.handler())
+		}`, "2", ""},
 	})
 }

@@ -54,5 +54,5 @@ func (l *GDIRLambda) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) err
 }
 
 func NewGDIRLambda(typ *runtime.GDLambdaType, pos scanner.Position) (*GDIRLambda, *GDIRObject) {
-	return &GDIRLambda{typ, pos, NewGDIRBlock()}, NewGDIRReg(cpu.RPop, scanner.ZeroPos)
+	return &GDIRLambda{typ, pos, NewGDIRBlock()}, NewGDIRRegObject(cpu.RPop, scanner.ZeroPos)
 }

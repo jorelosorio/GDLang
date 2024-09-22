@@ -36,6 +36,8 @@ func Write(bytecode *bytes.Buffer, data ...any) error {
 			err = bytecode.WriteByte(byte(value))
 		case runtime.GDObject:
 			err = writeObjectWithType(bytecode, value)
+		case runtime.GDIdent:
+			err = WriteIdent(bytecode, value)
 		case runtime.GDTypable:
 			err = WriteType(bytecode, value)
 		default:
@@ -62,25 +64,20 @@ func WriteType(bytecode *bytes.Buffer, typ runtime.GDTypable) error {
 			return err
 		}
 
-		for _, field := range t {
-			err := WriteType(bytecode, field.Ident)
+		for _, attr := range t {
+			err := WriteIdent(bytecode, attr.Ident)
 			if err != nil {
 				return err
 			}
 
-			err = WriteType(bytecode, field.Type)
+			err = WriteType(bytecode, attr.Type)
 			if err != nil {
 				return err
 			}
 		}
-	case runtime.GDByteIdentType:
-		byteValue := t.GetRawValue().(byte)
-		return WriteByte(bytecode, byteValue)
-	case runtime.GDStringIdentType:
-		return WriteIdent(bytecode, t.ToString())
-	case runtime.GDUInt16IdentType:
-		uIntValue := t.GetRawValue().(uint16)
-		return WriteUInt16(bytecode, uIntValue)
+	case runtime.GDIdent:
+		// Write the ident mode and raw value
+		return WriteIdent(bytecode, t)
 	case *runtime.GDArrayType:
 		return WriteType(bytecode, t.SubType)
 	case runtime.GDUnionType:
@@ -118,7 +115,7 @@ func WriteType(bytecode *bytes.Buffer, typ runtime.GDTypable) error {
 		}
 
 		for _, argType := range t.ArgTypes {
-			err = WriteType(bytecode, argType.Key)
+			err = WriteIdent(bytecode, argType.Key)
 			if err != nil {
 				return err
 			}
@@ -176,8 +173,12 @@ func writeObject(bytecode *bytes.Buffer, obj runtime.GDObject) error {
 		}
 
 		for _, item := range obj.Type {
-			obj := obj.Attrs[item.Ident]
-			err := writeObjectWithType(bytecode, obj.Object)
+			obj, err := obj.GetAttr(item.Ident)
+			if err != nil {
+				return err
+			}
+
+			err = writeObjectWithType(bytecode, obj.Object)
 			if err != nil {
 				return err
 			}
@@ -251,13 +252,34 @@ func WriteByte(bytecode *bytes.Buffer, val byte) error {
 }
 
 // Ident are 256 characters long, to fit in a byte
-func WriteIdent(bytecode *bytes.Buffer, ident string) error {
-	err := bytecode.WriteByte(byte(len(ident)))
+func WriteIdent(bytecode *bytes.Buffer, ident runtime.GDIdent) error {
+	// Write the ident mode
+	err := WriteByte(bytecode, byte(ident.GetMode()))
 	if err != nil {
 		return err
 	}
-	_, err = bytecode.WriteString(ident)
-	return err
+
+	// Write the raw value
+	switch mode := ident.GetMode(); mode {
+	case runtime.GDByteIdentMode:
+		return WriteByte(bytecode, byte(ident.GetRawValue().(byte)))
+	case runtime.GDUInt16IdentMode:
+		return WriteUInt16(bytecode, ident.GetRawValue().(uint16))
+	case runtime.GDStringIdentMode:
+		str := ident.GetRawValue().(string)
+
+		err := bytecode.WriteByte(byte(len(str)))
+		if err != nil {
+			return err
+		}
+
+		_, err = bytecode.WriteString(str)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func WriteString(bytecode *bytes.Buffer, str string) error {

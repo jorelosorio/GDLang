@@ -134,7 +134,7 @@ func (p *GDDepAnalyzer) Build(basePath string, op DepAnalyzerOpt) error {
 					return err
 				}
 			}
-		case runtime.GDIdentType:
+		case runtime.GDIdent:
 			identStr := typ.ToString()
 			path := identStr + "@" + file.File.Name()
 			if _, visited := visitedObjects[path]; visited {

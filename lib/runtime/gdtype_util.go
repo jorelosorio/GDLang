@@ -67,7 +67,7 @@ func ComputeTypeFromTypes(types []GDTypable) GDTypable {
 
 func UnwrapIdentType(typ GDTypable, stack *GDSymbolStack) (GDTypable, error) {
 	switch typ := typ.(type) {
-	case GDIdentType:
+	case GDIdent:
 		symbol, err := stack.GetSymbol(typ)
 		if err != nil {
 			return nil, err
@@ -151,7 +151,8 @@ func determineTypeCompatibility(toType, fromType GDTypable, isAssignmentNeeded b
 	}
 
 	switch toType := toType.(type) {
-	case GDIdentType:
+	case GDIdentRefType:
+		// TODO: It might be also possible to check for ident names are similar
 		symbol, err := stack.GetSymbol(toType)
 		if err != nil {
 			return nil, err

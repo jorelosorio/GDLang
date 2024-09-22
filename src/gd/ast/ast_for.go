@@ -27,8 +27,8 @@ import (
 // For
 
 type NodeFor interface {
-	SetEndLabel(runtime.GDIdentType)
-	GetEndLabel() runtime.GDIdentType
+	SetEndLabel(runtime.GDIdent)
+	GetEndLabel() runtime.GDIdent
 }
 
 // Nod For If
@@ -39,7 +39,7 @@ type NodeForIf struct {
 	Block *NodeBlock
 
 	// Labeling
-	endLabel runtime.GDIdentType
+	endLabel runtime.GDIdent
 
 	BaseNode
 }
@@ -49,8 +49,8 @@ func (f *NodeForIf) GetPosition() scanner.Position {
 }
 func (f *NodeForIf) Order() uint16 { return EquivalentOrder }
 
-func (f *NodeForIf) SetEndLabel(endLabel runtime.GDIdentType) { f.endLabel = endLabel }
-func (f *NodeForIf) GetEndLabel() runtime.GDIdentType         { return f.endLabel }
+func (f *NodeForIf) SetEndLabel(endLabel runtime.GDIdent) { f.endLabel = endLabel }
+func (f *NodeForIf) GetEndLabel() runtime.GDIdent         { return f.endLabel }
 
 func NewNodeForIf(setObjs Node, ifConds []Node, block *NodeBlock) *NodeForIf {
 	block.SetAsControlFlowBlock()

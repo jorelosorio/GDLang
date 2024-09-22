@@ -44,7 +44,7 @@ func TestSimpleStructType(t *testing.T) {
 		// Struct with nested struct and array
 		{[]runtime.GDStructAttrType{{aParamIdent, subStructTypeWithArray}}, "{a: {b: [int]}}", ""},
 		// Wrong types
-		{[]runtime.GDStructAttrType{{aParamIdent, Istr("none")}}, "", "object `none` was not found"},
+		{[]runtime.GDStructAttrType{{aParamIdent, runtime.NewGDIdentRefType(runtime.NewGDStringIdent("none"))}}, "", "object `none` was not found"},
 	} {
 		structType := runtime.NewGDStructType(test.attrs...)
 		err := runtime.CheckType(structType, stack)

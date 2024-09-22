@@ -37,21 +37,7 @@ type GDVMReader struct {
 
 // Type
 
-func (p *GDVMReader) ReadIdentType() (runtime.GDIdentType, error) {
-	identTyp, err := p.ReadType()
-	if err != nil {
-		return nil, err
-	}
-
-	ident, ok := identTyp.(runtime.GDIdentType)
-	if !ok {
-		return nil, InvalidTypeErr("an `ident` type", identTyp)
-	}
-
-	return ident, nil
-}
-
-func (p *GDVMReader) ReadType() (runtime.GDTypable, error) {
+func (p *GDVMReader) ReadType(stack *runtime.GDSymbolStack) (runtime.GDTypable, error) {
 	byteValue, err := p.ReadByte()
 	if err != nil {
 		return nil, err
@@ -60,61 +46,50 @@ func (p *GDVMReader) ReadType() (runtime.GDTypable, error) {
 	typeCode := runtime.GDTypableCode(byteValue)
 	switch typeCode {
 	case runtime.GDStructTypeCode:
-		fLen, err := p.ReadByte()
+		attrsLen, err := p.ReadByte()
 		if err != nil {
 			return nil, err
 		}
 
-		tFields := make([]runtime.GDStructAttrType, fLen)
-		for i := range fLen {
-			fIdent, err := p.ReadType()
+		attrs := make([]runtime.GDStructAttrType, attrsLen)
+		for i := range attrsLen {
+			attrIdent, err := p.ReadIdent()
 			if err != nil {
 				return nil, err
 			}
 
-			ident, ok := fIdent.(runtime.GDIdentType)
-
-			if !ok {
-				return nil, InvalidTypeErr("an `ident` type", fIdent)
-			}
-
-			fType, err := p.ReadType()
+			attrType, err := p.ReadType(stack)
 			if err != nil {
 				return nil, err
 			}
 
-			tFields[i] = runtime.GDStructAttrType{Ident: ident, Type: fType}
+			attrs[i] = runtime.GDStructAttrType{Ident: attrIdent, Type: attrType}
 		}
 
-		return runtime.NewGDStructType(tFields...), nil
-	case runtime.GDByteIdentTypeCode:
-		b, err := p.ReadByte()
+		return runtime.NewGDStructType(attrs...), nil
+	case runtime.GDObjRefTypeCode:
+		ident, err := p.ReadIdent()
 		if err != nil {
 			return nil, err
 		}
 
-		return runtime.GDByteIdentType(b), nil
-	case runtime.GDStringIdentTypeCode:
-		strLen, err := p.ReadByte()
+		oIdent := runtime.NewGDObjRefType(ident)
+
+		return oIdent, nil
+	case runtime.GDTypeRefTypeCode:
+		ident, err := p.ReadIdent()
 		if err != nil {
 			return nil, err
 		}
 
-		str, err := p.readString(uint(strLen))
+		symbol, err := stack.GetSymbol(ident)
 		if err != nil {
 			return nil, err
 		}
 
-		return runtime.GDStringIdentType(str), nil
-	case runtime.GDUInt16IdentTypeCode:
-		uInt16, err := p.ReadUInt16()
-		if err != nil {
-			return nil, err
-		}
-
-		return runtime.GDUInt16IdentType(uInt16), nil
+		return symbol.Type, nil
 	case runtime.GDArrayTypeCode:
-		subType, err := p.ReadType()
+		subType, err := p.ReadType(stack)
 		if err != nil {
 			return nil, err
 		}
@@ -128,7 +103,7 @@ func (p *GDVMReader) ReadType() (runtime.GDTypable, error) {
 
 		uTypes := make([]runtime.GDTypable, uLen)
 		for i := range uLen {
-			uType, err := p.ReadType()
+			uType, err := p.ReadType(stack)
 			if err != nil {
 				return nil, err
 			}
@@ -145,7 +120,7 @@ func (p *GDVMReader) ReadType() (runtime.GDTypable, error) {
 
 		tTypes := make([]runtime.GDTypable, tLen)
 		for i := range tLen {
-			tType, err := p.ReadType()
+			tType, err := p.ReadType(stack)
 			if err != nil {
 				return nil, err
 			}
@@ -154,7 +129,7 @@ func (p *GDVMReader) ReadType() (runtime.GDTypable, error) {
 
 		return runtime.NewGDTupleType(tTypes...), nil
 	case runtime.GDLambdaTypeCode:
-		rType, err := p.ReadType()
+		rType, err := p.ReadType(stack)
 		if err != nil {
 			return nil, err
 		}
@@ -166,23 +141,17 @@ func (p *GDVMReader) ReadType() (runtime.GDTypable, error) {
 
 		argTypes := make(runtime.GDLambdaArgTypes, argLen)
 		for i := range argLen {
-			argIdent, err := p.ReadType()
+			argIdent, err := p.ReadIdent()
 			if err != nil {
 				return nil, err
 			}
 
-			ident, ok := argIdent.(runtime.GDIdentType)
-
-			if !ok {
-				return nil, InvalidTypeErr("an `ident` type", argIdent)
-			}
-
-			argType, err := p.ReadType()
+			argType, err := p.ReadType(stack)
 			if err != nil {
 				return nil, err
 			}
 
-			argTypes[i] = runtime.GDLambdaArgType{Key: ident, Value: argType}
+			argTypes[i] = runtime.GDLambdaArgType{Key: argIdent, Value: argType}
 		}
 
 		isVariadic, err := p.ReadBool()
@@ -194,6 +163,45 @@ func (p *GDVMReader) ReadType() (runtime.GDTypable, error) {
 	default:
 		return runtime.GDType(typeCode), nil
 	}
+}
+
+func (p *GDVMReader) ReadIdent() (runtime.GDIdent, error) {
+	modeValue, err := p.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+
+	mode := runtime.GDIdentMode(modeValue)
+	switch mode {
+	case runtime.GDByteIdentMode:
+		b, err := p.ReadByte()
+		if err != nil {
+			return nil, err
+		}
+
+		return runtime.NewGDByteIdent(b), nil
+	case runtime.GDUInt16IdentMode:
+		uInt16, err := p.ReadUInt16()
+		if err != nil {
+			return nil, err
+		}
+
+		return runtime.NewGDUInt16Ident(uInt16), nil
+	case runtime.GDStringIdentMode:
+		strLen, err := p.ReadByte()
+		if err != nil {
+			return nil, err
+		}
+
+		str, err := p.readString(uint(strLen))
+		if err != nil {
+			return nil, err
+		}
+
+		return runtime.NewGDStringIdent(str), nil
+	}
+
+	return nil, WrongTypeErr(runtime.Sprintf("an `ident` type was expected, but got an invalid mode: %@", byte(mode)))
 }
 
 // Objects
@@ -218,7 +226,7 @@ func (p *GDVMReader) ReadLambdaObj(stack *runtime.GDSymbolStack) (*runtime.GDLam
 		return nil, err
 	}
 
-	lambda, ok := obj.(*runtime.GDLambda)
+	lambda, ok := runtime.Unwrap(obj).(*runtime.GDLambda)
 	if !ok {
 		return nil, InvalidObjErr("a `lambda` object", obj)
 	}
@@ -232,7 +240,7 @@ func (p *GDVMReader) ReadArrayObj(stack *runtime.GDSymbolStack) (*runtime.GDArra
 		return nil, err
 	}
 
-	arr, ok := obj.(*runtime.GDArray)
+	arr, ok := runtime.Unwrap(obj).(*runtime.GDArray)
 	if !ok {
 		return nil, InvalidObjErr("an `array` object", obj)
 	}
@@ -246,7 +254,7 @@ func (p *GDVMReader) ReadIterObj(stack *runtime.GDSymbolStack) (runtime.GDIterab
 		return nil, err
 	}
 
-	iter, ok := obj.(runtime.GDIterableCollection)
+	iter, ok := runtime.Unwrap(obj).(runtime.GDIterableCollection)
 	if !ok {
 		return nil, InvalidObjErr("an `iterable` object", obj)
 	}
@@ -283,7 +291,7 @@ func (p *GDVMReader) ReadAttributable(stack *runtime.GDSymbolStack) (runtime.GDA
 }
 
 func (p *GDVMReader) ReadObject(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	typ, err := p.ReadType()
+	typ, err := p.ReadType(stack)
 	if err != nil {
 		return nil, err
 	}
@@ -291,30 +299,37 @@ func (p *GDVMReader) ReadObject(stack *runtime.GDSymbolStack) (runtime.GDObject,
 	switch typ.GetCode() {
 	case runtime.GDNilTypeCode:
 		return runtime.GDZNil, nil
-	case runtime.GDStringIdentTypeCode:
-		symbol, err := stack.GetSymbol(typ.(runtime.GDStringIdentType))
-		if err != nil {
-			return nil, err
+	case runtime.GDObjRefTypeCode:
+		objRef, ok := typ.(runtime.GDObjRefType)
+		if !ok {
+			return nil, InvalidTypeErr("an `objref` type", typ)
 		}
 
-		return symbol.Object, nil
-	case runtime.GDByteIdentTypeCode:
-		if identByte, ok := typ.(runtime.GDByteIdentType); ok {
-			byte := identByte.GetRawValue().(byte)
+		ident := objRef.GDIdent
+		switch ident.GetMode() {
+		case runtime.GDByteIdentMode:
+			byte := ident.GetRawValue().(byte)
 			switch cpu.GDReg(byte) {
 			case cpu.RPop:
 				return stack.PopBuffer(), nil
 			default:
-				symbol, err := stack.GetSymbol(identByte)
+				symbol, err := stack.GetSymbol(ident)
 				if err != nil {
 					return nil, err
 				}
 
 				return symbol.Object, nil
 			}
-		}
+		case runtime.GDStringIdentMode, runtime.GDUInt16IdentMode:
+			symbol, err := stack.GetSymbol(ident)
+			if err != nil {
+				return nil, err
+			}
 
-		return nil, nil
+			return symbol.Object, nil
+		default:
+			return nil, WrongTypeErr("an `ident` type was expected, but got an invalid mode")
+		}
 	case runtime.GDIntTypeCode:
 		intVal, err := p.ReadInt()
 		if err != nil {

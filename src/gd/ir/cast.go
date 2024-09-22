@@ -54,5 +54,5 @@ func (c *GDIRCastObject) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext)
 }
 
 func NewGDIRCastObject(typ runtime.GDTypable, expr GDIRNode, pos scanner.Position) (*GDIRCastObject, *GDIRObject) {
-	return &GDIRCastObject{typ, expr, GDIRBaseNode{pos}}, NewGDIRReg(cpu.RPop, pos)
+	return &GDIRCastObject{typ, expr, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
 }

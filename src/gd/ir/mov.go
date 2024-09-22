@@ -27,13 +27,13 @@ import (
 )
 
 type GDIRMov struct {
-	ident GDIRNode
-	expr  GDIRNode
+	target GDIRNode
+	value  GDIRNode
 	GDIRBaseNode
 }
 
 func (m *GDIRMov) BuildAssembly(padding string) string {
-	return padding + fmt.Sprintf("%s %s %s", cpu.GetCPUInstName(cpu.Mov), m.ident.BuildAssembly(""), m.expr.BuildAssembly(""))
+	return padding + fmt.Sprintf("%s %s %s", cpu.GetCPUInstName(cpu.Mov), m.target.BuildAssembly(""), m.value.BuildAssembly(""))
 }
 
 func (m *GDIRMov) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
@@ -44,12 +44,12 @@ func (m *GDIRMov) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error 
 		return err
 	}
 
-	err = m.ident.BuildBytecode(bytecode, ctx)
+	err = m.target.BuildBytecode(bytecode, ctx)
 	if err != nil {
 		return err
 	}
 
-	err = m.expr.BuildBytecode(bytecode, ctx)
+	err = m.value.BuildBytecode(bytecode, ctx)
 	if err != nil {
 		return err
 	}
@@ -57,6 +57,6 @@ func (m *GDIRMov) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error 
 	return nil
 }
 
-func NewGDIRMov(ident GDIRNode, expr GDIRNode, pos scanner.Position) *GDIRMov {
-	return &GDIRMov{ident, expr, GDIRBaseNode{pos}}
+func NewGDIRMov(target GDIRNode, value GDIRNode, pos scanner.Position) *GDIRMov {
+	return &GDIRMov{target, value, GDIRBaseNode{pos}}
 }

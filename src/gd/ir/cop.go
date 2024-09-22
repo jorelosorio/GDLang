@@ -76,5 +76,5 @@ func (a *GDIRCOp) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error 
 }
 
 func NewGDIRCOp(op ast.MutableCollectionOp, left GDIRNode, right GDIRNode, pos scanner.Position) (*GDIRCOp, *GDIRObject) {
-	return &GDIRCOp{op, left, right, GDIRBaseNode{pos}}, NewGDIRReg(cpu.RPop, pos)
+	return &GDIRCOp{op, left, right, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
 }

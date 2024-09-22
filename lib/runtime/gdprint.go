@@ -67,8 +67,14 @@ func convertAny(value any) string {
 		return v.ToString()
 	case int, int8, int16, int32, int64:
 		return strconv.FormatInt(int64(v.(int)), 10)
-	case uint, uint8, uint16, uint32, uint64:
+	case GDByteIdent:
+		return strconv.FormatUint(uint64(byte(v)), 10)
+	case GDIdent:
+		return v.ToString()
+	case uint, uint16, uint32, uint64:
 		return strconv.FormatUint(uint64(v.(uint)), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(v), 10)
 	case float32, float64:
 		return strconv.FormatFloat(float64(v.(float64)), 'f', -1, 64)
 	case complex64, complex128:

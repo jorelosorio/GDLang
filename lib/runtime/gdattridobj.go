@@ -24,6 +24,6 @@ type GDAttrIdObject struct {
 	GDIdObject
 }
 
-func NewGDAttrIdObject(ident GDIdentType, obj GDObject, attr GDAttributable) *GDAttrIdObject {
+func NewGDAttrIdObject(ident GDIdent, obj GDObject, attr GDAttributable) *GDAttrIdObject {
 	return &GDAttrIdObject{attr, GDIdObject{ident, obj}}
 }

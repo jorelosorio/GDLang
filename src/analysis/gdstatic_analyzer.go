@@ -85,7 +85,7 @@ func (t *GDStaticAnalyzer) EvalAtom(a *ast.NodeLiteral, stack *runtime.GDSymbolS
 }
 
 func (t *GDStaticAnalyzer) EvalIdent(i *ast.NodeIdent, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	ident := runtime.GDStringIdentType(i.Lit)
+	ident := runtime.NewGDStringIdent(i.Lit)
 	symbol, err := stack.GetSymbol(ident)
 	if err != nil {
 		return nil, comn.WrapFatalErr(err, i.GetPosition())
@@ -246,7 +246,7 @@ func (t *GDStaticAnalyzer) EvalFunc(f *ast.NodeFunc, stack *runtime.GDSymbolStac
 
 	gdfunc := runtime.NewGDLambdaWithType(f.Type, stack, nil)
 
-	_, err := stack.AddSymbol(runtime.GDStringIdentType(f.Ident.Lit), f.IsPub, true, f.Type, gdfunc)
+	_, err := stack.AddSymbol(runtime.NewGDStringIdent(f.Ident.Lit), f.IsPub, true, f.Type, gdfunc)
 	if err != nil {
 		return nil, comn.WrapFatalErr(err, f.Ident.Position)
 	}
@@ -335,7 +335,7 @@ func (t *GDStaticAnalyzer) EvalStruct(s *ast.NodeStruct, stack *runtime.GDSymbol
 				return nil, err
 			}
 
-			ident := runtime.GDStringIdentType(expr.Ident.Lit)
+			ident := runtime.NewGDStringIdent(expr.Ident.Lit)
 			attrTypes[i] = runtime.GDStructAttrType{Ident: ident, Type: obj.GetType()}
 			objects[i] = obj
 		default:
@@ -486,7 +486,7 @@ func (t *GDStaticAnalyzer) EvalSafeDotExpr(s *ast.NodeSafeDotExpr, stack *runtim
 			return nil, err
 		}
 
-		attrIdent := runtime.GDStringIdentType(identExpr.Lit)
+		attrIdent := runtime.NewGDStringIdent(identExpr.Lit)
 		s.SetInferredIdent(attrIdent)
 
 		obj = runtime.Unwrap(obj)
@@ -578,7 +578,7 @@ func (t *GDStaticAnalyzer) EvalSet(s *ast.NodeSet, stack *runtime.GDSymbolStack)
 		return nil, err
 	}
 
-	ident := runtime.GDStringIdentType(s.IdentWithType.Ident.Lit)
+	ident := runtime.NewGDStringIdent(s.IdentWithType.Ident.Lit)
 
 	inferredType, err := runtime.InferType(s.IdentWithType.Type, exprObj.GetType(), stack)
 	if err != nil {
@@ -897,7 +897,7 @@ func (t *GDStaticAnalyzer) EvalCollectableOp(c *ast.NodeMutCollectionOp, stack *
 		switch c.Op {
 		case ast.MutableCollectionAddOp:
 			if ident, ok := c.L.(*ast.NodeIdent); ok {
-				symbolId := runtime.GDStringIdentType(ident.Lit)
+				symbolId := runtime.NewGDStringIdent(ident.Lit)
 				symbol, err := stack.GetSymbol(symbolId)
 				if err != nil {
 					return nil, comn.WrapFatalErr(err, ident.GetPosition())
@@ -946,7 +946,7 @@ func (t *GDStaticAnalyzer) EvalCollectableOp(c *ast.NodeMutCollectionOp, stack *
 }
 
 func (t *GDStaticAnalyzer) EvalTypeAlias(ta *ast.NodeTypeAlias, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	ident := runtime.GDStringIdentType(ta.Ident.Lit)
+	ident := runtime.NewGDStringIdent(ta.Ident.Lit)
 	_, err := stack.AddSymbol(ident, ta.IsPub, true, ta.Type, nil)
 	if err != nil {
 		return nil, comn.WrapFatalErr(err, ta.GetPosition())

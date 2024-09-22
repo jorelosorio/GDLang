@@ -22,7 +22,7 @@ package vm
 import "gdlang/lib/runtime"
 
 type GDVMIdenSymbol struct {
-	Ident  runtime.GDIdentType
+	Ident  runtime.GDIdent
 	Symbol *runtime.GDSymbol
 }
 
@@ -36,7 +36,7 @@ func (p *GDVMProc) evalAGet(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 	expr, attrErr := p.ReadAttributable(stack)
 
 	// Continue reading the ident, after validating the expression
-	ident, err := p.ReadIdentType()
+	ident, err := p.ReadIdent()
 	if err != nil {
 		return nil, err
 	}

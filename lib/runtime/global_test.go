@@ -21,15 +21,15 @@ package runtime_test
 
 import "gdlang/lib/runtime"
 
-func Istr(ident string) runtime.GDIdentType {
-	return runtime.GDStringIdentType(ident)
+func NewGDStringIdentType(ident string) runtime.GDIdent {
+	return runtime.NewGDStringIdent(ident)
 }
 
 var (
-	aParamIdent = Istr("a")
-	bParamIdent = Istr("b")
-	cParamIdent = Istr("c")
-	attr1Ident  = Istr("attr1")
+	aParamIdent = NewGDStringIdentType("a")
+	bParamIdent = NewGDStringIdentType("b")
+	cParamIdent = NewGDStringIdentType("c")
+	attr1Ident  = NewGDStringIdentType("attr1")
 
 	// Structs
 	structWithAttrAAsInt    = runtime.NewGDStructType(runtime.GDStructAttrType{aParamIdent, runtime.GDIntType})

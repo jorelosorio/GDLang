@@ -28,12 +28,12 @@ import (
 
 type GDIRLabelMark struct {
 	Offset int
-	Label  runtime.GDIdentType
+	Label  runtime.GDIdent
 }
 
 type GDIRContext struct {
 	SrcMap       *GDSourceMap
-	LabelOffsets map[runtime.GDIdentType]uint16
+	LabelOffsets map[any]uint16
 	Marks        []GDIRLabelMark
 }
 
@@ -50,7 +50,7 @@ func (c *GDIRContext) ResolveMarks(bytecode *bytes.Buffer) {
 }
 
 func (c *GDIRContext) ResolveMark(mark GDIRLabelMark, bytecode *bytes.Buffer) bool {
-	offsetValue, ok := c.LabelOffsets[mark.Label]
+	offsetValue, ok := c.LabelOffsets[mark.Label.GetRawValue()]
 	if !ok {
 		return false
 	}
@@ -60,7 +60,7 @@ func (c *GDIRContext) ResolveMark(mark GDIRLabelMark, bytecode *bytes.Buffer) bo
 	return true
 }
 
-func (c *GDIRContext) AddMark(bytecode *bytes.Buffer, offset int, ident runtime.GDIdentType) bool {
+func (c *GDIRContext) AddMark(bytecode *bytes.Buffer, offset int, ident runtime.GDIdent) bool {
 	mark := GDIRLabelMark{offset, ident}
 	ok := c.ResolveMark(mark, bytecode)
 	// It was not possible to find a label yet, so add it to the pending list
@@ -72,12 +72,12 @@ func (c *GDIRContext) AddMark(bytecode *bytes.Buffer, offset int, ident runtime.
 	return ok
 }
 
-func (c *GDIRContext) AddLabel(bytecode *bytes.Buffer, offset uint16, label runtime.GDIdentType) {
-	if _, ok := c.LabelOffsets[label]; ok {
+func (c *GDIRContext) AddLabel(bytecode *bytes.Buffer, offset uint16, label runtime.GDIdent) {
+	if _, ok := c.LabelOffsets[label.GetRawValue()]; ok {
 		panic(fmt.Sprintf("Label %s already defined", label))
 	}
 
-	c.LabelOffsets[label] = offset
+	c.LabelOffsets[label.GetRawValue()] = offset
 
 	// Resolve pending marks
 	c.ResolveMarks(bytecode)
@@ -88,5 +88,5 @@ func (c *GDIRContext) AddMapping(bytecode *bytes.Buffer, pos scanner.Position) {
 }
 
 func NewGDIRContext() *GDIRContext {
-	return &GDIRContext{NewGDIRSourceMap(), make(map[runtime.GDIdentType]uint16), make([]GDIRLabelMark, 0)}
+	return &GDIRContext{NewGDIRSourceMap(), make(map[any]uint16), make([]GDIRLabelMark, 0)}
 }

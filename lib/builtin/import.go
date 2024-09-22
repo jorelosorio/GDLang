@@ -54,7 +54,7 @@ func Import(stack *runtime.GDSymbolStack) error {
 			return err
 		}
 
-		ident := runtime.GDStringIdentType(ident)
+		ident := runtime.NewGDStringIdent(ident)
 		_, err = stack.AddSymbol(ident, true, true, obj.GetType(), obj)
 		if err != nil {
 			return err

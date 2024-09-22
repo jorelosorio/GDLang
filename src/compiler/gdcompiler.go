@@ -37,7 +37,7 @@ type (
 	GDCompExpressionEvaluator = analysis.GDExpressionEvaluator[ir.GDIRNode, ir.GDIRStackNode]
 )
 
-type ForCallback func(endLabel runtime.GDIdentType, stack ir.GDIRStackNode) error
+type ForCallback func(endLabel runtime.GDIdent, stack ir.GDIRStackNode) error
 
 type GDCompiler struct {
 	Ctx  *ir.GDIRContext
@@ -74,7 +74,8 @@ func (c *GDCompiler) Compile(mainPkg string) error {
 		}
 	}
 
-	main := ir.NewGDIRIdObject(runtime.GDStringIdentType("main"), runtime.GDZNil, scanner.ZeroPos)
+	identObj := runtime.NewGDIdObject(runtime.NewGDStringIdent("main"), runtime.GDZNil)
+	main := ir.NewGDIRObject(identObj, scanner.ZeroPos)
 	inst, _ := ir.NewGDIRCall(main, ir.NewGDIRIterableObject(runtime.NewGDArrayType(runtime.GDAnyType), []ir.GDIRNode{}, scanner.ZeroPos), scanner.ZeroPos)
 	c.Root.AddNode(inst)
 
@@ -177,7 +178,7 @@ func (t *GDCompiler) EvalFunc(f *ast.NodeFunc, stack ir.GDIRStackNode) (ir.GDIRN
 		return nil, err
 	}
 
-	ident := runtime.GDStringIdentType(f.Ident.Lit)
+	ident := runtime.NewGDStringIdent(f.Ident.Lit)
 	disc := ir.NewGDIRDiscoverable(f.IsPub, true, ident)
 	irFunc := ir.NewGDIRSet(disc, f.InferredType(), lambda, f.GetPosition())
 
@@ -286,7 +287,7 @@ func (t *GDCompiler) resolveNodeSetExpr(set *ast.NodeSet, stack ir.GDIRStackNode
 	if set.Expr != nil {
 		switch expr := set.Expr.(type) {
 		case *ast.NodeSharedExpr:
-			sharedExprReg := ir.NewGDIRReg(cpu.Ra, set.GetPosition())
+			sharedExprReg := ir.NewGDIRRegObject(cpu.Ra, set.GetPosition())
 
 			// Check if shared expression has been processed
 			if !expr.HasBeenProcessed {
@@ -450,18 +451,18 @@ func (t *GDCompiler) EvalTernaryIf(tif *ast.NodeTernaryIf, stack ir.GDIRStackNod
 
 func (t *GDCompiler) EvalForIn(f *ast.NodeForIn, stack ir.GDIRStackNode) (ir.GDIRNode, error) {
 	// Register where the iterable
-	ra := ir.NewGDIRReg(cpu.Ra, f.Expr.GetPosition())
+	ra := ir.NewGDIRRegObject(cpu.Ra, f.Expr.GetPosition())
 
 	// Register for the iterable index
-	ri := ir.NewGDIRReg(cpu.Ri, f.GetPosition())
+	ri := ir.NewGDIRRegObject(cpu.Ri, f.GetPosition())
 
 	return t.evalFor(
 		f.NodeForIf,
 		stack,
-		func(_ runtime.GDIdentType, stack ir.GDIRStackNode) error {
+		func(_ runtime.GDIdent, stack ir.GDIRStackNode) error {
 			return nil
 		},
-		func(endLabel runtime.GDIdentType, stack ir.GDIRStackNode) error {
+		func(endLabel runtime.GDIdent, stack ir.GDIRStackNode) error {
 			expr, err := t.EvalNode(f.Expr, stack)
 			if err != nil {
 				return err
@@ -473,7 +474,7 @@ func (t *GDCompiler) EvalForIn(f *ast.NodeForIn, stack ir.GDIRStackNode) (ir.GDI
 
 			return nil
 		},
-		func(endLabel runtime.GDIdentType, stack ir.GDIRStackNode) error {
+		func(endLabel runtime.GDIdent, stack ir.GDIRStackNode) error {
 			// Compare jump condition:
 			// if (ri < len(ra)) == false => goto endLabel
 			lenInst, lenReg := ir.NewGDIRLen(ra, f.Expr.GetPosition())
@@ -485,12 +486,13 @@ func (t *GDCompiler) EvalForIn(f *ast.NodeForIn, stack ir.GDIRStackNode) (ir.GDI
 			)
 
 			// Get the value of the index
-			inst, reg := ir.NewGDIRIGet(ir.NewGDIRReg(cpu.Ri, f.Expr.GetPosition()), true, ir.NewGDIRReg(cpu.Ra, f.GetPosition()), f.Expr.GetPosition())
+			inst, reg := ir.NewGDIRIGet(ir.NewGDIRRegObject(cpu.Ri, f.Expr.GetPosition()), true, ir.NewGDIRRegObject(cpu.Ra, f.GetPosition()), f.Expr.GetPosition())
 			stack.AddNode(inst)
 
 			if f.InferredIterable != nil {
 				// Iterable reference
-				iterableIdent := ir.NewGDIRIdObject(f.InferredIterable.InferredIdent(), runtime.GDZNil, f.InferredIterable.GetPosition())
+				identObj := runtime.NewGDIdObject(f.InferredIterable.InferredIdent(), runtime.GDZNil)
+				iterableIdent := ir.NewGDIRObject(identObj, f.InferredIterable.GetPosition())
 				stack.AddNode(
 					ir.NewGDIRMov(iterableIdent, reg, f.InferredIterable.GetPosition()),
 				)
@@ -498,9 +500,10 @@ func (t *GDCompiler) EvalForIn(f *ast.NodeForIn, stack ir.GDIRStackNode) (ir.GDI
 
 			if f.InferredIndex != nil {
 				// Index reference
-				indexIdent := ir.NewGDIRIdObject(f.InferredIndex.InferredIdent(), runtime.GDZNil, f.InferredIndex.GetPosition())
+				identObj := runtime.NewGDIdObject(f.InferredIndex.InferredIdent(), runtime.GDZNil)
+				indexIdent := ir.NewGDIRObject(identObj, f.InferredIndex.GetPosition())
 				stack.AddNode(
-					ir.NewGDIRMov(indexIdent, ir.NewGDIRReg(cpu.Ri, f.GetPosition()), f.InferredIndex.GetPosition()),
+					ir.NewGDIRMov(indexIdent, ir.NewGDIRRegObject(cpu.Ri, f.GetPosition()), f.InferredIndex.GetPosition()),
 				)
 			}
 
@@ -538,7 +541,7 @@ func (t *GDCompiler) EvalCollectableOp(c *ast.NodeMutCollectionOp, stack ir.GDIR
 }
 
 func (t *GDCompiler) EvalTypeAlias(ta *ast.NodeTypeAlias, stack ir.GDIRStackNode) (ir.GDIRNode, error) {
-	disc := ir.NewGDIRDiscoverable(ta.IsPub, true, runtime.GDStringIdentType(ta.Ident.Lit))
+	disc := ir.NewGDIRDiscoverable(ta.IsPub, true, runtime.NewGDStringIdent(ta.Ident.Lit))
 
 	alias := ir.NewGDIRTypeAlias(disc, ta.Type, ta.GetPosition())
 	stack.AddNode(alias)

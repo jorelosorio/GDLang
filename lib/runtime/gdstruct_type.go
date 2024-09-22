@@ -20,7 +20,7 @@
 package runtime
 
 type GDStructAttrType struct {
-	Ident GDIdentType
+	Ident GDIdent
 	Type  GDTypable
 }
 
@@ -37,14 +37,14 @@ func (t GDStructType) ToString() string {
 	}, ", ") + "}"
 }
 
-func (t GDStructType) GetAttrType(key GDIdentType) (GDTypable, error) {
+func (t GDStructType) GetAttrType(ident GDIdent) (GDTypable, error) {
 	for _, attr := range t {
-		if attr.Ident == key {
+		if attr.Ident.GetRawValue() == ident.GetRawValue() {
 			return attr.Type, nil
 		}
 	}
 
-	return nil, AttributeNotFoundErr(key.ToString())
+	return nil, AttributeNotFoundErr(ident.ToString())
 }
 
 // An empty struct type is a struct type with no attributes

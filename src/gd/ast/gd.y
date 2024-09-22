@@ -348,18 +348,18 @@ ident_with_type:
 // Types
 
 unary_type:
-       LTINT                { $$ = runtime.GDIntType                  }
-       | LTFLOAT            { $$ = runtime.GDFloatType                }
-       | LTCOMPLEX          { $$ = runtime.GDComplexType              }
-       | LTBOOL             { $$ = runtime.GDBoolType                 }
-       | LTANY              { $$ = runtime.GDAnyType                  }
-       | LTSTRING           { $$ = runtime.GDStringType               }
-       | LTCHAR             { $$ = runtime.GDCharType                 }
-       | LIDENT             { $$ = runtime.GDStringIdentType($1.Lit)  }
-       | tuple_type         { $$ = $1                                 }
-       | array_type         { $$ = $1                                 }
-       | struct_type        { $$ = $1                                 }
-       | LFUNC func_type    { $$ = $2                                 }
+       LTINT                { $$ = runtime.GDIntType                                              }
+       | LTFLOAT            { $$ = runtime.GDFloatType                                            }
+       | LTCOMPLEX          { $$ = runtime.GDComplexType                                          }
+       | LTBOOL             { $$ = runtime.GDBoolType                                             }
+       | LTANY              { $$ = runtime.GDAnyType                                              }
+       | LTSTRING           { $$ = runtime.GDStringType                                           }
+       | LTCHAR             { $$ = runtime.GDCharType                                             }
+       | LIDENT             { $$ = runtime.NewGDIdentRefType(runtime.NewGDStringIdent($1.Lit))       }
+       | tuple_type         { $$ = $1                                                             }
+       | array_type         { $$ = $1                                                             }
+       | struct_type        { $$ = $1                                                             }
+       | LFUNC func_type    { $$ = $2                                                             }
 ;
 
 union_type:
@@ -471,7 +471,7 @@ struct_attr_type_list:
 
 struct_attr_type:
        ident LCOLON type {
-              ident := runtime.GDStringIdentType($1.(*NodeIdent).Lit)
+              ident := runtime.NewGDStringIdent($1.(*NodeIdent).Lit)
               $$ = runtime.GDStructAttrType{Ident: ident, Type: $3}
        }
 ;

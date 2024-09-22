@@ -28,12 +28,12 @@ import (
 )
 
 type GDIRJump struct {
-	label runtime.GDIdentType
+	label runtime.GDIdent
 	GDIRBaseNode
 }
 
 func (j *GDIRJump) BuildAssembly(padding string) string {
-	return padding + fmt.Sprintf("%s %s", cpu.GetCPUInstName(cpu.Jump), IRTypeToString(j.label))
+	return padding + fmt.Sprintf("%s %s", cpu.GetCPUInstName(cpu.Jump), j.label.ToString())
 }
 
 func (j *GDIRJump) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
@@ -59,6 +59,6 @@ func (j *GDIRJump) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error
 	return nil
 }
 
-func NewGDIRJump(label runtime.GDIdentType, pos scanner.Position) *GDIRJump {
+func NewGDIRJump(label runtime.GDIdent, pos scanner.Position) *GDIRJump {
 	return &GDIRJump{label, GDIRBaseNode{pos}}
 }

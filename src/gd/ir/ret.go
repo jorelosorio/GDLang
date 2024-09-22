@@ -52,5 +52,5 @@ func (r *GDIRRet) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error 
 }
 
 func NewGDIRRet(expr GDIRNode, pos scanner.Position) (*GDIRRet, *GDIRObject) {
-	return &GDIRRet{expr, GDIRBaseNode{pos}}, NewGDIRReg(cpu.RPop, pos)
+	return &GDIRRet{expr, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
 }

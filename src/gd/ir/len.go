@@ -52,5 +52,5 @@ func (l *GDIRILen) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error
 }
 
 func NewGDIRLen(expr GDIRNode, pos scanner.Position) (*GDIRILen, *GDIRObject) {
-	return &GDIRILen{expr, GDIRBaseNode{pos}}, NewGDIRReg(cpu.RPop, pos)
+	return &GDIRILen{expr, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
 }

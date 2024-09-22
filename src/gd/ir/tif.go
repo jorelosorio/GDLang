@@ -64,5 +64,5 @@ func (t *GDIRTIf) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error 
 }
 
 func NewGDIRTIf(expr GDIRNode, thenExpr GDIRNode, elseExpr GDIRNode, pos scanner.Position) (*GDIRTIf, *GDIRObject) {
-	return &GDIRTIf{expr, thenExpr, elseExpr, GDIRBaseNode{pos}}, NewGDIRReg(cpu.RPop, pos)
+	return &GDIRTIf{expr, thenExpr, elseExpr, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
 }

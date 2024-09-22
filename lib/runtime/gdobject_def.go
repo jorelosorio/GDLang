@@ -39,8 +39,8 @@ func ZObjectForType(typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
 		return GDZAny, nil
 	case GDStructTypeCode:
 		return NewGDStruct(typ.(GDStructType), stack)
-	case GDStringIdentTypeCode, GDByteIdentTypeCode, GDUInt16IdentTypeCode:
-		symbol, err := stack.GetSymbol(typ.(GDIdentType))
+	case GDTypeRefTypeCode:
+		symbol, err := stack.GetSymbol(typ.(GDIdent))
 		if err != nil {
 			return nil, err
 		}

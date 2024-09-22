@@ -19,13 +19,13 @@
 
 package runtime
 
-type GDLambdaArg GDKeyValue[GDIdentType, GDObject]
+type GDLambdaArg GDKeyValue[GDIdent, GDObject]
 
 // Args are what the function receives after is called, they are identified by a name
 // func (a: int, b: int) => int
 type GDLambdaArgs []*GDLambdaArg
 
-func (gd GDLambdaArgs) Get(ident GDIdentType) GDObject {
+func (gd GDLambdaArgs) Get(ident GDIdent) GDObject {
 	for _, arg := range gd {
 		if arg.Key == ident {
 			return arg.Value
@@ -45,7 +45,7 @@ type GDLambda struct {
 
 func (gd *GDLambda) GetType() GDTypable    { return gd.Type }
 func (gd *GDLambda) GetSubType() GDTypable { return nil }
-func (gd *GDLambda) ToString() string      { return "()" }
+func (gd *GDLambda) ToString() string      { return gd.Type.ToString() }
 func (gd *GDLambda) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
 	return nil, nil
 }

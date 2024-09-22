@@ -21,15 +21,14 @@ package runtime
 
 // Interal usage ident in the compiler and analyzer tools
 type GDIdObject struct {
-	Ident GDIdentType
+	Ident GDIdent
 	GDObject
 }
 
 func (i *GDIdObject) GetType() GDTypable    { return i.GDObject.GetType() }
-func (i *GDIdObject) GetSubType() GDTypable { return i.Ident }
+func (i *GDIdObject) GetSubType() GDTypable { return NewGDObjRefType(i.Ident) }
 
-func NewGDIdObject(ident GDIdentType, obj GDObject) *GDIdObject { return &GDIdObject{ident, obj} }
-
+func NewGDIdObject(ident GDIdent, obj GDObject) *GDIdObject { return &GDIdObject{ident, obj} }
 func NewGDByteIdObject(ident byte, obj GDObject) *GDIdObject {
-	return &GDIdObject{GDByteIdentType(ident), obj}
+	return &GDIdObject{NewGDByteIdent(ident), obj}
 }

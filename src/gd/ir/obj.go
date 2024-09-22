@@ -103,18 +103,18 @@ func NewGDIRObject(obj runtime.GDObject, pos scanner.Position) *GDIRObject {
 	return &GDIRObject{obj.GetType(), obj, GDIRBaseNode{pos}}
 }
 
-func NewGDIRIdObject(ident runtime.GDIdentType, obj runtime.GDObject, pos scanner.Position) *GDIRObject {
-	return &GDIRObject{ident, runtime.NewGDIdObject(ident, obj), GDIRBaseNode{pos}}
-}
-
-func NewGDIRReg(reg cpu.GDReg, pos scanner.Position) *GDIRObject {
-	return NewGDIRIdObject(runtime.GDByteIdentType(reg), runtime.GDString(cpu.GetCPURegName(reg)), pos)
+func NewGDIRRegObject(reg cpu.GDReg, pos scanner.Position) *GDIRObject {
+	ident := runtime.NewGDObjRefType(runtime.NewGDByteIdent(byte(reg)))
+	identObj := runtime.NewGDIdObject(ident, runtime.GDString(cpu.GetCPURegName(reg)))
+	return NewGDIRObject(identObj, pos)
 }
 
 func NewGDIRIterableObject(typ runtime.GDTypable, values []GDIRNode, pos scanner.Position) *GDIRObject {
 	return &GDIRObject{typ, values, GDIRBaseNode{pos}}
 }
 
+// Used for special cases where the type wraps an object
+// like the spreadable type.
 func NewGDIRObjectWithType(typ runtime.GDTypable, obj interface{}, pos scanner.Position) *GDIRObject {
 	return &GDIRObject{typ, obj, GDIRBaseNode{pos}}
 }

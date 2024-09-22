@@ -28,7 +28,7 @@ import (
 )
 
 type GDIRLabel struct {
-	name runtime.GDIdentType
+	name runtime.GDIdent
 	GDIRBaseNode
 }
 
@@ -37,7 +37,7 @@ func (l *GDIRLabel) BuildAssembly(padding string) string {
 	if len(padding)-3 > 0 {
 		spacing = padding[:len(padding)-3]
 	}
-	return spacing + fmt.Sprintf("=> %s %s:", cpu.GetCPUInstName(cpu.Label), IRTypeToString(l.name))
+	return spacing + fmt.Sprintf("=> %s %s:", cpu.GetCPUInstName(cpu.Label), l.name.ToString())
 }
 
 func (l *GDIRLabel) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
@@ -48,6 +48,6 @@ func (l *GDIRLabel) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) erro
 	return nil
 }
 
-func NewGDIRLabel(name runtime.GDIdentType, pos scanner.Position) *GDIRLabel {
+func NewGDIRLabel(name runtime.GDIdent, pos scanner.Position) *GDIRLabel {
 	return &GDIRLabel{name, GDIRBaseNode{pos}}
 }

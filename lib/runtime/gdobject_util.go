@@ -83,15 +83,15 @@ func TypeCoercion(obj GDObject, typ GDTypable, stack *GDSymbolStack) (GDObject, 
 	case *GDStruct:
 		if typ, ok := typ.(GDStructType); ok {
 			obj.Type = typ
-			for _, attr := range typ {
-				objAttr := obj.Attrs[attr.Ident]
-				obj, err := TypeCoercion(objAttr.Object, attr.Type, stack)
+			for i, attr := range typ {
+				objAttr := obj.Attrs[i]
+				obj, err := TypeCoercion(objAttr.Value.Object, attr.Type, stack)
 				if err != nil {
 					return nil, err
 				}
 
-				objAttr.Type = attr.Type
-				objAttr.Object = obj
+				objAttr.Value.Type = attr.Type
+				objAttr.Value.Object = obj
 			}
 		}
 	}

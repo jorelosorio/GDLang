@@ -22,7 +22,7 @@ package builtin
 import "gdlang/lib/runtime"
 
 func typeof(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	objParam := runtime.GDStringIdentType("obj")
+	objParam := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("obj"))
 	funcType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
 			{Key: objParam, Value: runtime.GDAnyType},
