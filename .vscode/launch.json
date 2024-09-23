@@ -25,6 +25,18 @@
         "${workspaceFolder}/examples/playground",
       ],
       "showLog": false,
+    },
+    {
+      "name": "gdc [Debug]",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/src/cmd/gdc/main.go",
+      "args": [
+        "-pkg",
+        "${workspaceFolder}/examples/playground",
+      ],
+      "showLog": false,
       "buildFlags": "-tags=debug"
     },
     {

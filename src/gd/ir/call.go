@@ -23,7 +23,7 @@ import (
 	"bytes"
 	"fmt"
 	"gdlang/src/cpu"
-	"gdlang/src/gd/scanner"
+	"gdlang/src/gd/ast"
 )
 
 type GDIRCall struct {
@@ -37,7 +37,7 @@ func (c *GDIRCall) BuildAssembly(padding string) string {
 }
 
 func (c *GDIRCall) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
-	ctx.AddMapping(bytecode, c.pos)
+	ctx.AddMapping(bytecode, c.GetPosition())
 
 	err := Write(bytecode, cpu.Call)
 	if err != nil {
@@ -59,6 +59,6 @@ func (c *GDIRCall) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error
 	return nil
 }
 
-func NewGDIRCall(expr GDIRNode, args GDIRNode, pos scanner.Position) (*GDIRCall, *GDIRObject) {
-	return &GDIRCall{expr, args, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
+func NewGDIRCall(expr GDIRNode, args GDIRNode, node ast.Node) (*GDIRCall, *GDIRObject) {
+	return &GDIRCall{expr, args, GDIRBaseNode{node}}, NewGDIRRegObject(cpu.RPop, node)
 }

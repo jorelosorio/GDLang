@@ -17,7 +17,7 @@
  * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package ir
+package tools
 
 import (
 	"crypto/rand"
@@ -33,7 +33,9 @@ const (
 	genLength     = 4
 )
 
-func NewStrIdent() runtime.GDIdent {
+type GDStringIdentGen struct{}
+
+func (s *GDStringIdentGen) NewIdent() runtime.GDIdent {
 	ident := randomAlphaString(genLength)
 	return runtime.NewGDStringIdent(ident)
 }
@@ -62,4 +64,8 @@ func randomBytes(length int) []byte {
 		return []byte(fmt.Sprintf("%d", time.Now().UnixNano()))
 	}
 	return randomBytes
+}
+
+func NewGDIdentStringGen() GDIdentGen {
+	return &GDStringIdentGen{}
 }

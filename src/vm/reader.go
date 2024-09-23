@@ -446,7 +446,7 @@ func (p *GDVMReader) ReadObject(stack *runtime.GDSymbolStack) (runtime.GDObject,
 				return nil, err
 			}
 
-			err = sObj.SetAttr(sType[sLen-i-1].Ident, attrObj)
+			_, err = sObj.SetAttr(sType[sLen-i-1].Ident, attrObj)
 			if err != nil {
 				return nil, err
 			}

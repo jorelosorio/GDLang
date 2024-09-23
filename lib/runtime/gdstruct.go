@@ -84,18 +84,18 @@ func (gd *GDStruct) GetAttr(ident GDIdent) (*GDSymbol, error) {
 	return nil, AttributeNotFoundErr(ident.ToString())
 }
 
-func (gd *GDStruct) SetAttr(ident GDIdent, object GDObject) error {
+func (gd *GDStruct) SetAttr(ident GDIdent, object GDObject) (*GDSymbol, error) {
 	symbol, error := gd.GetAttr(ident)
 	if error != nil {
-		return error
+		return nil, error
 	}
 
 	err := symbol.SetObject(object, gd.stack)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return symbol, nil
 }
 
 func NewGDStruct(structType GDStructType, stack *GDSymbolStack) (*GDStruct, error) {

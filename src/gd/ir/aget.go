@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"gdlang/lib/runtime"
 	"gdlang/src/cpu"
-	"gdlang/src/gd/scanner"
+	"gdlang/src/gd/ast"
 )
 
 type GDIRAGet struct {
@@ -39,7 +39,7 @@ func (i *GDIRAGet) BuildAssembly(padding string) string {
 }
 
 func (i *GDIRAGet) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
-	ctx.AddMapping(bytecode, i.pos)
+	ctx.AddMapping(bytecode, i.GetPosition())
 
 	err := Write(bytecode, cpu.AGet, i.isNilSafe)
 	if err != nil {
@@ -59,6 +59,6 @@ func (i *GDIRAGet) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error
 	return nil
 }
 
-func NewGDIRAIGet(ident runtime.GDIdent, isNilSafe bool, expr GDIRNode, pos scanner.Position) (*GDIRAGet, *GDIRObject) {
-	return &GDIRAGet{ident, isNilSafe, expr, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
+func NewGDIRAIGet(ident runtime.GDIdent, isNilSafe bool, expr GDIRNode, node ast.Node) (*GDIRAGet, *GDIRObject) {
+	return &GDIRAGet{ident, isNilSafe, expr, GDIRBaseNode{node}}, NewGDIRRegObject(cpu.RPop, node)
 }

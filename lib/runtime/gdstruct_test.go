@@ -52,7 +52,7 @@ func TestChangeTheValueOfAnAttribute(t *testing.T) {
 		t.Errorf("Error creating struct: %s", err.Error())
 	}
 
-	err = structObj.SetAttr(attr1Ident, runtime.GDString("new value"))
+	_, err = structObj.SetAttr(attr1Ident, runtime.GDString("new value"))
 	if err != nil && err.Error() == runtime.AttributeNotFoundErr("attr1").Error() {
 		t.Error("Attribute not found but it should be")
 	}
@@ -77,7 +77,7 @@ func TestReturnedObjectFromStructAreCopies(t *testing.T) {
 		t.Errorf("Error creating struct: %s", err.Error())
 	}
 
-	err = structObj.SetAttr(attr1Ident, runtime.GDString("test"))
+	_, err = structObj.SetAttr(attr1Ident, runtime.GDString("test"))
 	if err != nil {
 		t.Errorf("Error setting attribute value: %s", err.Error())
 	}
@@ -89,7 +89,7 @@ func TestReturnedObjectFromStructAreCopies(t *testing.T) {
 	}
 	eAttr1Value1 := attr1Value1.Object
 
-	err = structObj.SetAttr(attr1Ident, runtime.GDString("new value"))
+	_, err = structObj.SetAttr(attr1Ident, runtime.GDString("new value"))
 	if err != nil {
 		t.Errorf("Error setting attribute value: %s", err.Error())
 	}
@@ -131,7 +131,7 @@ func TestSetAttrWithDifferentType(t *testing.T) {
 		t.Errorf("Error creating struct: %s", err.Error())
 	}
 
-	err = structObj.SetAttr(attr1Ident, runtime.GDZInt)
+	_, err = structObj.SetAttr(attr1Ident, runtime.GDZInt)
 	if err == nil {
 		t.Error("Expected error setting attribute with different type but got nil")
 	}

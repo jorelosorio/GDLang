@@ -69,6 +69,7 @@ type GDDepAnalyzer struct {
 	mainPkg     *GDPackage            // The main root package of the package tree
 	visitedPkgs map[string]*GDPackage // All visited packages
 	FileNodes   []*GDFileNode
+	MainRef     *GDFileNode
 }
 
 // Dependency analysis options
@@ -106,6 +107,7 @@ func (p *GDDepAnalyzer) Build(basePath string, op DepAnalyzerOpt) error {
 		return comn.NErr(comn.DefaultFatalErrCode, comn.NoMainFunctionErrMsg, comn.FatalError, scanner.NZeroPostAt(basePath), nil)
 	}
 
+	p.MainRef = mainRef
 	visitedObjects := make(map[string]bool)
 
 	defer (func() {

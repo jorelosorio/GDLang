@@ -17,10 +17,10 @@
  * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package runtime
+package tools
 
-type GDAttributable interface {
-	GetStack() *GDSymbolStack
-	GetAttr(ident GDIdent) (*GDSymbol, error)
-	SetAttr(ident GDIdent, object GDObject) (*GDSymbol, error)
+import "gdlang/lib/runtime"
+
+type GDIdentGen interface {
+	NewIdent() runtime.GDIdent
 }

@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"gdlang/lib/runtime"
 	"gdlang/src/cpu"
-	"gdlang/src/gd/scanner"
+	"gdlang/src/gd/ast"
 )
 
 type GDIRCompJump struct {
@@ -35,11 +35,11 @@ type GDIRCompJump struct {
 }
 
 func (i *GDIRCompJump) BuildAssembly(padding string) string {
-	return padding + fmt.Sprintf("%s %s %s then %s", cpu.GetCPUInstName(cpu.CompareJump), i.expr.BuildAssembly(""), i.equalsTo.BuildAssembly(""), i.label.ToString())
+	return padding + fmt.Sprintf("%s %s %s then jump %s", cpu.GetCPUInstName(cpu.CompareJump), i.expr.BuildAssembly(""), i.equalsTo.BuildAssembly(""), i.label.ToString())
 }
 
 func (i *GDIRCompJump) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
-	ctx.AddMapping(bytecode, i.pos)
+	ctx.AddMapping(bytecode, i.GetPosition())
 
 	err := Write(bytecode, cpu.CompareJump)
 	if err != nil {
@@ -71,6 +71,6 @@ func (i *GDIRCompJump) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) e
 	return nil
 }
 
-func NewGDIRCompJump(conds GDIRNode, equalsTo GDIRNode, label runtime.GDIdent, pos scanner.Position) *GDIRCompJump {
-	return &GDIRCompJump{conds, equalsTo, label, GDIRBaseNode{pos}}
+func NewGDIRCompJump(conds GDIRNode, equalsTo GDIRNode, label runtime.GDIdent, node ast.Node) *GDIRCompJump {
+	return &GDIRCompJump{conds, equalsTo, label, GDIRBaseNode{node}}
 }

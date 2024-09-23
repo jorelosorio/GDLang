@@ -21,6 +21,7 @@ package analysis
 
 import (
 	"gdlang/lib/runtime"
+	"gdlang/lib/tools"
 	"gdlang/src/comn"
 	"gdlang/src/gd/ast"
 	"gdlang/src/gd/scanner"
@@ -34,6 +35,7 @@ type (
 type GDStaticAnalyzer struct {
 	ObjectEvaluator           // Implements the Evaluator interface
 	ObjectExpressionEvaluator // Embeds the evaluator process to evaluate the AST nodes
+	tools.GDIdentGen
 	*GDDepAnalyzer
 }
 
@@ -86,6 +88,7 @@ func (t *GDStaticAnalyzer) EvalAtom(a *ast.NodeLiteral, stack *runtime.GDSymbolS
 
 func (t *GDStaticAnalyzer) EvalIdent(i *ast.NodeIdent, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	ident := runtime.NewGDStringIdent(i.Lit)
+
 	symbol, err := stack.GetSymbol(ident)
 	if err != nil {
 		return nil, comn.WrapFatalErr(err, i.GetPosition())
@@ -93,7 +96,9 @@ func (t *GDStaticAnalyzer) EvalIdent(i *ast.NodeIdent, stack *runtime.GDSymbolSt
 
 	obj := runtime.NewGDIdObject(ident, symbol.Object)
 
-	i.SetInferredObject(obj)
+	i.SetInferredIdent(ident)
+	i.SetRuntimeIdent(symbol.Ident)
+	i.SetInferredObject(symbol.Object)
 
 	return obj, nil
 }
@@ -102,17 +107,64 @@ func (t *GDStaticAnalyzer) EvalLambda(l *ast.NodeLambda, stack *runtime.GDSymbol
 	lambdaStack := stack.NewSymbolStack(runtime.LambdaCtx)
 	defer lambdaStack.Dispose()
 
-	for _, arg := range l.Type.ArgTypes {
-		// Functions arguments are always variables, not constants
-		// and they are not public, because they are only accessible within the function
-		// and they are not constants because they can be changed.
-		_, err := lambdaStack.AddSymbol(arg.Key, false, false, arg.Value, nil)
+	addArgSymbol := func(ident runtime.GDIdent, typ runtime.GDTypable) (*runtime.GDSymbol, error) {
+		obj, err := runtime.ZObjectForType(typ, lambdaStack)
 		if err != nil {
 			return nil, comn.WrapFatalErr(err, l.GetPosition())
 		}
+
+		// Functions arguments are always variables, not constants
+		// and they are not public, because they are only accessible within the function
+		// and they are not constants because they can be changed.
+		symbol, err := lambdaStack.AddSymbol(ident, false, false, typ, obj)
+		if err != nil {
+			return nil, comn.WrapFatalErr(err, l.GetPosition())
+		}
+
+		// Set internal identifier for the symbol
+		// It is used only internally to identify the symbol to map with the runtime identifier
+		symbol.Ident = t.NewIdent()
+
+		return symbol, nil
+	}
+
+	funcArgsLen := len(l.Type.ArgTypes)
+
+	// Runtime lambda arguments
+	runtimeArgs := make(runtime.GDLambdaArgTypes, funcArgsLen)
+
+	if l.Type.IsVariadic {
+		funcArgsLen--
+		arg := l.Type.ArgTypes[funcArgsLen]
+
+		variadicArg := runtime.NewGDArrayType(arg.Value)
+
+		symbol, err := addArgSymbol(arg.Key, variadicArg)
+		if err != nil {
+			return nil, err
+		}
+
+		runtimeArgs[funcArgsLen] = runtime.GDLambdaArgType{Key: symbol.Ident, Value: arg.Value}
+	}
+
+	for i := 0; i < funcArgsLen; i++ {
+		funcArg := l.Type.ArgTypes[i]
+		symbol, err := addArgSymbol(funcArg.Key, funcArg.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		runtimeArgs[i] = runtime.GDLambdaArgType{Key: symbol.Ident, Value: funcArg.Value}
 	}
 
 	lambdaObj := runtime.NewGDLambdaWithType(l.Type, stack, nil)
+
+	// A copy of the lambda type with the runtime arguments
+	runtimeLambdaType := runtime.NewGDLambdaType(runtimeArgs, l.Type.ReturnType, l.Type.IsVariadic)
+	l.SetRuntimeType(runtimeLambdaType)
+
+	// Set the inferred type for the lambda
+	l.SetInferredType(l.Type)
 
 	// Evaluate the block
 	_, err := t.evalBlock(l.Block, lambdaStack)
@@ -241,61 +293,28 @@ func (t *GDStaticAnalyzer) EvalExpEllipsis(e *ast.NodeEllipsisExpr, stack *runti
 // Structure of a function node:
 // func Ident(param: Type, ...) => Type { ... }
 func (t *GDStaticAnalyzer) EvalFunc(f *ast.NodeFunc, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	funcStack := stack.NewSymbolStack(runtime.FuncCtx)
-	defer funcStack.Dispose()
-
-	gdfunc := runtime.NewGDLambdaWithType(f.Type, stack, nil)
-
-	_, err := stack.AddSymbol(runtime.NewGDStringIdent(f.Ident.Lit), f.IsPub, true, f.Type, gdfunc)
-	if err != nil {
-		return nil, comn.WrapFatalErr(err, f.Ident.Position)
-	}
-
-	addArgSymbol := func(arg runtime.GDLambdaArgType) error {
-		obj, err := runtime.ZObjectForType(arg.Value, funcStack)
-		if err != nil {
-			return comn.WrapFatalErr(err, f.GetPosition())
-		}
-
-		_, err = funcStack.AddSymbol(arg.Key, false, false, arg.Value, obj)
-		if err != nil {
-			return comn.WrapFatalErr(err, f.GetPosition())
-		}
-
-		return nil
-	}
-
-	funcArgsLen := len(f.Type.ArgTypes)
-	if f.Type.IsVariadic {
-		funcArgsLen--
-		funcArg := f.Type.ArgTypes[funcArgsLen]
-
-		vArgType := runtime.NewGDArrayType(funcArg.Value)
-
-		err := addArgSymbol(runtime.GDLambdaArgType{Key: funcArg.Key, Value: vArgType})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	for i := 0; i < funcArgsLen; i++ {
-		funcArg := f.Type.ArgTypes[i]
-		err := addArgSymbol(funcArg)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Evaluate the block
-	_, err = t.evalBlock(f.Block, funcStack)
+	lambda, err := t.EvalLambda(f.NodeLambda, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	f.SetInferredType(gdfunc.GetType())
-	f.SetInferredObject(gdfunc)
+	ident := runtime.NewGDStringIdent(f.Ident.Lit)
+	symbol, err := stack.AddSymbol(ident, f.IsPub, true, f.Type, lambda)
+	if err != nil {
+		return nil, comn.WrapFatalErr(err, f.Ident.Position)
+	}
 
-	return gdfunc, nil
+	symbol.Ident = t.NewIdent()
+
+	f.SetInferredIdent(ident)
+	f.SetRuntimeIdent(symbol.Ident)
+
+	f.SetInferredType(f.NodeLambda.InferredType())
+	f.SetRuntimeType(f.NodeLambda.RuntimeType())
+
+	f.SetInferredObject(lambda)
+
+	return lambda, nil
 }
 
 func (t *GDStaticAnalyzer) EvalTuple(tu *ast.NodeTuple, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
@@ -336,8 +355,11 @@ func (t *GDStaticAnalyzer) EvalStruct(s *ast.NodeStruct, stack *runtime.GDSymbol
 			}
 
 			ident := runtime.NewGDStringIdent(expr.Ident.Lit)
+
 			attrTypes[i] = runtime.GDStructAttrType{Ident: ident, Type: obj.GetType()}
 			objects[i] = obj
+
+			expr.SetInferredIdent(ident)
 		default:
 			panic("expected a struct attribute")
 		}
@@ -350,7 +372,7 @@ func (t *GDStaticAnalyzer) EvalStruct(s *ast.NodeStruct, stack *runtime.GDSymbol
 	}
 
 	for i, obj := range objects {
-		err = structObj.SetAttr(attrTypes[i].Ident, obj)
+		_, err = structObj.SetAttr(attrTypes[i].Ident, obj)
 		if err != nil {
 			return nil, comn.WrapFatalErr(err, s.GetPosition())
 		}
@@ -599,11 +621,7 @@ func (t *GDStaticAnalyzer) EvalSet(s *ast.NodeSet, stack *runtime.GDSymbolStack)
 		}
 	}
 
-	s.SetInferredIdent(ident)
-	s.SetInferredType(inferredType)
-	s.SetInferredObject(exprObj)
-
-	_, err = stack.AddSymbol(ident, s.IsPub, s.IsConst, inferredType, exprObj)
+	symbol, err := stack.AddSymbol(ident, s.IsPub, s.IsConst, inferredType, exprObj)
 	if err != nil {
 		switch err := err.(type) {
 		case runtime.GDRuntimeErr:
@@ -620,6 +638,16 @@ func (t *GDStaticAnalyzer) EvalSet(s *ast.NodeSet, stack *runtime.GDSymbolStack)
 		}
 		return nil, comn.WrapFatalErr(err, s.GetPosition())
 	}
+
+	// Set internal identifier for the symbol
+	// It is used only internally to identify the symbol to map with the runtime identifier
+	symbol.Ident = t.NewIdent()
+
+	s.SetInferredIdent(ident)
+	s.SetRuntimeIdent(symbol.Ident)
+	s.SetInferredType(inferredType)
+	s.SetRuntimeType(s.RuntimeType())
+	s.SetInferredObject(exprObj)
 
 	return runtime.NewGDIdObject(ident, exprObj), nil
 }
@@ -680,7 +708,7 @@ func (t *GDStaticAnalyzer) EvalUpdateSet(u *ast.NodeUpdateSet, stack *runtime.GD
 				return nil, comn.WrapFatalErr(err, u.Expr.GetPosition())
 			}
 		case *runtime.GDAttrIdObject:
-			err := expr.SetAttr(expr.Ident, assignObj)
+			_, err := expr.SetAttr(expr.Ident, assignObj)
 			if err != nil {
 				return nil, comn.WrapFatalErr(err, u.Expr.GetPosition())
 			}
@@ -952,6 +980,8 @@ func (t *GDStaticAnalyzer) EvalTypeAlias(ta *ast.NodeTypeAlias, stack *runtime.G
 		return nil, comn.WrapFatalErr(err, ta.GetPosition())
 	}
 
+	ta.SetInferredIdent(ident)
+
 	return nil, nil
 }
 
@@ -1040,7 +1070,7 @@ func (t *GDStaticAnalyzer) evalBlock(b *ast.NodeBlock, stack *runtime.GDSymbolSt
 }
 
 func NewGDStaticAnalyzer(depAnalyzer *GDDepAnalyzer) *GDStaticAnalyzer {
-	staticAnalyzer := &GDStaticAnalyzer{GDDepAnalyzer: depAnalyzer}
+	staticAnalyzer := &GDStaticAnalyzer{GDDepAnalyzer: depAnalyzer, GDIdentGen: NewIdentGenerator()}
 	staticAnalyzer.ObjectExpressionEvaluator = ObjectExpressionEvaluator{staticAnalyzer}
 
 	return staticAnalyzer

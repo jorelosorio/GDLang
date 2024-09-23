@@ -69,6 +69,8 @@ func convertAny(value any) string {
 		return strconv.FormatInt(int64(v.(int)), 10)
 	case GDByteIdent:
 		return strconv.FormatUint(uint64(byte(v)), 10)
+	case GDUInt16Ident:
+		return strconv.FormatUint(uint64(uint16(v)), 10)
 	case GDIdent:
 		return v.ToString()
 	case uint, uint16, uint32, uint64:

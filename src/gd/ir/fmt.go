@@ -39,7 +39,7 @@ func IRTypeToString(typ runtime.GDTypable) string {
 
 func IRObjectTypeToString(obj runtime.GDObject) string {
 	if typ := obj.GetSubType(); typ != nil {
-		return formatTypeToString(obj.GetSubType())
+		return formatTypeToString(typ)
 	}
 
 	return formatTypeToString(obj.GetType())

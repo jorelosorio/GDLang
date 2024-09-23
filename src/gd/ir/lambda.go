@@ -24,13 +24,13 @@ import (
 	"fmt"
 	"gdlang/lib/runtime"
 	"gdlang/src/cpu"
-	"gdlang/src/gd/scanner"
+	"gdlang/src/gd/ast"
 )
 
 type GDIRLambda struct {
 	typ *runtime.GDLambdaType
-	pos scanner.Position
 	*GDIRBlock
+	GDIRBaseNode
 }
 
 func (l *GDIRLambda) BuildAssembly(padding string) string {
@@ -53,6 +53,6 @@ func (l *GDIRLambda) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) err
 	return nil
 }
 
-func NewGDIRLambda(typ *runtime.GDLambdaType, pos scanner.Position) (*GDIRLambda, *GDIRObject) {
-	return &GDIRLambda{typ, pos, NewGDIRBlock()}, NewGDIRRegObject(cpu.RPop, scanner.ZeroPos)
+func NewGDIRLambda(typ *runtime.GDLambdaType, node ast.Node) (*GDIRLambda, *GDIRObject) {
+	return &GDIRLambda{typ, NewGDIRBlock(), GDIRBaseNode{node}}, NewGDIRRegObject(cpu.RPop, node)
 }

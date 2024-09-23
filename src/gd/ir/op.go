@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"gdlang/lib/runtime"
 	"gdlang/src/cpu"
-	"gdlang/src/gd/scanner"
+	"gdlang/src/gd/ast"
 )
 
 type GDIROp struct {
@@ -36,14 +36,14 @@ type GDIROp struct {
 func (e *GDIROp) BuildAssembly(padding string) string {
 	rExpr := e.right
 	if e.right == nil {
-		rExpr = NewGDIRObject(runtime.GDZNil, e.pos)
+		rExpr = NewGDIRObject(runtime.GDZNil, e)
 	}
 
 	return padding + fmt.Sprintf("%s %s %s %s", cpu.GetCPUInstName(cpu.Operation), runtime.ExprOperationMap[e.op], e.left.BuildAssembly(""), rExpr.BuildAssembly(""))
 }
 
 func (e *GDIROp) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
-	ctx.AddMapping(bytecode, e.pos)
+	ctx.AddMapping(bytecode, e.GetPosition())
 
 	err := Write(bytecode, cpu.Operation)
 	if err != nil {
@@ -76,6 +76,6 @@ func (e *GDIROp) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
 	return nil
 }
 
-func NewGDIROp(op runtime.ExprOperationType, left, right GDIRNode, pos scanner.Position) (*GDIROp, *GDIRObject) {
-	return &GDIROp{op, left, right, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
+func NewGDIROp(op runtime.ExprOperationType, left, right GDIRNode, node ast.Node) (*GDIROp, *GDIRObject) {
+	return &GDIROp{op, left, right, GDIRBaseNode{node}}, NewGDIRRegObject(cpu.RPop, node)
 }

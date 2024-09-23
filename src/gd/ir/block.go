@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"gdlang/lib/runtime"
 	"gdlang/src/cpu"
-	"gdlang/src/gd/scanner"
 )
 
 type GDIRBlock struct {
@@ -84,5 +83,5 @@ func (b *GDIRBlock) AddNode(node ...GDIRNode) {
 }
 
 func NewGDIRBlock(nodes ...GDIRNode) *GDIRBlock {
-	return &GDIRBlock{nodes, GDIRBaseNode{scanner.ZeroPos}}
+	return &GDIRBlock{nodes, GDIRBaseNode{}}
 }

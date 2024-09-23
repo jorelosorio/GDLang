@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"gdlang/lib/runtime"
 	"gdlang/src/cpu"
-	"gdlang/src/gd/scanner"
+	"gdlang/src/gd/ast"
 )
 
 type GDIRLabel struct {
@@ -41,13 +41,13 @@ func (l *GDIRLabel) BuildAssembly(padding string) string {
 }
 
 func (l *GDIRLabel) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
-	ctx.AddMapping(bytecode, l.pos)
+	ctx.AddMapping(bytecode, l.GetPosition())
 
 	ctx.AddLabel(bytecode, uint16(bytecode.Len()), l.name)
 
 	return nil
 }
 
-func NewGDIRLabel(name runtime.GDIdent, pos scanner.Position) *GDIRLabel {
-	return &GDIRLabel{name, GDIRBaseNode{pos}}
+func NewGDIRLabel(name runtime.GDIdent, node ast.Node) *GDIRLabel {
+	return &GDIRLabel{name, GDIRBaseNode{node}}
 }

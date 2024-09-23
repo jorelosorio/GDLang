@@ -1,3 +1,6 @@
+//go:build debug
+// +build debug
+
 /*
  * Copyright (C) 2023 The GDLang Team.
  *
@@ -17,10 +20,17 @@
  * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package runtime
+package compiler
 
-type GDAttributable interface {
-	GetStack() *GDSymbolStack
-	GetAttr(ident GDIdent) (*GDSymbol, error)
-	SetAttr(ident GDIdent, object GDObject) (*GDSymbol, error)
+import (
+	"gdlang/lib/runtime"
+	"gdlang/src/gd/ast"
+)
+
+func (c *GDCompiler) DeriveIdent(node ast.Node) runtime.GDIdent {
+	return node.InferredIdent()
+}
+
+func (c *GDCompiler) DeriveType(node ast.Node) runtime.GDTypable {
+	return node.InferredType()
 }

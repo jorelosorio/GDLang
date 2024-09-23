@@ -24,7 +24,6 @@ type StackContext byte
 const (
 	GlobalCtx StackContext = iota
 	BlockCtx
-	FuncCtx
 	LambdaCtx
 	ForCtx
 	IfCtx
@@ -79,9 +78,9 @@ func (s *GDSymbolStack) AddSymbol(ident GDIdent, isPub, isConst bool, typ GDTypa
 			return nil, err
 		}
 
-		symbol = &GDSymbol{isPub, isConst, inferedType, object}
+		symbol = NewGDSymbol(isPub, isConst, inferedType, object)
 	} else {
-		symbol = &GDSymbol{isPub, isConst, typ, GDZNil}
+		symbol = NewGDSymbol(isPub, isConst, typ, GDZNil)
 	}
 
 	s.Symbols[ident.GetRawValue()] = symbol

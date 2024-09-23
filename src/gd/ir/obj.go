@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"gdlang/lib/runtime"
 	"gdlang/src/cpu"
-	"gdlang/src/gd/scanner"
+	"gdlang/src/gd/ast"
 )
 
 type GDIRObject struct {
@@ -52,7 +52,7 @@ func (o *GDIRObject) BuildAssembly(padding string) string {
 }
 
 func (o *GDIRObject) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
-	ctx.AddMapping(bytecode, o.pos)
+	ctx.AddMapping(bytecode, o.GetPosition())
 
 	switch obj := o.Obj.(type) {
 	case runtime.GDObject:
@@ -99,22 +99,27 @@ func (o *GDIRObject) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) err
 	return nil
 }
 
-func NewGDIRObject(obj runtime.GDObject, pos scanner.Position) *GDIRObject {
-	return &GDIRObject{obj.GetType(), obj, GDIRBaseNode{pos}}
+func NewGDIRObject(obj runtime.GDObject, node ast.Node) *GDIRObject {
+	return &GDIRObject{obj.GetType(), obj, GDIRBaseNode{node}}
 }
 
-func NewGDIRRegObject(reg cpu.GDReg, pos scanner.Position) *GDIRObject {
+func NewGDIRIdentObject(ident runtime.GDIdent, obj runtime.GDObject, node ast.Node) *GDIRObject {
+	identObj := runtime.NewGDIdObject(ident, obj)
+	return &GDIRObject{identObj.GetType(), identObj, GDIRBaseNode{node}}
+}
+
+func NewGDIRRegObject(reg cpu.GDReg, node ast.Node) *GDIRObject {
 	ident := runtime.NewGDObjRefType(runtime.NewGDByteIdent(byte(reg)))
 	identObj := runtime.NewGDIdObject(ident, runtime.GDString(cpu.GetCPURegName(reg)))
-	return NewGDIRObject(identObj, pos)
+	return NewGDIRObject(identObj, node)
 }
 
-func NewGDIRIterableObject(typ runtime.GDTypable, values []GDIRNode, pos scanner.Position) *GDIRObject {
-	return &GDIRObject{typ, values, GDIRBaseNode{pos}}
+func NewGDIRIterableObject(typ runtime.GDTypable, values []GDIRNode) *GDIRObject {
+	return &GDIRObject{typ, values, GDIRBaseNode{}}
 }
 
 // Used for special cases where the type wraps an object
 // like the spreadable type.
-func NewGDIRObjectWithType(typ runtime.GDTypable, obj interface{}, pos scanner.Position) *GDIRObject {
-	return &GDIRObject{typ, obj, GDIRBaseNode{pos}}
+func NewGDIRObjectWithType(typ runtime.GDTypable, obj interface{}, node ast.Node) *GDIRObject {
+	return &GDIRObject{typ, obj, GDIRBaseNode{node}}
 }

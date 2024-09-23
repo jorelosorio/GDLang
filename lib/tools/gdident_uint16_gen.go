@@ -17,10 +17,21 @@
  * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package runtime
+package tools
 
-type GDAttributable interface {
-	GetStack() *GDSymbolStack
-	GetAttr(ident GDIdent) (*GDSymbol, error)
-	SetAttr(ident GDIdent, object GDObject) (*GDSymbol, error)
+import (
+	"gdlang/lib/runtime"
+)
+
+type GDUint16IdentGen struct {
+	increment uint16
+}
+
+func (s *GDUint16IdentGen) NewIdent() runtime.GDIdent {
+	s.increment++
+	return runtime.NewGDUInt16Ident(s.increment)
+}
+
+func NewGDUint16IdentGen() GDIdentGen {
+	return &GDUint16IdentGen{0}
 }

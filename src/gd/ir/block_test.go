@@ -24,16 +24,15 @@ import (
 	"gdlang/lib/runtime"
 	"gdlang/src/cpu"
 	"gdlang/src/gd/ir"
-	"gdlang/src/gd/scanner"
 	"testing"
 )
 
 func TestBlockLen(t *testing.T) {
 	tif, _ := ir.NewGDIRTIf(
-		ir.NewGDIRObject(runtime.GDBool(true), scanner.ZeroPos),
-		ir.NewGDIRObject(runtime.GDString("ok"), scanner.ZeroPos),
-		ir.NewGDIRObject(runtime.GDString("no"), scanner.ZeroPos),
-		scanner.ZeroPos,
+		ir.NewGDIRObject(runtime.GDBool(true), nil),
+		ir.NewGDIRObject(runtime.GDString("ok"), nil),
+		ir.NewGDIRObject(runtime.GDString("no"), nil),
+		nil,
 	)
 	b := ir.NewGDIRBlock()
 	b.AddNode(tif)

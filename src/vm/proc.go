@@ -362,7 +362,7 @@ func (p *GDVMProc) evalMove(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 
 			switch obj := obj.(type) {
 			case *runtime.GDAttrIdObject:
-				err := obj.SetAttr(obj.Ident, value)
+				_, err := obj.SetAttr(obj.Ident, value)
 				if err != nil {
 					return nil, err
 				}

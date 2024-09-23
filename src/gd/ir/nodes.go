@@ -21,6 +21,7 @@ package ir
 
 import (
 	"bytes"
+	"gdlang/src/gd/ast"
 	"gdlang/src/gd/scanner"
 )
 
@@ -36,9 +37,17 @@ type GDIRStackNode interface {
 }
 
 type GDIRBaseNode struct {
-	pos scanner.Position
+	ast.Node
 }
 
 func (b *GDIRBaseNode) BuildAssembly(padding string) string                          { return "" }
 func (b *GDIRBaseNode) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error { return nil }
-func (b *GDIRBaseNode) GetPosition() scanner.Position                                { return b.pos }
+func (b *GDIRBaseNode) GetPosition() scanner.Position {
+	if b.Node != nil {
+		return b.Node.GetPosition()
+	}
+
+	// There are some cases like in the test where an AST node is not specified,
+	// as well, as some functions made by the compiler don't have a node.
+	return scanner.ZeroPos
+}

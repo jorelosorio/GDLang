@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"gdlang/lib/runtime"
 	"gdlang/src/cpu"
-	"gdlang/src/gd/scanner"
+	"gdlang/src/gd/ast"
 )
 
 type GDIRCastObject struct {
@@ -38,7 +38,7 @@ func (c *GDIRCastObject) BuildAssembly(padding string) string {
 }
 
 func (c *GDIRCastObject) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
-	ctx.AddMapping(bytecode, c.pos)
+	ctx.AddMapping(bytecode, c.GetPosition())
 
 	err := Write(bytecode, cpu.CastObj, c.Type)
 	if err != nil {
@@ -53,6 +53,6 @@ func (c *GDIRCastObject) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext)
 	return nil
 }
 
-func NewGDIRCastObject(typ runtime.GDTypable, expr GDIRNode, pos scanner.Position) (*GDIRCastObject, *GDIRObject) {
-	return &GDIRCastObject{typ, expr, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
+func NewGDIRCastObject(typ runtime.GDTypable, expr GDIRNode, node ast.Node) (*GDIRCastObject, *GDIRObject) {
+	return &GDIRCastObject{typ, expr, GDIRBaseNode{node}}, NewGDIRRegObject(cpu.RPop, node)
 }

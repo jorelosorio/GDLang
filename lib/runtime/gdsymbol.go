@@ -20,6 +20,7 @@
 package runtime
 
 type GDSymbol struct {
+	Ident   GDIdent
 	IsPub   bool
 	IsConst bool
 	Type    GDTypable
@@ -60,5 +61,5 @@ func (s *GDSymbol) SetObject(object GDObject, stack *GDSymbolStack) error {
 }
 
 func NewGDSymbol(isPub, isConst bool, typ GDTypable, object GDObject) *GDSymbol {
-	return &GDSymbol{isPub, isConst, typ, object}
+	return &GDSymbol{nil, isPub, isConst, typ, object}
 }

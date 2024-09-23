@@ -1,3 +1,6 @@
+//go:build debug
+// +build debug
+
 /*
  * Copyright (C) 2023 The GDLang Team.
  *
@@ -17,10 +20,10 @@
  * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package runtime
+package analysis
 
-type GDAttributable interface {
-	GetStack() *GDSymbolStack
-	GetAttr(ident GDIdent) (*GDSymbol, error)
-	SetAttr(ident GDIdent, object GDObject) (*GDSymbol, error)
+import "gdlang/lib/tools"
+
+func NewIdentGenerator() tools.GDIdentGen {
+	return tools.NewGDUint16IdentGen()
 }

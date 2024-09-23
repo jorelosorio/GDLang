@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"gdlang/src/cpu"
 	"gdlang/src/gd/ast"
-	"gdlang/src/gd/scanner"
 )
 
 type GDIRCOp struct {
@@ -47,7 +46,7 @@ func (a *GDIRCOp) BuildAssembly(padding string) string {
 }
 
 func (a *GDIRCOp) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
-	ctx.AddMapping(bytecode, a.pos)
+	ctx.AddMapping(bytecode, a.GetPosition())
 
 	var inst cpu.GDInst
 	switch a.op {
@@ -75,6 +74,6 @@ func (a *GDIRCOp) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error 
 	return nil
 }
 
-func NewGDIRCOp(op ast.MutableCollectionOp, left GDIRNode, right GDIRNode, pos scanner.Position) (*GDIRCOp, *GDIRObject) {
-	return &GDIRCOp{op, left, right, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
+func NewGDIRCOp(op ast.MutableCollectionOp, left GDIRNode, right GDIRNode, node ast.Node) (*GDIRCOp, *GDIRObject) {
+	return &GDIRCOp{op, left, right, GDIRBaseNode{node}}, NewGDIRRegObject(cpu.RPop, node)
 }

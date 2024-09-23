@@ -23,7 +23,7 @@ import (
 	"bytes"
 	"fmt"
 	"gdlang/src/cpu"
-	"gdlang/src/gd/scanner"
+	"gdlang/src/gd/ast"
 )
 
 type GDIRIGet struct {
@@ -38,7 +38,7 @@ func (i *GDIRIGet) BuildAssembly(padding string) string {
 }
 
 func (i *GDIRIGet) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
-	ctx.AddMapping(bytecode, i.pos)
+	ctx.AddMapping(bytecode, i.GetPosition())
 
 	err := Write(bytecode, cpu.IGet, i.isNilSafe)
 	if err != nil {
@@ -58,6 +58,6 @@ func (i *GDIRIGet) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error
 	return nil
 }
 
-func NewGDIRIGet(idx GDIRNode, isNilSafe bool, expr GDIRNode, pos scanner.Position) (*GDIRIGet, *GDIRObject) {
-	return &GDIRIGet{idx, isNilSafe, expr, GDIRBaseNode{pos}}, NewGDIRRegObject(cpu.RPop, pos)
+func NewGDIRIGet(idx GDIRNode, isNilSafe bool, expr GDIRNode, node ast.Node) (*GDIRIGet, *GDIRObject) {
+	return &GDIRIGet{idx, isNilSafe, expr, GDIRBaseNode{node}}, NewGDIRRegObject(cpu.RPop, node)
 }

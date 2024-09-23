@@ -23,7 +23,7 @@ import (
 	"bytes"
 	"fmt"
 	"gdlang/lib/runtime"
-	"gdlang/src/gd/scanner"
+	"gdlang/src/gd/ast"
 )
 
 type GDIRDiscoverable struct {
@@ -37,6 +37,8 @@ func (d *GDIRDiscoverable) IR(padding string) string {
 }
 
 func (d *GDIRDiscoverable) Bytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
+	ctx.AddMapping(bytecode, d.GetPosition())
+
 	err := Write(bytecode, d.isPub, d.isConst, d.ident)
 	if err != nil {
 		return err
@@ -45,7 +47,7 @@ func (d *GDIRDiscoverable) Bytecode(bytecode *bytes.Buffer, ctx *GDIRContext) er
 	return nil
 }
 
-func NewGDIRDiscoverable(isPub, isConst bool, ident runtime.GDIdent) *GDIRDiscoverable {
+func NewGDIRDiscoverable(isPub, isConst bool, ident runtime.GDIdent, node ast.Node) *GDIRDiscoverable {
 	// TODO: ZeroPos is not defined, it should use the position where the node is created
-	return &GDIRDiscoverable{isPub, isConst, ident, GDIRBaseNode{scanner.ZeroPos}}
+	return &GDIRDiscoverable{isPub, isConst, ident, GDIRBaseNode{node}}
 }

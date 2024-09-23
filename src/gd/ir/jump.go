@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"gdlang/lib/runtime"
 	"gdlang/src/cpu"
-	"gdlang/src/gd/scanner"
+	"gdlang/src/gd/ast"
 )
 
 type GDIRJump struct {
@@ -37,7 +37,7 @@ func (j *GDIRJump) BuildAssembly(padding string) string {
 }
 
 func (j *GDIRJump) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
-	ctx.AddMapping(bytecode, j.pos)
+	ctx.AddMapping(bytecode, j.GetPosition())
 
 	err := Write(bytecode, cpu.Jump)
 	if err != nil {
@@ -59,6 +59,6 @@ func (j *GDIRJump) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error
 	return nil
 }
 
-func NewGDIRJump(label runtime.GDIdent, pos scanner.Position) *GDIRJump {
-	return &GDIRJump{label, GDIRBaseNode{pos}}
+func NewGDIRJump(label runtime.GDIdent, node ast.Node) *GDIRJump {
+	return &GDIRJump{label, GDIRBaseNode{node}}
 }

@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"gdlang/lib/runtime"
 	"gdlang/src/cpu"
-	"gdlang/src/gd/scanner"
+	"gdlang/src/gd/ast"
 )
 
 type GDIRTypeAlias struct {
@@ -38,7 +38,7 @@ func (t *GDIRTypeAlias) BuildAssembly(padding string) string {
 }
 
 func (t *GDIRTypeAlias) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
-	ctx.AddMapping(bytecode, t.pos)
+	ctx.AddMapping(bytecode, t.GetPosition())
 
 	err := Write(bytecode, cpu.TypeAlias)
 	if err != nil {
@@ -58,6 +58,6 @@ func (t *GDIRTypeAlias) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) 
 	return nil
 }
 
-func NewGDIRTypeAlias(disc *GDIRDiscoverable, typ runtime.GDTypable, pos scanner.Position) *GDIRTypeAlias {
-	return &GDIRTypeAlias{disc, typ, GDIRBaseNode{pos}}
+func NewGDIRTypeAlias(disc *GDIRDiscoverable, typ runtime.GDTypable, node ast.Node) *GDIRTypeAlias {
+	return &GDIRTypeAlias{disc, typ, GDIRBaseNode{node}}
 }
