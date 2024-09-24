@@ -38,7 +38,7 @@ set index: route = {
 
 // Every program needs a main function
 pub func main() {
-    set message = "Hello, " + index.handler() + "!"
+    set message = "Hello, " + index.handler()
     println(message)
 }
 ```
@@ -92,7 +92,7 @@ After running the compiler, you will see a new file called `hello.gdbin` in the 
 
 > NOTE: There is also a new file called `hello.gdmap` that maps the bytecode to the source code.
 
-### Lets run the compiled program
+### Let's run the compiled program
 
 Run the following command to execute the compiled bytecode:
 
