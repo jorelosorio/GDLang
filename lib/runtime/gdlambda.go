@@ -83,7 +83,7 @@ func (gd *GDLambda) CheckArgValues(args *GDArray) (GDLambdaArgs, error) {
 	gdFuncArgObjects := make(GDLambdaArgs, funcArgsLen)
 	if gd.Type.IsVariadic {
 		funcArgsLen--
-		vargs := []GDObject{}
+		var vargs = make([]GDObject, 0)
 		for i := funcArgsLen; i < len(args.Objects); i++ {
 			switch argObj := args.Objects[i].(type) {
 			case *GDSpreadable:

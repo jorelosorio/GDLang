@@ -25,12 +25,17 @@ import (
 	"strings"
 )
 
-func Printf(format string, args ...any) {
-	Print(Sprintf(format, args...))
+func Printf(format string, args ...any) error {
+	return Print(Sprintf(format, args...))
 }
 
-func Print(value string) {
-	os.Stdout.WriteString(value)
+func Print(value string) error {
+	_, err := os.Stdout.WriteString(value)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func Sprintf(format string, args ...any) string {
@@ -68,9 +73,9 @@ func convertAny(value any) string {
 	case int, int8, int16, int32, int64:
 		return strconv.FormatInt(int64(v.(int)), 10)
 	case GDByteIdent:
-		return strconv.FormatUint(uint64(byte(v)), 10)
+		return strconv.FormatUint(uint64(v), 10)
 	case GDUInt16Ident:
-		return strconv.FormatUint(uint64(uint16(v)), 10)
+		return strconv.FormatUint(uint64(v), 10)
 	case GDIdent:
 		return v.ToString()
 	case uint, uint16, uint32, uint64:
@@ -78,7 +83,7 @@ func convertAny(value any) string {
 	case uint8:
 		return strconv.FormatUint(uint64(v), 10)
 	case float32, float64:
-		return strconv.FormatFloat(float64(v.(float64)), 'f', -1, 64)
+		return strconv.FormatFloat(v.(float64), 'f', -1, 64)
 	case complex64, complex128:
 		return strconv.FormatComplex(v.(complex128), 'f', -1, 128)
 	case bool:

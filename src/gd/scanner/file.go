@@ -53,7 +53,7 @@ func (f *File) Offset(p Pos) int {
 func (f *File) unpack(offset int) (filename string, line, column int) {
 	f.mutex.Lock()
 	filename = f.name
-	if i := searchInts(f.lines, offset); i >= 0 {
+	if i := searchInt(f.lines, offset); i >= 0 {
 		line, column = i+1, offset-f.lines[i]+1
 	}
 	// Follow up https://go.dev/issue/38471 to use `defer f.mutex.Unlock()` here.
@@ -66,7 +66,7 @@ func (f *File) Position(p Pos) (pos Position) {
 }
 
 func (f *File) PositionFrom(start Pos, end Pos) (pos Position) {
-	spos := f.PositionFor(start)
+	startPos := f.PositionFor(start)
 	// A -1 is required to get the correct column end,
 	// Due to the way the scanner works, the end position is always one byte ahead.
 	if end <= start {
@@ -74,8 +74,8 @@ func (f *File) PositionFrom(start Pos, end Pos) (pos Position) {
 	} else {
 		end--
 	}
-	spos.ColEnd = spos.ColStart + (int(end) - int(start))
-	return spos
+	startPos.ColEnd = startPos.ColStart + (int(end) - int(start))
+	return startPos
 }
 
 func (f *File) PositionFor(p Pos) (pos Position) {
@@ -114,7 +114,7 @@ func (f *File) fixOffset(offset int) int {
 	}
 }
 
-func searchInts(a []int, x int) int {
+func searchInt(a []int, x int) int {
 	// Follow up changes src/go/token/position.go
 	return sort.Search(len(a), func(i int) bool { return a[i] > x }) - 1
 }

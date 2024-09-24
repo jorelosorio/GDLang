@@ -19,7 +19,7 @@
 
 package runtime
 
-// Intented to be used as ... operator to spread all the elements
+// Intended to be used as ... operator to spread all the elements
 // of a collection.
 type GDSpreadableType struct {
 	GDIterableCollectionType

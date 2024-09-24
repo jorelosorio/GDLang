@@ -100,16 +100,16 @@ func RunTest(t *testing.T, test Test) {
 }
 
 func RunFileTest(pkgPath string) (*vm.GDVMProc, *compiler.GDCompiler, error) {
-	compiler := compiler.NewGDCompiler()
-	defer compiler.Dispose()
+	comp := compiler.NewGDCompiler()
+	defer comp.Dispose()
 
-	err := compiler.Compile(pkgPath)
+	err := comp.Compile(pkgPath)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	buffer := &bytes.Buffer{}
-	err = compiler.Root.BuildBytecode(buffer, compiler.Ctx)
+	err = comp.Root.BuildBytecode(buffer, comp.Ctx)
 	if err != nil {
 		print(err.Error())
 		os.Exit(1)
@@ -126,5 +126,5 @@ func RunFileTest(pkgPath string) (*vm.GDVMProc, *compiler.GDCompiler, error) {
 		return nil, nil, err
 	}
 
-	return vmProc, compiler, nil
+	return vmProc, comp, nil
 }

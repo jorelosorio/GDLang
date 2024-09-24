@@ -34,21 +34,6 @@ func init() {
 	comn.PrettyPrintErrors = false
 }
 
-func buildAst(src string, errHandler ast.AstErrorListener) (ast.Node, error) {
-	fileSet.Reset()
-	srcFile, err := newTestFile(len(src))
-	if err != nil {
-		return nil, err
-	}
-
-	err = astObj.Init(srcFile, []byte(src), errHandler)
-	if err != nil {
-		return nil, err
-	}
-
-	return astObj.Build(), nil
-}
-
 func newTestFile(srcLen int) (*scanner.File, error) {
 	return fileSet.AddFile("test.gd", fileSet.Base(), srcLen)
 }

@@ -21,7 +21,7 @@ package vm
 
 import "gdlang/lib/runtime"
 
-type GDVMIdenSymbol struct {
+type GDVMIdentSymbol struct {
 	Ident  runtime.GDIdent
 	Symbol *runtime.GDSymbol
 }

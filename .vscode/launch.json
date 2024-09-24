@@ -9,7 +9,7 @@
       "program": "${workspaceFolder}/src/cmd/gdcvm/main.go",
       "args": [
         "-pkg",
-        "${workspaceFolder}/examples/playground",
+        "${workspaceFolder}/examples/playground"
       ],
       "showLog": false,
       "buildFlags": "-tags=debug"
@@ -22,9 +22,9 @@
       "program": "${workspaceFolder}/src/cmd/gdc/main.go",
       "args": [
         "-pkg",
-        "${workspaceFolder}/examples/playground",
+        "${workspaceFolder}/examples/playground"
       ],
-      "showLog": false,
+      "showLog": false
     },
     {
       "name": "gdc [Debug]",
@@ -34,7 +34,7 @@
       "program": "${workspaceFolder}/src/cmd/gdc/main.go",
       "args": [
         "-pkg",
-        "${workspaceFolder}/examples/playground",
+        "${workspaceFolder}/examples/playground"
       ],
       "showLog": false,
       "buildFlags": "-tags=debug"
@@ -47,7 +47,7 @@
       "program": "${workspaceFolder}/src/cmd/gdvm/main.go",
       "args": [
         "-gdbin",
-        "${workspaceFolder}/examples/playground/playground.gdbin",
+        "${workspaceFolder}/examples/playground/playground.gdbin"
       ],
       "showLog": false,
       "buildFlags": "-tags=debug"

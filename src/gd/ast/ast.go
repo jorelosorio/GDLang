@@ -129,7 +129,7 @@ func (a *Ast) Error(msg string) {
 				a.dispatchError(comn.CreateExpSymbolsErr(expectedTokens, a.CTok.Position))
 				return
 			default:
-				a.dispatchError(comn.CreateUnexpSyntaxError(expectedTokens[0], expectedTokens[1:], a.CTok.Position))
+				a.dispatchError(comn.CreateUnexpectedSyntaxError(expectedTokens[0], expectedTokens[1:], a.CTok.Position))
 				return
 			}
 		}

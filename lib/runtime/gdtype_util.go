@@ -276,7 +276,7 @@ func determineTypeCompatibility(toType, fromType GDTypable, isAssignmentNeeded b
 	}
 
 	if isAssignmentNeeded {
-		// Untyped behaves as the type `any`, but with with weak inference,
+		// Untyped behaves as the type `any`, but with weak inference,
 		// that means it mutates to the other type, even if the other type is untyped.
 		if toType == GDUntypedType {
 			if fromType != GDNilType {

@@ -235,9 +235,9 @@ func writeObjectWithType(bytecode *bytes.Buffer, obj runtime.GDObject) error {
 
 func WriteUInt16At(off int, bytecode *bytes.Buffer, value uint16) {
 	ui32bytes := UI16toBytes(value)
-	bytes := bytecode.Bytes()
+	b := bytecode.Bytes()
 	for _, intByte := range ui32bytes {
-		bytes[off] = intByte
+		b[off] = intByte
 		off++
 	}
 }
@@ -262,7 +262,7 @@ func WriteIdent(bytecode *bytes.Buffer, ident runtime.GDIdent) error {
 	// Write the raw value
 	switch mode := ident.GetMode(); mode {
 	case runtime.GDByteIdentMode:
-		return WriteByte(bytecode, byte(ident.GetRawValue().(byte)))
+		return WriteByte(bytecode, ident.GetRawValue().(byte))
 	case runtime.GDUInt16IdentMode:
 		return WriteUInt16(bytecode, ident.GetRawValue().(uint16))
 	case runtime.GDStringIdentMode:

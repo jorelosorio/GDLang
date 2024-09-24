@@ -25,5 +25,5 @@ package analysis
 import "gdlang/lib/tools"
 
 func NewIdentGenerator() tools.GDIdentGen {
-	return tools.NewGDUint16IdentGen()
+	return tools.NewGDIdentStringGen()
 }

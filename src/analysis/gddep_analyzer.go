@@ -138,11 +138,11 @@ func (p *GDDepAnalyzer) Build(basePath string, op DepAnalyzerOpt) error {
 			}
 		case runtime.GDIdent:
 			identStr := typ.ToString()
-			path := identStr + "@" + file.File.Name()
-			if _, visited := visitedObjects[path]; visited {
+			objPath := identStr + "@" + file.File.Name()
+			if _, visited := visitedObjects[objPath]; visited {
 				return nil
 			}
-			visitedObjects[path] = true
+			visitedObjects[objPath] = true
 
 			objNodRef := getNodeRef(identStr, file)
 			if objNodRef != nil {
@@ -166,9 +166,8 @@ func (p *GDDepAnalyzer) Build(basePath string, op DepAnalyzerOpt) error {
 	traverseAST = func(node ast.Node, file *GDSrcFile) error {
 		switch node := node.(type) {
 		case *ast.NodeIdent:
-			switch node.Token {
-			case scanner.IDENT:
-				// Check if the identifier is a public object
+			if node.Token == scanner.IDENT {
+				// Check if the identifier is a public object,
 				// but it is not found, then it does not throw an error, it is because
 				// Other analysis processes will check for identities using the stack.
 				if objNodRef := getNodeRef(node.Lit, file); objNodRef != nil {
@@ -179,11 +178,11 @@ func (p *GDDepAnalyzer) Build(basePath string, op DepAnalyzerOpt) error {
 				}
 			}
 		case *ast.NodeFunc:
-			path := node.Ident.Lit + "@" + file.File.Name()
-			if _, visited := visitedObjects[path]; visited {
+			objPath := node.Ident.Lit + "@" + file.File.Name()
+			if _, visited := visitedObjects[objPath]; visited {
 				return nil
 			}
-			visitedObjects[path] = true
+			visitedObjects[objPath] = true
 
 			err := traverseAST(node.NodeLambda, file)
 			if err != nil {
@@ -204,7 +203,7 @@ func (p *GDDepAnalyzer) Build(basePath string, op DepAnalyzerOpt) error {
 
 			return traverseAST(node.R, file)
 		case *ast.NodeIf:
-			for _, node := range node.Conds {
+			for _, node := range node.Conditions {
 				err := traverseAST(node, file)
 				if err != nil {
 					return err
@@ -244,8 +243,8 @@ func (p *GDDepAnalyzer) Build(basePath string, op DepAnalyzerOpt) error {
 				}
 			}
 
-			if node.Conds != nil {
-				for _, node := range node.Conds {
+			if node.Conditions != nil {
+				for _, node := range node.Conditions {
 					err := traverseAST(node, file)
 					if err != nil {
 						return err
@@ -319,11 +318,11 @@ func (p *GDDepAnalyzer) Build(basePath string, op DepAnalyzerOpt) error {
 				}
 			}
 
-			path := node.IdentWithType.Ident.Lit + "@" + file.File.Name()
-			if _, visited := visitedObjects[path]; visited {
+			objPath := node.IdentWithType.Ident.Lit + "@" + file.File.Name()
+			if _, visited := visitedObjects[objPath]; visited {
 				return nil
 			}
-			visitedObjects[path] = true
+			visitedObjects[objPath] = true
 
 			objNodRef := getNodeRef(node.IdentWithType.Ident.Lit, file)
 			if objNodRef != nil {
@@ -466,7 +465,7 @@ func (p *GDDepAnalyzer) buildGDFileFromPath(filePath string, parentPkg *GDPackag
 		return nil, err
 	}
 
-	// Free memory (Ast is not longer needed)
+	// Free memory (Ast is no longer needed)
 	defer (func() {
 		p.astBuilder.Dispose()
 		rootNode = nil
@@ -501,7 +500,7 @@ func (p *GDDepAnalyzer) buildGDFileFromPath(filePath string, parentPkg *GDPackag
 			return nil, comn.NErr(comn.DefaultFatalErrCode, "invalid package", comn.FatalError, nPkgs.GetPosition(), nil)
 		}
 
-		// Try find the package using the relative path
+		// Try to find the package using the relative path
 		pkgPath := path.Join(parentPkg.Path, nPkg.GetPath())
 		// Check if package directory exists
 		if _, err := os.Stat(pkgPath); err != nil {
@@ -679,7 +678,7 @@ func NDepAnalyzerProc() *GDDepAnalyzer {
 	return &GDDepAnalyzer{
 		astBuilder:  ast.NAstBuilderProc(),
 		fileSet:     scanner.NFileSet(),
-		visitedPkgs: make(map[string]*GDPackage, 0),
+		visitedPkgs: make(map[string]*GDPackage),
 		FileNodes:   make([]*GDFileNode, 0),
 	}
 }

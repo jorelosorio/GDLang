@@ -35,8 +35,8 @@ func ToBool(value any) (GDBool, error) {
 	case GDBool:
 		return value, nil
 	case GDObject:
-		return GDBool(false), InvalidCastingWrongTypeErr(GDBoolType, value.GetType())
+		return false, InvalidCastingWrongTypeErr(GDBoolType, value.GetType())
 	}
 
-	return GDBool(false), InvalidCastingExpectedTypeErr(GDBoolType)
+	return false, InvalidCastingExpectedTypeErr(GDBoolType)
 }

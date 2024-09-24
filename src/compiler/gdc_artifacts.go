@@ -22,14 +22,24 @@
 
 package compiler
 
-import "path"
+import (
+	"os"
+	"path"
+)
 
 func (c *GDCompiler) GenerateArtifacts(pkgName, outputPath string) error {
 	// IR, Bytecode and SourceMap writing process
 
+	// IR assembly
+	asmPath := path.Join(outputPath, pkgName+".gdasm")
+	err := c.writeAsm(asmPath)
+	if err != nil {
+		return err
+	}
+
 	// Bytecode
 	bytecodePath := path.Join(outputPath, pkgName+".gdbin")
-	err := c.writeBytecode(bytecodePath)
+	err = c.writeBytecode(bytecodePath)
 	if err != nil {
 		return err
 	}
@@ -37,6 +47,21 @@ func (c *GDCompiler) GenerateArtifacts(pkgName, outputPath string) error {
 	// Source map
 	srcMapPath := path.Join(outputPath, pkgName+".gdmap")
 	err = c.writeSourceMap(srcMapPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *GDCompiler) writeAsm(outputFile string) error {
+	file, err := os.Create(outputFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write([]byte(c.Root.BuildAssembly("")))
 	if err != nil {
 		return err
 	}

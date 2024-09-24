@@ -119,7 +119,7 @@ func TestCastObject(t *testing.T) {
 		{runtime.GDString("1.0"), runtime.GDComplex64Type, ""}, // Complex64, Complex128 are ComplexType (Both are compatible)
 		{runtime.GDString(runtime.GDComplex128(complex(math.MaxFloat64, math.MaxFloat64)).ToString()), runtime.GDComplex128Type, ""},
 		{runtime.GDString("1.0"), runtime.GDIntType, "error trying to cast `1.0` into a `int`"},
-		{runtime.GDString("1.0"), runtime.GDInt8Type, "error trying to cast `1.0` into a `int`"}, // Internally it is a int8
+		{runtime.GDString("1.0"), runtime.GDInt8Type, "error trying to cast `1.0` into a `int`"}, // Internally it is an int8
 		{runtime.NewGDArray(runtime.GDString("hola")), runtime.GDStringType, ""},
 		{runtime.NewGDArray(runtime.GDString("hola")), runtime.GDIntType, "error while casting `[string]` to `int`"},
 		// Char cases

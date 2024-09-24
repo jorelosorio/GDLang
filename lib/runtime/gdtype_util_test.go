@@ -217,7 +217,7 @@ func TestTypeInference(t *testing.T) {
 		{runtime.GDUntypedType, runtime.NewGDEmptyArrayType(), runtime.NewGDEmptyArrayType(), ""},
 		// set a: [untyped] = [untyped]
 		{runtime.NewGDEmptyArrayType(), runtime.NewGDEmptyArrayType(), runtime.NewGDEmptyArrayType(), ""},
-		// set a: [untyped] = [[untyped]] (For this case `untyped` in the left side is a `[untyped]`)
+		// set a: [untyped] = [[untyped]] (For this case `untyped` on the left side is a `[untyped]`)
 		{runtime.NewGDEmptyArrayType(), runtime.NewGDArrayType(runtime.NewGDEmptyArrayType()), runtime.NewGDArrayType(runtime.NewGDEmptyArrayType()), ""},
 		// set a: [[untyped]] = [untyped]
 		{runtime.NewGDArrayType(runtime.NewGDEmptyArrayType()), runtime.NewGDEmptyArrayType(), runtime.NewGDArrayType(runtime.NewGDEmptyArrayType()), ""},
@@ -256,25 +256,25 @@ func TestTypeInference(t *testing.T) {
 		{runtime.NewGDUnionType(runtime.GDIntType, runtime.GDStringType), runtime.NewGDUnionType(runtime.GDIntType, runtime.GDStringType), runtime.NewGDUnionType(runtime.GDIntType, runtime.GDStringType), ""},
 		// set a: string | int = int | string
 		{runtime.NewGDUnionType(runtime.GDStringType, runtime.GDIntType), runtime.NewGDUnionType(runtime.GDIntType, runtime.GDStringType), runtime.NewGDUnionType(runtime.GDStringType, runtime.GDIntType), ""},
-		// set a: untypped = (untypped,)
+		// set a: untyped = (untyped,)
 		{runtime.GDUntypedType, runtime.NewGDTupleType(), runtime.NewGDTupleType(), ""},
-		// set a: untypped = int | string
+		// set a: untyped = int | string
 		{runtime.GDUntypedType, runtime.NewGDUnionType(runtime.GDIntType, runtime.GDStringType), runtime.NewGDUnionType(runtime.GDIntType, runtime.GDStringType), ""},
-		// set a: (untypped,) = untypped
+		// set a: (untyped,) = untyped
 		{runtime.NewGDTupleType(), runtime.GDUntypedType, runtime.NewGDTupleType(), ""},
-		// set a: (int,) = (untypped,)
+		// set a: (int,) = (untyped,)
 		{runtime.NewGDTupleType(runtime.GDIntType), runtime.NewGDTupleType(), runtime.NewGDTupleType(runtime.GDIntType), ""},
-		// set a: (untypped,) = (int,)
+		// set a: (untyped,) = (int,)
 		{runtime.NewGDTupleType(), runtime.NewGDTupleType(runtime.GDIntType), runtime.NewGDTupleType(runtime.GDIntType), ""},
 		// set a: ((int,),) = ((float,),)
 		{runtime.NewGDTupleType(runtime.NewGDTupleType(runtime.GDIntType)), runtime.NewGDTupleType(runtime.NewGDTupleType(runtime.GDFloatType)), nil, "expected `((int,),)` but got `((float,),)`"},
-		// set a: ((int,),) = ((untypped,),)
+		// set a: ((int,),) = ((untyped,),)
 		{runtime.NewGDTupleType(runtime.NewGDTupleType(runtime.GDIntType)), runtime.NewGDTupleType(runtime.NewGDTupleType()), runtime.NewGDTupleType(runtime.NewGDTupleType(runtime.GDIntType)), ""},
-		// set a: ((untypped,),) = ((int,),)
+		// set a: ((untyped,),) = ((int,),)
 		{runtime.NewGDTupleType(runtime.NewGDTupleType()), runtime.NewGDTupleType(runtime.NewGDTupleType(runtime.GDIntType)), runtime.NewGDTupleType(runtime.NewGDTupleType(runtime.GDIntType)), ""},
-		// set a: ((untypped,),) = ((untypped,),)
+		// set a: ((untyped,),) = ((untyped,),)
 		{runtime.NewGDTupleType(runtime.NewGDTupleType()), runtime.NewGDTupleType(runtime.NewGDTupleType()), runtime.NewGDTupleType(runtime.NewGDTupleType()), ""},
-		// set a: (untypped,) = ((untypped,),)
+		// set a: (untyped,) = ((untyped,),)
 		{runtime.NewGDTupleType(), runtime.NewGDTupleType(runtime.NewGDTupleType()), runtime.NewGDTupleType(runtime.NewGDTupleType()), ""},
 		// set a: int = int | string
 		{runtime.GDIntType, runtime.NewGDUnionType(runtime.GDIntType, runtime.GDStringType), nil, "expected `int` but got `(int | string)`"},
@@ -331,7 +331,7 @@ func TestTypeInference(t *testing.T) {
 				return err
 			}
 		} else {
-			return fmt.Errorf("There was no error but found expected type nil")
+			return fmt.Errorf("there was no error but found expected type nil")
 		}
 
 		return nil

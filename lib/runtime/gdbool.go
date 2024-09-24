@@ -98,7 +98,7 @@ func (gd GDBool) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, erro
 func NewGDBoolFromString(value string) (GDBool, error) {
 	boolean, err := strconv.ParseBool(value)
 	if err != nil {
-		return GDBool(false), InvalidCastingLitErr(value, GDBoolType)
+		return false, InvalidCastingLitErr(value, GDBoolType)
 	}
 
 	return GDBool(boolean), nil

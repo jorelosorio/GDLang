@@ -373,28 +373,28 @@ func (s *Scanner) scanString() string {
 
 // scanEscape parses an escape sequence where rune is the accepted
 // escaped quote. In case of a syntax error, it stops at the offending
-// character (without consuming it) and returns false. Otherwise
+// character (without consuming it) and returns false. Otherwise,
 // it returns true.
 func (s *Scanner) scanEscape(offsS int, quote rune) bool {
 	offs := s.offset
 
 	var n int
-	var base, max uint32
+	var base, maxValue uint32
 	switch s.ch {
 	case 'a', 'b', 'f', 'n', 'r', 't', 'v', '\\', quote:
 		s.next()
 		return true
 	case '0', '1', '2', '3', '4', '5', '6', '7':
-		n, base, max = 3, 8, 255
+		n, base, maxValue = 3, 8, 255
 	case 'x':
 		s.next()
-		n, base, max = 2, 16, 255
+		n, base, maxValue = 2, 16, 255
 	case 'u':
 		s.next()
-		n, base, max = 4, 16, unicode.MaxRune
+		n, base, maxValue = 4, 16, unicode.MaxRune
 	case 'U':
 		s.next()
-		n, base, max = 8, 16, unicode.MaxRune
+		n, base, maxValue = 8, 16, unicode.MaxRune
 	default:
 		msg := "unknown escape sequence"
 		if s.ch < 0 {
@@ -424,7 +424,7 @@ func (s *Scanner) scanEscape(offsS int, quote rune) bool {
 		n--
 	}
 
-	if x > max || 0xD800 <= x && x < 0xE000 {
+	if x > maxValue || 0xD800 <= x && x < 0xE000 {
 		s.error(offs, "escape sequence is invalid Unicode code point")
 		return false
 	}
@@ -462,7 +462,7 @@ func (s *Scanner) scanComment() (string, int) {
 			}
 			s.next()
 		}
-		// if we are at '\n', the position following the comment is afterwards
+		// if we are at '\n', the position following the comment is afterward
 		next = s.offset
 		if s.ch == '\n' {
 			next++
@@ -495,8 +495,8 @@ exit:
 	// On Windows, a (//-comment) line may end in "\r\n".
 	// Remove the final '\r' before analyzing the text for
 	// line directives (matching the compiler). Remove any
-	// other '\r' afterwards (matching the pre-existing be-
-	// havior of the scanner).
+	// other '\r' afterwards (matching the pre-existing
+	// behavior of the scanner).
 	if numCR > 0 && len(lit) >= 2 && lit[1] == '/' && lit[len(lit)-1] == '\r' {
 		lit = lit[:len(lit)-1]
 		numCR--

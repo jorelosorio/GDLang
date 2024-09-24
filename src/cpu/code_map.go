@@ -25,7 +25,7 @@ var cpuOpMap = map[GDInst]string{
 	Set:         "set",
 	Lambda:      "lambda",
 	BBegin:      "block",
-	BEnd:        "endblock",
+	BEnd:        "end",
 	Ret:         "ret",
 	Call:        "call",
 	Mov:         "mov",

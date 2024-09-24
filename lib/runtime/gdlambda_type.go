@@ -71,7 +71,7 @@ func (gd *GDLambdaType) CheckArgAtIndex(index int, typ GDTypable, stack *GDSymbo
 	argTypesCount := len(gd.ArgTypes) - 1
 	var lambdaArg GDLambdaArgType
 	var lambdaErrArg GDTypable
-	var inferredType GDTypable = typ
+	var inferredType = typ
 	if index >= argTypesCount && gd.IsVariadic {
 		lambdaArg = gd.ArgTypes[argTypesCount]
 

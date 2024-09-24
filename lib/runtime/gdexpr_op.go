@@ -250,11 +250,11 @@ func PerformExprOperation(op ExprOperationType, a, b GDObject) (GDObject, error)
 func performLogicalOp(op ExprOperationType, a, b GDBool) (GDObject, error) {
 	switch op {
 	case ExprOperationNot:
-		return GDBool(!a), nil
+		return !a, nil
 	case ExprOperationAnd:
-		return GDBool(a && b), nil
+		return a && b, nil
 	case ExprOperationOr:
-		return GDBool(a || b), nil
+		return a || b, nil
 	case ExprOperationEqual:
 		return GDBool(a == b), nil
 	case ExprOperationNotEqual:
@@ -267,7 +267,7 @@ func performLogicalOp(op ExprOperationType, a, b GDBool) (GDObject, error) {
 func performStringOp(op ExprOperationType, a, b GDString) (GDObject, error) {
 	switch op {
 	case ExprOperationAdd:
-		return GDString(a + b), nil
+		return a + b, nil
 	case ExprOperationGreater:
 		return GDBool(a > b), nil
 	case ExprOperationGreaterEqual:

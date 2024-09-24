@@ -60,7 +60,7 @@ func NewGDIntNumber(value GDInt) GDObject {
 	case bitSize < 16:
 		return GDInt16(value)
 	}
-	return GDInt(value)
+	return value
 }
 
 func NewGDIntNumberFromString(number string) (GDObject, error) {
@@ -75,7 +75,7 @@ func NewGDFloatNumber(value GDFloat64) GDObject {
 	if FloatBitsLen(float64(value)) == 32 {
 		return GDFloat32(value)
 	}
-	return GDFloat64(value)
+	return value
 }
 
 func NewGDFloatNumberFromString(number string) (GDObject, error) {
@@ -90,7 +90,7 @@ func NewGDComplexNumber(value GDComplex128) GDObject {
 	if ComplexBitsLen(complex128(value)) == 64 {
 		return GDComplex64(value)
 	}
-	return GDComplex128(value)
+	return value
 }
 
 func NewGDComplexNumberFromString(number string) (GDObject, error) {
@@ -156,7 +156,7 @@ func (gd GDInt8) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, erro
 		case GDInt8Type:
 			return gd, nil
 		case GDInt16Type:
-			return GDInt16(int16(gd)), nil
+			return GDInt16(gd), nil
 		case GDFloatType:
 			return NewGDFloatNumber(GDFloat64(gd)), nil
 		case GDFloat32Type:
@@ -172,7 +172,7 @@ func (gd GDInt8) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, erro
 		case GDStringType:
 			return GDString(gd.ToString()), nil
 		case GDCharType:
-			return GDChar(rune(gd)), nil
+			return GDChar(gd), nil
 		case GDBoolType:
 			return GDBool(gd != 0), nil
 		}
@@ -211,7 +211,7 @@ func (gd GDInt16) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, err
 		case GDStringType:
 			return GDString(gd.ToString()), nil
 		case GDCharType:
-			return GDChar(rune(gd)), nil
+			return GDChar(gd), nil
 		case GDBoolType:
 			return GDBool(gd != 0), nil
 		}
@@ -244,11 +244,11 @@ func (gd GDFloat32) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, e
 		case GDFloat64Type:
 			return GDFloat64(gd), nil
 		case GDComplexType:
-			return NewGDComplexNumber(GDComplex128(complex(float64(gd), 0))), nil
+			return NewGDComplexNumber(GDComplex128(complex(gd, 0))), nil
 		case GDComplex64Type:
-			return GDComplex64(complex(float32(gd), 0)), nil
+			return GDComplex64(complex(gd, 0)), nil
 		case GDComplex128Type:
-			return GDComplex128(complex(float64(gd), 0)), nil
+			return GDComplex128(complex(gd, 0)), nil
 		case GDStringType:
 			return GDString(gd.ToString()), nil
 		case GDCharType:
@@ -277,17 +277,17 @@ func (gd GDFloat64) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, e
 		case GDInt16Type:
 			return GDInt16(int16(gd)), nil
 		case GDFloatType:
-			return NewGDFloatNumber(GDFloat64(gd)), nil
+			return NewGDFloatNumber(gd), nil
 		case GDFloat32Type:
 			return GDFloat32(gd), nil
 		case GDFloat64Type:
 			return gd, nil
 		case GDComplexType:
-			return NewGDComplexNumber(GDComplex128(complex(float64(gd), 0))), nil
+			return NewGDComplexNumber(GDComplex128(complex(gd, 0))), nil
 		case GDComplex64Type:
 			return GDComplex64(complex(float32(gd), 0)), nil
 		case GDComplex128Type:
-			return GDComplex128(complex(float64(gd), 0)), nil
+			return GDComplex128(complex(gd, 0)), nil
 		case GDStringType:
 			return GDString(gd.ToString()), nil
 		case GDCharType:
@@ -361,7 +361,7 @@ func (gd GDComplex128) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject
 		case GDFloat64Type:
 			return GDFloat64(real(gd)), nil
 		case GDComplexType:
-			return NewGDComplexNumber(GDComplex128(gd)), nil
+			return NewGDComplexNumber(gd), nil
 		case GDComplex64Type:
 			return GDComplex64(complex64(gd)), nil
 		case GDComplex128Type:

@@ -25,14 +25,14 @@ type GDInst byte
 const (
 	TypeAlias   GDInst = iota // Define a type alias
 	CastObj                   // Cast an object
-	Set                       // Instanciate a new object
+	Set                       // Instance a new object
 	Mov                       // Move a value to a register
 	CSet                      // Set a value to an iterable
-	CAdd                      // Add a value to an collectable
+	CAdd                      // Add a value to a collectable
 	CRemove                   // Remove a value from an collectable
 	IGet                      // Get a value from an iterable
 	ILen                      // Get the length of an iterable
-	AGet                      // Get a value from an struct
+	AGet                      // Get a value from a struct
 	Lambda                    // Define a lambda
 	BBegin                    // Define a block
 	BEnd                      // End a block

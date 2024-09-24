@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Example usage:
-# ./scripts/build-gd-tool.sh go gdvm release darwin amd64 0.0.1
+# ./scripts/build-gd-tool.sh go gdvm release darwin amd64 0.0.1 1 ./bin
 
 if [ "$#" -ne 8 ]; then
     echo "Usage: $0 [go | tinygo] [gdc | gdcvm | gdvm] [debug | release] [os] [arch] [version] [build_number] [binary_path]"

@@ -47,5 +47,5 @@ func NewGDTupleType(gdTypes ...GDTypable) GDTupleType {
 		return GDTupleType{GDUntypedType}
 	}
 
-	return GDTupleType(gdTypes)
+	return gdTypes
 }

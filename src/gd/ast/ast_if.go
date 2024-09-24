@@ -45,24 +45,25 @@ func NewNodeTernaryIf(expr Node, then Node, elseNode Node) *NodeTernaryIf {
 // If
 
 type NodeIf struct {
-	Conds []Node
-	Block *NodeBlock
-	Ident runtime.GDIdent
+	Conditions []Node
+	Block      *NodeBlock
+	Ident      runtime.GDIdent
 	BaseNode
 }
 
-func (i *NodeIf) GetPosition() scanner.Position { return GetStartEndPosition(append(i.Conds, i.Block)) }
-func (i *NodeIf) Order() uint16                 { return EquivalentOrder }
+func (i *NodeIf) GetPosition() scanner.Position {
+	return GetStartEndPosition(append(i.Conditions, i.Block))
+}
+func (i *NodeIf) Order() uint16 { return EquivalentOrder }
 
-func NewNodeIf(ifConds []Node, block *NodeBlock) *NodeIf {
-	// Set the block as a control flow block if it is not nil
-	// Nil block it is used of thernary if and conditions validation
+func NewNodeIf(ifConditions []Node, block *NodeBlock) *NodeIf {
+	nodeIf := &NodeIf{ifConditions, block, nil, BaseNode{nodeType: NodeTypeIf}}
+	// Set the block as a control flow block if it is not nil.
+	// Nil block it is used of ternary if and conditions validation
 	if block != nil {
+		block.SetParentNode(nodeIf)
 		block.SetAsControlFlowBlock()
 	}
-
-	nodeIf := &NodeIf{ifConds, block, nil, BaseNode{nodeType: NodeTypeIf}}
-	block.SetParentNode(nodeIf)
 
 	return nodeIf
 }

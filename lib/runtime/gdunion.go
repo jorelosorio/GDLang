@@ -26,8 +26,8 @@ type GDUnion struct {
 
 func (u *GDUnion) GetType() GDTypable    { return u.Type }
 func (u *GDUnion) GetSubType() GDTypable { return nil }
-func (gd *GDUnion) ToString() string {
-	return JoinSlice(gd.Objects, func(obj GDObject, _ int) string {
+func (u *GDUnion) ToString() string {
+	return JoinSlice(u.Objects, func(obj GDObject, _ int) string {
 		return obj.ToString()
 	}, " | ")
 }

@@ -25,7 +25,7 @@ import (
 )
 
 func ScanTokens(msg string) []string {
-	tokens := []string{}
+	tokens := make([]string, 0)
 	var buffer strings.Builder
 
 	for _, ch := range msg {

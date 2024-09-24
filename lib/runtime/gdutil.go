@@ -31,32 +31,8 @@ func MapSlice[S ~[]E, E any, T any](slice S, fn func(E, int) T) []T {
 	return vals
 }
 
-// Map slice with error handling
-func MapSliceErr[S ~[]E, E any, T any](slice S, fn func(E) (T, error)) ([]T, error) {
-	vals := make([]T, len(slice))
-	for i, v := range slice {
-		fnV, err := fn(v)
-		if err != nil {
-			return nil, err
-		}
-
-		vals[i] = fnV
-	}
-	return vals, nil
-}
-
 func JoinSlice[S ~[]E, E any](slice S, fn func(E, int) string, separator string) string {
 	return strings.Join(MapSlice(slice, fn), separator)
-}
-
-func IterateSlice[S ~[]E, E any](slice S, fn func(E, int) error) error {
-	for i, v := range slice {
-		err := fn(v, i)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func ContainsAny(target string, list ...string) bool {

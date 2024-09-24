@@ -24,7 +24,7 @@ import (
 	"gdlang/src/gd/ast"
 )
 
-// The evaluator is an interface that is used to evaluate the analyzed AST
+// The evaluator is an interface that is used to evaluate the analyzed AST,
 // and it is used for static analysis and code generation.
 type GDEvaluator[T interface{}, E interface{}] interface {
 	EvalAtom(a *ast.NodeLiteral, stack E) (T, error)

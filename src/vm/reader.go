@@ -302,14 +302,14 @@ func (p *GDVMReader) ReadObject(stack *runtime.GDSymbolStack) (runtime.GDObject,
 	case runtime.GDObjRefTypeCode:
 		objRef, ok := typ.(runtime.GDObjRefType)
 		if !ok {
-			return nil, InvalidTypeErr("an `objref` type", typ)
+			return nil, InvalidTypeErr("an `object reference` type", typ)
 		}
 
 		ident := objRef.GDIdent
 		switch ident.GetMode() {
 		case runtime.GDByteIdentMode:
-			byte := ident.GetRawValue().(byte)
-			switch cpu.GDReg(byte) {
+			b := ident.GetRawValue().(byte)
+			switch cpu.GDReg(b) {
 			case cpu.RPop:
 				return stack.PopBuffer(), nil
 			default:
@@ -482,9 +482,9 @@ func (p *GDVMReader) ReadObject(stack *runtime.GDSymbolStack) (runtime.GDObject,
 		}
 
 		return runtime.NewGDArrayWithTypeAndObjects(typ.(*runtime.GDArrayType), aObjs), nil
+	default:
+		return nil, InvalidTypeCodeReadingObjectErr(byte(typ.GetCode()))
 	}
-
-	return nil, InvalidTypeCodeReadingObjectErr(byte(typ.GetCode()))
 }
 
 func (p *GDVMReader) ReadBool() (bool, error) {

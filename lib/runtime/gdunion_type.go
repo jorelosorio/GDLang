@@ -58,5 +58,5 @@ func (t GDUnionType) ToString() string {
 }
 
 func NewGDUnionType(fields ...GDTypable) GDUnionType {
-	return GDUnionType(fields)
+	return fields
 }

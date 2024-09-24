@@ -22,14 +22,8 @@ package comn
 type ErrCode uint16
 
 const (
-	// Used internally to spot mistakes
-	PenaltyDebugErrCode ErrCode = iota
-
-	// Execution error might be caused by a runtime error
-	RuntimeExceptionErrCode
-
 	// A general fatal error code
-	DefaultFatalErrCode
+	DefaultFatalErrCode ErrCode = iota
 
 	// A general syntax error code
 	DefaultSyntaxErrCode
@@ -52,16 +46,6 @@ const (
 	// Trying to use `nil` as a type is not allowed
 	NilAsATypeErrCode
 
-	// A statement was not terminated correctly, missing braces, semicolons, etc.
-	WrongEndOfStatementErrCode
-
-	// Invoker is nil, this happends when trying either to call a method on a nil object
-	// or accessing a property of a nil object
-	InvokerIsNilErrCode
-
-	// Not a function when invoking a function
-	InvokerNotAFunctionErrCode
-
 	// Not valid spreadable type
 	InvalidSpreadableTypeErrCode
 
@@ -73,9 +57,6 @@ const (
 
 	// A public object was not found in the package
 	PublicObjectNotFoundErrCode
-
-	// Duplicated pub object
-	DuplicatedPublicObjectErrCode
 
 	// Use directive can only be used at the header of a file example:
 	// use io::read{*}

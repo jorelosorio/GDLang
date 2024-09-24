@@ -22,7 +22,7 @@ package runtime
 type GDObject interface {
 	GetType() GDTypable
 	// The underlying type of the object.
-	// If the object is a number int then is a sub-type of int8, int16.
+	// If the object is a number int then is a subtype of int8, int16.
 	GetSubType() GDTypable
 	GDPrintable
 	GDCastable

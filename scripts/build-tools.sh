@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Example usage:
-# ./scripts/build-tools.sh go release darwin amd64 0.0.1
+# ./scripts/build-tools.sh go release darwin amd64 0.0.1 1 ./bin ./dist
 
 if [ "$#" -ne 8 ]; then
     echo "Usage: $0 [go | tinygo] [debug | release] [os] [arch] [version] [build_number] [binary_path] [dist_path]"

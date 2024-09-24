@@ -44,20 +44,14 @@ func (e ErrCode) Errorf(params ...string) ProcErr {
 const (
 	WrongEndOfStatementErrMsg            = "wrong statement termination"
 	NilAsATypeErrMsg                     = "hold up! `What's going on here?`, assigning `nil` as a type is not allowed"
-	RuntimeExceptionErrMsg               = "an unfourtunate error occurred, the program will be terminated"
-	InvokerIsNilErrMsg                   = "a nil was encountered when trying to access a property or calling a function"
-	NotAFunctionErrMsg                   = "object `%s` is not a function"
 	InvalidArraySpreadExpressionErrorMsg = "ellipsis expression can only be used in tuples or arrays"
-	WrongFileStateWhileParsingMsg        = "an error occurred while parsing a file"
 	PackageNotFoundMsg                   = "package `%s` was not found"
 	PackageSourceCodeFileParsingErrMsg   = "an error occurred while parsing a source code file from package `%s`"
 	PublicObjectNotFoundErrMsg           = "public object `%s` was not found in package `%s`"
 	UseOnlyAtHeaderErrMsg                = "`use` directive can only be used at the header of a file, not between statements"
 	NoMainFunctionErrMsg                 = "no `main` function was found in the package"
 	DuplicatedPublicObjectErrMsg         = "an object `%s` was already declared in the package `%s`"
-	UntypedTypeMistmatchErrMsg           = "type mismatch error: Untyped objects adopt the type of their first assigned value and cannot change type. This can cause runtime errors if later assignments are of different types"
-	MisplassedBreakErrMsg                = "`break` statement is not allowed here, it can only be used inside a control flow statement"
-	EndOfBlockExpectedErrMsg             = "an internal error occurred, the end of a block was expected, but not found"
+	MisplacedBreakErrMsg                 = "`break` statement is not allowed here, it can only be used inside a control flow statement"
 	NilAccessExceptionErrMsg             = "a `nil` was encountered while dereferencing an object"
 )
 
@@ -89,9 +83,8 @@ func (e ProcErr) Error() string {
 
 	var positionInfo string
 	if PrettyPrintErrors {
-		var severityColor Color = ErrorHighlightColor
-		switch e.Severity {
-		case Warning:
+		var severityColor = ErrorHighlightColor
+		if e.Severity == Warning {
 			severityColor = WarningHighlightColor
 		}
 
@@ -138,7 +131,7 @@ func WrapCompilerErr(err error, errPos scanner.Position) ProcErr {
 	return NErr(DefaultCompilerErrCode, err.Error(), FatalError, errPos, nil)
 }
 
-func CreateUnexpSyntaxError(unexpected string, expecting []string, errPos scanner.Position) ProcErr {
+func CreateUnexpectedSyntaxError(unexpected string, expecting []string, errPos scanner.Position) ProcErr {
 	switch len(expecting) {
 	case 0:
 		msg := fmt.Sprintf("an unexpected `%s` was encountered", unexpected)

@@ -50,5 +50,5 @@ func (t GDStructType) GetAttrType(ident GDIdent) (GDTypable, error) {
 // An empty struct type is a struct type with no attributes
 // This is useful to represent an empty struct
 func NewGDStructType(attrs ...GDStructAttrType) GDStructType {
-	return GDStructType(attrs)
+	return attrs
 }

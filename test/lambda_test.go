@@ -23,7 +23,7 @@ import (
 	"testing"
 )
 
-func TestLambaCases(t *testing.T) {
+func TestLambdaCases(t *testing.T) {
 	RunTestsWithMainTemplate(t, []Test{
 		{`func (){}()`, "", ""},
 		{`func ()=>int{return 1;}()`, "", ""},

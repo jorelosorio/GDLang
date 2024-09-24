@@ -46,7 +46,6 @@ func main() {
 		versionMsg := comn.NewMarkdown("GDLang Compiler / VM `version`: " + version + " `build`: " + buildNumber + " `arch`: " + arch)
 		println(versionMsg.Stylize())
 		os.Exit(0)
-		os.Exit(0)
 	}
 
 	c := compiler.NewGDCompiler()

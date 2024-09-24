@@ -113,11 +113,11 @@ func ToComplex(value any) (GDComplex128, error) {
 	case GDInt16:
 		return GDComplex128(complex(float64(value), 0)), nil
 	case GDFloat32:
-		return GDComplex128(complex(float64(value), 0)), nil
+		return GDComplex128(complex(value, 0)), nil
 	case GDFloat64:
 		return GDComplex128(complex(value, 0)), nil
 	case GDComplex64:
-		return GDComplex128(complex128(value)), nil
+		return GDComplex128(value), nil
 	case GDComplex128:
 		return value, nil
 	case GDObject:

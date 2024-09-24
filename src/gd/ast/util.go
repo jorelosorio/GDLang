@@ -36,7 +36,7 @@ func GetStartEndPosition[T Node](nodes []T) scanner.Position {
 }
 
 func buildStartEndPos(firstItem, lastItem Node) scanner.Position {
-	var fp, lp scanner.Position = scanner.ZeroPos, scanner.ZeroPos
+	var fp, lp = scanner.ZeroPos, scanner.ZeroPos
 
 	if firstItem != nil {
 		fp = firstItem.GetPosition()

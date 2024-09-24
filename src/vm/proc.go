@@ -180,7 +180,7 @@ walk:
 
 		// Stop walking the block if the block end is reached
 		// or an object is returned.
-		if p.Off >= uint(endOfBlock) || obj != nil {
+		if p.Off >= endOfBlock || obj != nil {
 			break
 		}
 	}
@@ -190,7 +190,7 @@ walk:
 		case VMJump:
 			// Jump to the label
 			jumpOff := uint(obj)
-			if jumpOff >= startOfBlock && jumpOff <= uint(endOfBlock) {
+			if jumpOff >= startOfBlock && jumpOff <= endOfBlock {
 				p.Off = jumpOff
 				goto walk
 			}

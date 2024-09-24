@@ -34,9 +34,9 @@ type NodeFor interface {
 // Nod For If
 
 type NodeForIf struct {
-	Sets  Node
-	Conds []Node
-	Block *NodeBlock
+	Sets       Node
+	Conditions []Node
+	Block      *NodeBlock
 
 	// Labeling
 	endLabel runtime.GDIdent
@@ -52,9 +52,9 @@ func (f *NodeForIf) Order() uint16 { return EquivalentOrder }
 func (f *NodeForIf) SetEndLabel(endLabel runtime.GDIdent) { f.endLabel = endLabel }
 func (f *NodeForIf) GetEndLabel() runtime.GDIdent         { return f.endLabel }
 
-func NewNodeForIf(setObjs Node, ifConds []Node, block *NodeBlock) *NodeForIf {
+func NewNodeForIf(setObjs Node, ifConditions []Node, block *NodeBlock) *NodeForIf {
 	block.SetAsControlFlowBlock()
-	nodeFor := &NodeForIf{setObjs, ifConds, block, nil, BaseNode{nodeType: NodeTypeFor}}
+	nodeFor := &NodeForIf{setObjs, ifConditions, block, nil, BaseNode{nodeType: NodeTypeFor}}
 	block.SetParentNode(nodeFor)
 
 	return nodeFor

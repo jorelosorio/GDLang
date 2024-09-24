@@ -20,8 +20,7 @@
 package runtime
 
 const (
-	InvalidReturnTypeCode = iota
-	IncompatibleTypeCode
+	IncompatibleTypeCode = iota
 	InvalidArgumentTypeCode
 	UnsupportedOperationCode
 	UnsupportedTypeCode
@@ -36,15 +35,13 @@ const (
 	FuncMissingArgsCode
 	InvalidCharConversionCode
 	NoFunctionCallbackErrCode
-	InvalidCastingErrCode
 	RuntimeErrorCode
 )
 
 var (
-	DivByZeroErr                = NewGDRuntimeErr(DivByZeroCode, "division by zero")
-	IndexOutOfBoundsErr         = NewGDRuntimeErr(IndexOutOfBoundsCode, "index out of bounds")
-	VariadicFuncRequiresArgsErr = NewGDRuntimeErr(VariadicFnRequiresArgsCode, "`variadic` argument requires at least one argument")
-	NoFunctionCallbackErr       = NewGDRuntimeErr(NoFunctionCallbackErrCode, "no function callback")
+	DivByZeroErr          = NewGDRuntimeErr(DivByZeroCode, "division by zero")
+	IndexOutOfBoundsErr   = NewGDRuntimeErr(IndexOutOfBoundsCode, "index out of bounds")
+	NoFunctionCallbackErr = NewGDRuntimeErr(NoFunctionCallbackErrCode, "no function callback")
 )
 
 type GDRuntimeErr struct {

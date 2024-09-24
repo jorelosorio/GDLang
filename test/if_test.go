@@ -23,7 +23,7 @@ import (
 	"testing"
 )
 
-func TestSingeleIfCondition(t *testing.T) {
+func TestSingleIfCondition(t *testing.T) {
 	RunTests(t, []Test{
 		{`
 		pub func main() {

@@ -71,6 +71,6 @@ func (i *GDIRCompJump) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) e
 	return nil
 }
 
-func NewGDIRCompJump(conds GDIRNode, equalsTo GDIRNode, label runtime.GDIdent, node ast.Node) *GDIRCompJump {
-	return &GDIRCompJump{conds, equalsTo, label, GDIRBaseNode{node}}
+func NewGDIRCompJump(conditions GDIRNode, equalsTo GDIRNode, label runtime.GDIdent, node ast.Node) *GDIRCompJump {
+	return &GDIRCompJump{conditions, equalsTo, label, GDIRBaseNode{node}}
 }

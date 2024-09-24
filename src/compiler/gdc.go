@@ -99,7 +99,12 @@ func (c *GDCompiler) writeBytecode(outputFile string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			panic("error closing file: " + err.Error())
+		}
+	}(file)
 
 	_, err = file.Write(buffer.Bytes())
 	if err != nil {
@@ -114,7 +119,12 @@ func (c *GDCompiler) writeSourceMap(outputFile string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			panic("error closing file: " + err.Error())
+		}
+	}(file)
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "")
@@ -401,7 +411,7 @@ func (c *GDCompiler) EvalIfElse(i *ast.NodeIfElse, stack ir.GDIRStackNode) (ir.G
 			ident := c.NewIdent()
 			i.Ident = ident
 
-			for _, node := range i.Conds {
+			for _, node := range i.Conditions {
 				cond, err := c.EvalNode(node, stack)
 				if err != nil {
 					return nil, err
@@ -656,8 +666,8 @@ func (c *GDCompiler) evalFor(f *ast.NodeForIf, stack ir.GDIRStackNode, forStart,
 	}
 
 	// Evaluate the condition
-	if f.Conds != nil {
-		for _, node := range f.Conds {
+	if f.Conditions != nil {
+		for _, node := range f.Conditions {
 			cond, err := c.EvalNode(node, block)
 			if err != nil {
 				return nil, err

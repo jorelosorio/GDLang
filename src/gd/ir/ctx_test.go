@@ -38,7 +38,7 @@ func TestResolvePendingLabels(t *testing.T) {
 		t.Error(err)
 	}
 
-	// Add a mark to be fullfilled later, when the label is added
+	// Add a mark to be fulfilled later, when the label is added
 	_ = ctx.AddMark(bytecode, bytecode.Len(), labelIdent)
 
 	// Write uint32 where the jump will go

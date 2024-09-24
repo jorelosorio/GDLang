@@ -35,6 +35,6 @@ func ToString(value any) (GDString, error) {
 	case GDObject:
 		return GDString(value.ToString()), nil
 	default:
-		return GDString(""), InvalidCastingExpectedTypeErr(GDStringType)
+		return "", InvalidCastingExpectedTypeErr(GDStringType)
 	}
 }

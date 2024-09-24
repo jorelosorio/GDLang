@@ -20,6 +20,7 @@
 package runtime_test
 
 import (
+	"errors"
 	"gdlang/lib/runtime"
 	"testing"
 )
@@ -40,7 +41,7 @@ func TestArrayOfStrings(t *testing.T) {
 	}
 }
 
-func TestArrayOfBools(t *testing.T) {
+func TestArrayOfBool(t *testing.T) {
 	array := runtime.NewGDArray(runtime.GDBool(true), runtime.GDBool(false), runtime.GDBool(true))
 	if array.ToString() != "[true, false, true]" {
 		t.Error("Wrong array string representation, got", array.ToString())
@@ -165,7 +166,7 @@ func TestGetIndexOutOfBounds(t *testing.T) {
 	array := runtime.NewGDArray(runtime.NewGDIntNumber(1))
 
 	_, err := array.Get(1)
-	if err != runtime.IndexOutOfBoundsErr {
+	if !errors.Is(err, runtime.IndexOutOfBoundsErr) {
 		t.Error("Expected error when getting index out of bounds")
 	}
 }
@@ -174,7 +175,7 @@ func TestSetIndexOutOfBounds(t *testing.T) {
 	array := runtime.NewGDArray(runtime.NewGDIntNumber(1))
 
 	err := array.Set(1, runtime.NewGDIntNumber(2), nil)
-	if err != runtime.IndexOutOfBoundsErr {
+	if !errors.Is(err, runtime.IndexOutOfBoundsErr) {
 		t.Error("Expected error when setting index out of bounds")
 	}
 }
@@ -183,7 +184,7 @@ func TestRemoveIndexOutOfBounds(t *testing.T) {
 	array := runtime.NewGDArray(runtime.NewGDIntNumber(1))
 
 	_, err := array.Remove(1)
-	if err != runtime.IndexOutOfBoundsErr {
+	if !errors.Is(err, runtime.IndexOutOfBoundsErr) {
 		t.Error("Expected error when removing index out of bounds")
 	}
 }
@@ -197,7 +198,7 @@ func TestAppendIndexOutOfBounds(t *testing.T) {
 	}
 
 	_, err = array.Get(2)
-	if err != runtime.IndexOutOfBoundsErr {
+	if !errors.Is(err, runtime.IndexOutOfBoundsErr) {
 		t.Error("Expected error when getting index out of bounds")
 	}
 }

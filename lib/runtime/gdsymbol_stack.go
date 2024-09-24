@@ -26,7 +26,6 @@ const (
 	BlockCtx
 	LambdaCtx
 	ForCtx
-	IfCtx
 	StructCtx
 )
 
@@ -73,12 +72,12 @@ func (s *GDSymbolStack) AddSymbol(ident GDIdent, isPub, isConst bool, typ GDTypa
 
 	var symbol *GDSymbol
 	if object != nil {
-		inferedType, err := InferType(typ, GDNilType, s)
+		inferredType, err := InferType(typ, GDNilType, s)
 		if err != nil {
 			return nil, err
 		}
 
-		symbol = NewGDSymbol(isPub, isConst, inferedType, object)
+		symbol = NewGDSymbol(isPub, isConst, inferredType, object)
 	} else {
 		symbol = NewGDSymbol(isPub, isConst, typ, GDZNil)
 	}
