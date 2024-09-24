@@ -20,6 +20,7 @@
 package analysis
 
 import (
+	"errors"
 	"gdlang/lib/runtime"
 	"gdlang/lib/tools"
 	"gdlang/src/comn"
@@ -107,16 +108,31 @@ func (t *GDStaticAnalyzer) EvalLambda(l *ast.NodeLambda, stack *runtime.GDSymbol
 	lambdaStack := stack.NewSymbolStack(runtime.LambdaCtx)
 	defer lambdaStack.Dispose()
 
+	lambda, err := t.evalNewLambdaWithObject(l, lambdaStack)
+	if err != nil {
+		return nil, err
+	}
+
+	// Evaluate the block
+	_, err = t.evalBlock(l.Block, lambdaStack)
+	if err != nil {
+		return nil, err
+	}
+
+	return lambda, nil
+}
+
+func (t *GDStaticAnalyzer) evalNewLambdaWithObject(l *ast.NodeLambda, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	addArgSymbol := func(ident runtime.GDIdent, typ runtime.GDTypable) (*runtime.GDSymbol, error) {
-		obj, err := runtime.ZObjectForType(typ, lambdaStack)
+		obj, err := runtime.ZObjectForType(typ, stack)
 		if err != nil {
 			return nil, comn.WrapFatalErr(err, l.GetPosition())
 		}
 
-		// Functions arguments are always variables, not constants
-		// and they are not public, because they are only accessible within the function
+		// Functions arguments are always variables, not constants,
+		// and they are not public, because they are only accessible within the function,
 		// and they are not constants because they can be changed.
-		symbol, err := lambdaStack.AddSymbol(ident, false, false, typ, obj)
+		symbol, err := stack.AddSymbol(ident, false, false, typ, obj)
 		if err != nil {
 			return nil, comn.WrapFatalErr(err, l.GetPosition())
 		}
@@ -166,12 +182,6 @@ func (t *GDStaticAnalyzer) EvalLambda(l *ast.NodeLambda, stack *runtime.GDSymbol
 	// Set the inferred type for the lambda
 	l.SetInferredType(l.Type)
 
-	// Evaluate the block
-	_, err := t.evalBlock(l.Block, lambdaStack)
-	if err != nil {
-		return nil, err
-	}
-
 	// Return type is the function type for lambda
 	return lambdaObj, nil
 }
@@ -214,7 +224,7 @@ func (t *GDStaticAnalyzer) EvalExprOp(e *ast.NodeExprOperation, stack *runtime.G
 	}
 
 	evalObjectsBetweenUnions := func(a, b *runtime.GDUnion) ([]runtime.GDObject, error) {
-		objects := []runtime.GDObject{}
+		objects := make([]runtime.GDObject, 0)
 		for _, a := range a.Objects {
 			objs, err := evalObjectsFromUnion(a, b)
 			if err != nil {
@@ -293,7 +303,10 @@ func (t *GDStaticAnalyzer) EvalExpEllipsis(e *ast.NodeEllipsisExpr, stack *runti
 // Structure of a function node:
 // func Ident(param: Type, ...) => Type { ... }
 func (t *GDStaticAnalyzer) EvalFunc(f *ast.NodeFunc, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	lambda, err := t.EvalLambda(f.NodeLambda, stack)
+	lambdaStack := stack.NewSymbolStack(runtime.LambdaCtx)
+	defer lambdaStack.Dispose()
+
+	lambda, err := t.evalNewLambdaWithObject(f.NodeLambda, lambdaStack)
 	if err != nil {
 		return nil, err
 	}
@@ -305,6 +318,12 @@ func (t *GDStaticAnalyzer) EvalFunc(f *ast.NodeFunc, stack *runtime.GDSymbolStac
 	}
 
 	symbol.Ident = t.NewIdent()
+
+	// Evaluate the block
+	_, err = t.evalBlock(f.NodeLambda.Block, lambdaStack)
+	if err != nil {
+		return nil, err
+	}
 
 	f.SetInferredIdent(ident)
 	f.SetRuntimeIdent(symbol.Ident)
@@ -623,8 +642,9 @@ func (t *GDStaticAnalyzer) EvalSet(s *ast.NodeSet, stack *runtime.GDSymbolStack)
 
 	symbol, err := stack.AddSymbol(ident, s.IsPub, s.IsConst, inferredType, exprObj)
 	if err != nil {
-		switch err := err.(type) {
-		case runtime.GDRuntimeErr:
+		var err runtime.GDRuntimeErr
+		switch {
+		case errors.As(err, &err):
 			switch err.Code {
 			case runtime.DuplicatedObjectCreationCode:
 				return nil, comn.WrapFatalErr(err, s.IdentWithType.Ident.GetPosition())
@@ -634,6 +654,8 @@ func (t *GDStaticAnalyzer) EvalSet(s *ast.NodeSet, stack *runtime.GDSymbolStack)
 				}
 
 				return nil, comn.WrapFatalErr(err, s.IdentWithType.Ident.GetPosition())
+			default:
+				panic("unhandled default case")
 			}
 		}
 		return nil, comn.WrapFatalErr(err, s.GetPosition())
@@ -826,7 +848,7 @@ func (t *GDStaticAnalyzer) EvalForIn(f *ast.NodeForIn, stack *runtime.GDSymbolSt
 			}
 
 			// It is expected that the type of the symbol is the same as
-			// the required type and it can be either a Int or the iterable type
+			// the required type, and it can be either an Int or the iterable type
 			err = symbol.SetObject(obj, forStack)
 			if err != nil {
 				return nil, err
@@ -895,8 +917,8 @@ func (t *GDStaticAnalyzer) EvalForIf(f *ast.NodeForIf, stack *runtime.GDSymbolSt
 		}
 	}
 
-	if f.Conds != nil {
-		err := t.checkIfConditions(f.Conds, forStack)
+	if f.Conditions != nil {
+		err := t.checkIfConditions(f.Conditions, forStack)
 		if err != nil {
 			return nil, err
 		}
@@ -1003,7 +1025,7 @@ func (t *GDStaticAnalyzer) EvalCastExpr(c *ast.NodeCastExpr, stack *runtime.GDSy
 }
 
 func (t *GDStaticAnalyzer) evalIfNode(i *ast.NodeIf, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	err := t.checkIfConditions(i.Conds, stack)
+	err := t.checkIfConditions(i.Conditions, stack)
 	if err != nil {
 		return nil, err
 	}
@@ -1044,7 +1066,7 @@ func (t *GDStaticAnalyzer) evalBlock(b *ast.NodeBlock, stack *runtime.GDSymbolSt
 		switch node := node.(type) {
 		case *ast.NodeBreak:
 			if b.Type == ast.FuncBlockType {
-				return nil, comn.CompilerErr(comn.MisplassedBreakErrMsg, node.GetPosition())
+				return nil, comn.CompilerErr(comn.MisplacedBreakErrMsg, node.GetPosition())
 			}
 		case *ast.NodeReturn:
 			// If not a flow control block, then return type is expected
