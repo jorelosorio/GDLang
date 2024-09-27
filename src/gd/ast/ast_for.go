@@ -47,7 +47,6 @@ type NodeForIf struct {
 func (f *NodeForIf) GetPosition() scanner.Position {
 	return f.Block.GetPosition()
 }
-func (f *NodeForIf) Order() uint16 { return EquivalentOrder }
 
 func (f *NodeForIf) SetEndLabel(endLabel runtime.GDIdent) { f.endLabel = endLabel }
 func (f *NodeForIf) GetEndLabel() runtime.GDIdent         { return f.endLabel }
@@ -74,7 +73,6 @@ type NodeForIn struct {
 func (f *NodeForIn) GetPosition() scanner.Position {
 	return GetStartEndPosition([]Node{f.Sets, f.Expr, f.Block})
 }
-func (f *NodeForIn) Order() uint16 { return EquivalentOrder }
 
 func NewNodeForIn(setObjs Node, expr Node, block *NodeBlock) Node {
 	block.SetAsControlFlowBlock()
@@ -99,7 +97,6 @@ type NodeBreak struct {
 }
 
 func (b *NodeBreak) GetPosition() scanner.Position { return b.Position }
-func (b *NodeBreak) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeBreak(ident *NodeTokenInfo) *NodeBreak {
 	return &NodeBreak{ident, BaseNode{nodeType: NodeTypeFor}}

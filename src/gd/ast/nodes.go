@@ -35,7 +35,6 @@ type NodeTokenInfo struct {
 }
 
 func (n *NodeTokenInfo) GetPosition() scanner.Position { return n.Position }
-func (n *NodeTokenInfo) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeTokenInfo(token scanner.Token, pos scanner.Position, lit string) *NodeTokenInfo {
 	return &NodeTokenInfo{pos, token, lit, BaseNode{}}
@@ -52,7 +51,6 @@ type NodeFile struct {
 }
 
 func (f *NodeFile) GetPosition() scanner.Position { return GetStartEndPosition(f.Nodes) }
-func (f *NodeFile) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeFile(packages []Node, nodes []Node) *NodeFile {
 	return &NodeFile{packages, nodes, BaseNode{}}
@@ -71,7 +69,6 @@ type NodePackage struct {
 }
 
 func (p *NodePackage) GetPosition() scanner.Position { return GetStartEndPosition(p.PackagePath) }
-func (p *NodePackage) Order() uint16                 { return EquivalentOrder }
 func (p *NodePackage) GetName() string               { return p.PackagePath[len(p.PackagePath)-1].(*NodeIdent).Lit }
 func (p *NodePackage) GetPath() string {
 	var pkgPath string
@@ -96,7 +93,6 @@ type NodeTypeAlias struct {
 }
 
 func (t *NodeTypeAlias) GetPosition() scanner.Position { return t.Ident.Position }
-func (t *NodeTypeAlias) Order() uint16                 { return TypeAliasOrder }
 
 func NewNodeTypeAlias(isPub bool, ident *NodeIdent, identType runtime.GDTypable) *NodeTypeAlias {
 	return &NodeTypeAlias{isPub, ident, identType, BaseNode{}}
@@ -111,7 +107,6 @@ type NodeIdentWithType struct {
 }
 
 func (t *NodeIdentWithType) GetPosition() scanner.Position { return t.Ident.Position }
-func (t *NodeIdentWithType) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeIdentWithType(ident *NodeIdent, identType runtime.GDTypable) *NodeIdentWithType {
 	return &NodeIdentWithType{ident, identType, BaseNode{}}
@@ -125,7 +120,6 @@ type NodeIdent struct {
 }
 
 func (i *NodeIdent) GetPosition() scanner.Position { return i.Position }
-func (i *NodeIdent) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeIdent(node *NodeTokenInfo) *NodeIdent {
 	return &NodeIdent{node, BaseNode{}}
@@ -141,7 +135,6 @@ type NodeType struct {
 func (t *NodeType) GetPosition() scanner.Position {
 	return t.TypeTokenInfo.GetPosition()
 }
-func (t *NodeType) Order() uint16 { return EquivalentOrder }
 
 func NewNodeType(typeTokenInfo *NodeTokenInfo) *NodeType {
 	return &NodeType{typeTokenInfo, BaseNode{}}
@@ -157,7 +150,6 @@ type NodeCastExpr struct {
 }
 
 func (c *NodeCastExpr) GetPosition() scanner.Position { return c.Expr.GetPosition() }
-func (c *NodeCastExpr) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeCastExpr(expr Node, typ runtime.GDTypable) *NodeCastExpr {
 	return &NodeCastExpr{expr, typ, BaseNode{}}
@@ -174,7 +166,6 @@ type NodeExprOperation struct {
 func (e *NodeExprOperation) GetPosition() scanner.Position {
 	return GetStartEndPosition([]Node{e.L, e.R})
 }
-func (e *NodeExprOperation) Order() uint16 { return EquivalentOrder }
 
 func NewNodeExprOperation(op runtime.ExprOperationType, l, r Node) *NodeExprOperation {
 	return &NodeExprOperation{op, l, r, BaseNode{}}
@@ -188,7 +179,6 @@ type NodeEllipsisExpr struct {
 }
 
 func (e *NodeEllipsisExpr) GetPosition() scanner.Position { return e.Expr.GetPosition() }
-func (e *NodeEllipsisExpr) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeEllipsisExpr(exp Node) Node {
 	return &NodeEllipsisExpr{exp, BaseNode{}}
@@ -202,7 +192,6 @@ type NodeStruct struct {
 }
 
 func (s *NodeStruct) GetPosition() scanner.Position { return GetStartEndPosition(s.Nodes) }
-func (s *NodeStruct) Order() uint16                 { return StructOrder }
 
 func NewNodeStruct(nodes ...Node) *NodeStruct {
 	return &NodeStruct{nodes, BaseNode{}}
@@ -216,7 +205,6 @@ type NodeTuple struct {
 }
 
 func (t *NodeTuple) GetPosition() scanner.Position { return GetStartEndPosition(t.Nodes) }
-func (t *NodeTuple) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeTuple(exprs ...Node) *NodeTuple {
 	return &NodeTuple{exprs, BaseNode{}}
@@ -243,8 +231,6 @@ func (c *NodeMutCollectionOp) GetPosition() scanner.Position {
 	return GetStartEndPosition([]Node{c.L, c.R})
 }
 
-func (c *NodeMutCollectionOp) Order() uint16 { return EquivalentOrder }
-
 func NewNodeMutCollectionOp(op MutableCollectionOp, l, r Node) *NodeMutCollectionOp {
 	return &NodeMutCollectionOp{op, l, r, BaseNode{}}
 }
@@ -266,7 +252,6 @@ func (a *NodeArray) GetPosition() scanner.Position {
 
 	return GetStartEndPosition(a.Nodes)
 }
-func (a *NodeArray) Order() uint16 { return EquivalentOrder }
 
 func NewNodeArray(exprStart, exprEnd Node, nodes []Node) *NodeArray {
 	return &NodeArray{exprStart, exprEnd, nodes, BaseNode{}}
@@ -280,7 +265,6 @@ type NodeLabel struct {
 }
 
 func (l *NodeLabel) GetPosition() scanner.Position { return l.Ident.Position }
-func (l *NodeLabel) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeLabel(ident NodeIdent) *NodeLabel {
 	return &NodeLabel{ident, BaseNode{}}
@@ -296,7 +280,6 @@ type NodeCallExpr struct {
 }
 
 func (s *NodeCallExpr) GetPosition() scanner.Position { return s.Expr.GetPosition() }
-func (s *NodeCallExpr) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeCallExpr(expr Node, args []Node) *NodeCallExpr {
 	return &NodeCallExpr{expr, args, BaseNode{}}
@@ -313,7 +296,6 @@ type NodeIterIdxExpr struct {
 func (s *NodeIterIdxExpr) GetPosition() scanner.Position {
 	return GetStartEndPosition([]Node{s.Expr, s.IdxExpr})
 }
-func (s *NodeIterIdxExpr) Order() uint16 { return EquivalentOrder }
 
 func NewNodeIterIdxExpr(isNilSafe bool, expr, idxExpr Node) *NodeIterIdxExpr {
 	return &NodeIterIdxExpr{isNilSafe, expr, idxExpr, BaseNode{}}
@@ -328,7 +310,6 @@ type NodeSafeDotExpr struct {
 }
 
 func (s *NodeSafeDotExpr) GetPosition() scanner.Position { return s.Expr.GetPosition() }
-func (s *NodeSafeDotExpr) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeSafeDotExpr(node Node, isNilSafe bool, ident Node) *NodeSafeDotExpr {
 	return &NodeSafeDotExpr{node, ident, isNilSafe, BaseNode{}}

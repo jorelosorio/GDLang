@@ -36,7 +36,6 @@ type NodeTernaryIf struct {
 func (e *NodeTernaryIf) GetPosition() scanner.Position {
 	return GetStartEndPosition([]Node{e.Expr, e.Then, e.Else})
 }
-func (e *NodeTernaryIf) Order() uint16 { return EquivalentOrder }
 
 func NewNodeTernaryIf(expr Node, then Node, elseNode Node) *NodeTernaryIf {
 	return &NodeTernaryIf{expr, then, elseNode, BaseNode{nodeType: NodeTypeIf}}
@@ -54,7 +53,6 @@ type NodeIf struct {
 func (i *NodeIf) GetPosition() scanner.Position {
 	return GetStartEndPosition(append(i.Conditions, i.Block))
 }
-func (i *NodeIf) Order() uint16 { return EquivalentOrder }
 
 func NewNodeIf(ifConditions []Node, block *NodeBlock) *NodeIf {
 	nodeIf := &NodeIf{ifConditions, block, nil, BaseNode{nodeType: NodeTypeIf}}
@@ -78,7 +76,6 @@ type NodeIfElse struct {
 func (i *NodeIfElse) GetPosition() scanner.Position {
 	return GetStartEndPosition([]Node{i.If, i.Else})
 }
-func (i *NodeIfElse) Order() uint16 { return EquivalentOrder }
 
 func NewNodeIfElse(nodIf Node, nodIfs []Node, nodeElse Node) *NodeIfElse {
 	nodeElseIf := &NodeIfElse{nodIf, nodIfs, nodeElse, BaseNode{nodeType: NodeTypeIf}}

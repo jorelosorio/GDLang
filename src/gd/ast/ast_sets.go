@@ -30,7 +30,6 @@ type NodeSharedExpr struct {
 }
 
 func (e *NodeSharedExpr) GetPosition() scanner.Position { return e.Expr.GetPosition() }
-func (e *NodeSharedExpr) Order() uint16                 { return e.Expr.Order() }
 
 func NewNodeSharedExpr(expr Node) *NodeSharedExpr {
 	return &NodeSharedExpr{expr, false, BaseNode{}}
@@ -44,7 +43,6 @@ type NodeSets struct {
 }
 
 func (d *NodeSets) GetPosition() scanner.Position { return GetStartEndPosition(d.Nodes) }
-func (d *NodeSets) Order() uint16                 { return SetObjectOrder }
 
 func NewNodeSets(nodes []Node) *NodeSets {
 	return &NodeSets{nodes, BaseNode{}}
@@ -62,7 +60,6 @@ type NodeSet struct {
 func (s *NodeSet) GetPosition() scanner.Position {
 	return GetStartEndPosition([]Node{s.IdentWithType})
 }
-func (s *NodeSet) Order() uint16 { return SetObjectOrder }
 
 func NewNodeSet(isPub bool, isConst bool, identWithType *NodeIdentWithType, expr Node) *NodeSet {
 	return &NodeSet{false, isConst, identWithType, expr, 0, BaseNode{}}
@@ -79,8 +76,6 @@ type NodeUpdateSet struct {
 func (u *NodeUpdateSet) GetPosition() scanner.Position {
 	return GetStartEndPosition([]Node{u.IdentExpr, u.Expr})
 }
-
-func (u *NodeUpdateSet) Order() uint16 { return UpdateObjectOrder }
 
 func NewNodeUpdateSet(identExpr Node, expr Node) *NodeUpdateSet {
 	return &NodeUpdateSet{identExpr, expr, BaseNode{}}

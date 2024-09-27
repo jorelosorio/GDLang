@@ -34,8 +34,6 @@ type NodeLambda struct {
 
 func (l *NodeLambda) GetPosition() scanner.Position { return l.Block.GetPosition() }
 
-func (l *NodeLambda) Order() uint16 { return EquivalentOrder }
-
 func NewNodeLambda(funcType *runtime.GDLambdaType, block *NodeBlock) *NodeLambda {
 	block.SetAsFuncBlock(funcType.ReturnType)
 
@@ -58,14 +56,6 @@ func (f *NodeFunc) GetPosition() scanner.Position {
 	return GetStartEndPosition([]Node{f.Ident})
 }
 
-func (f *NodeFunc) Order() uint16 {
-	if f.IsPub {
-		return PubFuncOrder
-	}
-
-	return PrivateFuncOrder
-}
-
 func NewNodeFunc(isPublic bool, ident *NodeIdent, funcType *runtime.GDLambdaType, block *NodeBlock) *NodeFunc {
 	nodeFunc := &NodeFunc{isPublic, ident, NewNodeLambda(funcType, block), BaseNode{nodeType: NodeTypeFunc}}
 	block.SetParentNode(nodeFunc)
@@ -82,7 +72,6 @@ type NodeStructAttr struct {
 func (s *NodeStructAttr) GetPosition() scanner.Position {
 	return GetStartEndPosition([]Node{s.Ident, s.Expr})
 }
-func (s *NodeStructAttr) Order() uint16 { return EquivalentOrder }
 
 func NewNodeStructAttr(ident *NodeIdent, expr Node) *NodeStructAttr {
 	return &NodeStructAttr{ident, expr, BaseNode{}}

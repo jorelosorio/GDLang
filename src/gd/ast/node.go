@@ -24,17 +24,6 @@ import (
 	"gdlang/src/gd/scanner"
 )
 
-// Node order
-const (
-	TypeAliasOrder uint16 = iota
-	SetObjectOrder
-	UpdateObjectOrder
-	StructOrder
-	PrivateFuncOrder
-	PubFuncOrder
-	EquivalentOrder
-)
-
 type BaseNodeType byte
 
 const (
@@ -47,7 +36,6 @@ const (
 
 type Node interface {
 	GetPosition() scanner.Position
-	Order() uint16
 	GetNodeType() BaseNodeType
 	SetParentNode(Node)
 	GetParentNode() Node

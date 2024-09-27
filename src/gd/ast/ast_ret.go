@@ -30,7 +30,6 @@ type NodeReturn struct {
 }
 
 func (r *NodeReturn) GetPosition() scanner.Position { return r.Position }
-func (r *NodeReturn) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeReturn(token *NodeTokenInfo, expr Node) *NodeReturn {
 	return &NodeReturn{token, expr, BaseNode{}}

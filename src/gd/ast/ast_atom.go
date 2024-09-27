@@ -32,7 +32,6 @@ type NodeLiteral struct {
 }
 
 func (a *NodeLiteral) GetPosition() scanner.Position { return a.Position }
-func (a *NodeLiteral) Order() uint16                 { return EquivalentOrder }
 
 func NewNodeLiteral(token *NodeTokenInfo) *NodeLiteral {
 	return &NodeLiteral{token, BaseNode{}}

@@ -51,7 +51,6 @@ type NodeBlock struct {
 }
 
 func (n *NodeBlock) GetPosition() scanner.Position { return GetStartEndPosition(n.Nodes) }
-func (n *NodeBlock) Order() uint16                 { return EquivalentOrder }
 
 func (n *NodeBlock) SetAsControlFlowBlock() {
 	n.Type = ControlFlowBlockType
