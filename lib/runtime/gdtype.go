@@ -97,7 +97,6 @@ var (
 	GDStringType  = GDType(GDStringTypeCode)
 
 	// Internal Types
-	// ==============
 	GDUntypedType = GDType(GDUntypedTypeCode)
 
 	// Sub-Types

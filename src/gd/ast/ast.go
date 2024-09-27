@@ -78,7 +78,7 @@ func (a *Ast) Build() *NodeFile {
 
 // Errors reported by the scanner
 func (a *Ast) scannerErrorHandler(msg string, pos scanner.Position) {
-	a.dispatchError(comn.NErr(comn.DefaultSyntaxErrCode, msg, comn.SyntaxError, pos, nil))
+	a.dispatchError(comn.NewError(comn.DefaultSyntaxErrCode, msg, comn.SyntaxError, pos, nil))
 }
 
 func (a *Ast) dispatchError(err error) {
@@ -134,10 +134,10 @@ func (a *Ast) Error(msg string) {
 			}
 		}
 	case runtime.ContainsAny(msg, "NIL_AS_A_TYPE_ERR"):
-		a.dispatchError(comn.NErr(comn.NilAsATypeErrCode, comn.NilAsATypeErrMsg, comn.SyntaxError, a.CTok.Position, nil))
+		a.dispatchError(comn.NewError(comn.NilAsATypeErrCode, comn.NilAsATypeErrMsg, comn.SyntaxError, a.CTok.Position, nil))
 		return
 	case runtime.ContainsAny(msg, "USE_ONLY_AT_HEADER_ERR"):
-		a.dispatchError(comn.NErr(comn.UseOnlyAtHeaderErrCode, comn.UseOnlyAtHeaderErrMsg, comn.SyntaxError, a.CTok.Position, nil))
+		a.dispatchError(comn.NewError(comn.UseOnlyAtHeaderErrCode, comn.UseOnlyAtHeaderErrMsg, comn.SyntaxError, a.CTok.Position, nil))
 		return
 	}
 

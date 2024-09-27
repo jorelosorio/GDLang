@@ -1,5 +1,5 @@
-//go:build debug
-// +build debug
+//go:build !debug
+// +build !debug
 
 /*
  * Copyright (C) 2023 The GDLang Team.
@@ -20,10 +20,10 @@
  * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package analysis
+package staticcheck
 
 import "gdlang/lib/tools"
 
 func NewIdentGenerator() tools.GDIdentGen {
-	return tools.NewGDIdentStringGen()
+	return tools.NewGDUint16IdentGen()
 }

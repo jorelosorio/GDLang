@@ -70,7 +70,7 @@ func TestSetCases(t *testing.T) {
 			a = "test"
 		}`, "", "expected `int` but got `string`"},
 		{`set a = 1
-		set a = 2;pub func main(){}`, "", "object `a` was already declared"},
+		set a = 2;pub func main(){}`, "", "object `a` was already created"},
 		{`
 		set a: float = 1.9
 		set b: float = 2.9

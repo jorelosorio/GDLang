@@ -25,16 +25,17 @@ import (
 	"gdlang/lib/builtin"
 	"gdlang/lib/runtime"
 	"gdlang/lib/tools"
-	"gdlang/src/analysis"
 	"gdlang/src/cpu"
+	"gdlang/src/gd/analysis"
 	"gdlang/src/gd/ast"
 	"gdlang/src/gd/ir"
+	"gdlang/src/gd/staticcheck"
 	"os"
 )
 
 type (
-	GDCmpEvaluator            = analysis.GDEvaluator[ir.GDIRNode, ir.GDIRStackNode]
-	GDCompExpressionEvaluator = analysis.GDExpressionEvaluator[ir.GDIRNode, ir.GDIRStackNode]
+	GDCmpEvaluator            = staticcheck.Evaluator[ir.GDIRNode, ir.GDIRStackNode]
+	GDCompExpressionEvaluator = staticcheck.ExpressionEvaluator[ir.GDIRNode, ir.GDIRStackNode]
 )
 
 type ForCallback func(endLabel runtime.GDIdent, stack ir.GDIRStackNode) error
@@ -45,7 +46,7 @@ type GDCompiler struct {
 	tools.GDIdentGen
 	GDCmpEvaluator
 	GDCompExpressionEvaluator
-	*analysis.GDDepAnalyzer
+	*analysis.PackageDependenciesAnalyzer
 }
 
 func (c *GDCompiler) Compile(mainPkg string) error {
@@ -55,12 +56,12 @@ func (c *GDCompiler) Compile(mainPkg string) error {
 		return err
 	}
 
-	err = c.Build(mainPkg, analysis.DepAnalyzerOpt{MainAsEntryPoint: true})
+	err = c.Analyze(mainPkg, analysis.PackageDependenciesAnalyzerOptions{ShouldLookUpFromMain: true})
 	if err != nil {
 		return err
 	}
 
-	staticAnalyzer := analysis.NewGDStaticAnalyzer(c.GDDepAnalyzer)
+	staticAnalyzer := staticcheck.NewStaticCheck(c.PackageDependenciesAnalyzer)
 	err = staticAnalyzer.Check(stack)
 	if err != nil {
 		return err
@@ -68,15 +69,14 @@ func (c *GDCompiler) Compile(mainPkg string) error {
 
 	stack.Dispose()
 
-	for _, fileNode := range c.FileNodes {
-		_, err := c.EvalNode(fileNode.Node, c.Root)
+	for _, node := range c.Nodes {
+		_, err := c.EvalNode(node, c.Root)
 		if err != nil {
 			return err
 		}
 	}
 
-	mainRef := c.MainRef
-	ident := c.DeriveIdent(mainRef)
+	ident := c.DeriveIdent(c.MainEntry)
 
 	mainObj := runtime.NewGDIdObject(ident, runtime.GDZNil)
 	irMain := ir.NewGDIRObject(mainObj, nil)
@@ -719,8 +719,8 @@ func (c *GDCompiler) collectNodes(typ runtime.GDTypable, nodes []ast.Node, stack
 }
 
 func NewGDCompiler() *GDCompiler {
-	byteCode := &GDCompiler{Ctx: ir.NewGDIRContext(), Root: ir.NewGDIRBlock(), GDDepAnalyzer: analysis.NDepAnalyzerProc(), GDIdentGen: tools.NewGDIdentStringGen()}
-	byteCode.GDCompExpressionEvaluator = GDCompExpressionEvaluator{GDEvaluator: byteCode}
+	byteCode := &GDCompiler{Ctx: ir.NewGDIRContext(), Root: ir.NewGDIRBlock(), PackageDependenciesAnalyzer: analysis.NewPackageDependenciesAnalyzer(), GDIdentGen: tools.NewGDIdentStringGen()}
+	byteCode.GDCompExpressionEvaluator = GDCompExpressionEvaluator{Evaluator: byteCode}
 
 	return byteCode
 }

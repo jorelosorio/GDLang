@@ -25,13 +25,13 @@ import (
 )
 
 // A processor that will process the AST
-type AstBuilderProc struct {
+type BuilderProc struct {
 	Ast *Ast
 	// Compiles all the grammar and parser Errors into an array
 	Errors []error
 }
 
-func (p *AstBuilderProc) Init(file *scanner.File, src []byte) error {
+func (p *BuilderProc) Init(file *scanner.File, src []byte) error {
 	// Reset errors
 	p.Errors = make([]error, 0)
 	err := p.Ast.Init(file, src, p.astErrorListener)
@@ -42,12 +42,12 @@ func (p *AstBuilderProc) Init(file *scanner.File, src []byte) error {
 	return nil
 }
 
-func (p *AstBuilderProc) Dispose() {
+func (p *BuilderProc) Dispose() {
 	p.Errors = nil
 	p.Ast.Dispose()
 }
 
-func (p *AstBuilderProc) Build() (Node, error) {
+func (p *BuilderProc) Build() (*NodeFile, error) {
 	rootNode := p.Ast.Build()
 	if len(p.Errors) > 0 {
 		return nil, errors.Join(p.Errors...)
@@ -58,16 +58,16 @@ func (p *AstBuilderProc) Build() (Node, error) {
 
 // All the reported errors from the ast will be appended to the errors array
 // Ast errors are the errors that are within the grammar and parser
-func (p *AstBuilderProc) astErrorListener(err error) {
+func (p *BuilderProc) astErrorListener(err error) {
 	p.AppendError(err)
 }
 
-func (p *AstBuilderProc) AppendError(err error) {
+func (p *BuilderProc) AppendError(err error) {
 	if err != nil {
 		p.Errors = append(p.Errors, err)
 	}
 }
 
-func NAstBuilderProc() *AstBuilderProc {
-	return &AstBuilderProc{NAst(), make([]error, 0)}
+func NAstBuilderProc() *BuilderProc {
+	return &BuilderProc{NAst(), make([]error, 0)}
 }

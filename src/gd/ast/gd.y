@@ -1,4 +1,23 @@
 %{
+/*
+ * Copyright (C) 2023 The GDLang Team.
+ *
+ * This file is part of GDLang.
+ *
+ * GDLang is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * GDLang is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package ast
 
 import (
@@ -95,25 +114,8 @@ use_list:
 ;
 
 use:
-       LUSE ident_access_list LPERIOD LLPAREN ident_list LRPAREN {
-              // Package with list of names
-              $$ = NewNodePackage($2, $5)
-       }
-       | LUSE ident_access_list {
-              lastIdent := $2[len($2)-1]
-              $2 = $2[:len($2)-1]
-              $$ = NewNodePackage($2, []Node{lastIdent})
-       }
-;
-
-// package., package., ...
-ident_access_list:
-       ident_access_list LPERIOD ident {
-              $1 = append($1, $3)
-              $$ = $1
-       }
-       | ident {
-              $$ = []Node{$1}
+       LUSE ident_access_list LLBRACE ident_list LRBRACE {
+              $$ = NewNodePackage($2, $4)
        }
 ;
 
@@ -121,6 +123,17 @@ ident_list:
        ident LCOMMA ident_list {
               $3 = append($3, $1)
               $$ = $3
+       }
+       | ident {
+              $$ = []Node{$1}
+       }
+;
+
+// ident., ...
+ident_access_list:
+       ident_access_list LPERIOD ident {
+              $1 = append($1, $3)
+              $$ = $1
        }
        | ident {
               $$ = []Node{$1}

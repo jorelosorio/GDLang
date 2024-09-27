@@ -1,3 +1,6 @@
+//go:build debug
+// +build debug
+
 /*
  * Copyright (C) 2023 The GDLang Team.
  *
@@ -17,23 +20,10 @@
  * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package ast_test
+package staticcheck
 
-import (
-	"gdlang/src/comn"
-	"gdlang/src/gd/ast"
-	"gdlang/src/gd/scanner"
-)
+import "gdlang/lib/tools"
 
-var (
-	fileSet = scanner.NewFileSet()
-	astObj  = ast.NAst()
-)
-
-func init() {
-	comn.PrettyPrintErrors = false
-}
-
-func newTestFile(srcLen int) (*scanner.File, error) {
-	return fileSet.AddFile("test.gd", fileSet.Base(), srcLen)
+func NewIdentGenerator() tools.GDIdentGen {
+	return tools.NewGDIdentStringGen()
 }

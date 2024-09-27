@@ -62,28 +62,28 @@ func NewNodeFile(packages []Node, nodes []Node) *NodeFile {
 
 type NodePackage struct {
 	// Path of the package
-	// Example: a::b::c
-	Idents []Node
-	// Public references that are required from the package
-	// Example: a::b::c{func, object, typealias, ...}
-	Pub []Node
+	// Example: a.b.c
+	PackagePath []Node
+	// Public import references that are required from the package
+	// Example: use a.b.c {object, ...}
+	Imports []Node
 	BaseNode
 }
 
-func (p *NodePackage) GetPosition() scanner.Position { return GetStartEndPosition(p.Idents) }
+func (p *NodePackage) GetPosition() scanner.Position { return GetStartEndPosition(p.PackagePath) }
 func (p *NodePackage) Order() uint16                 { return EquivalentOrder }
-func (p *NodePackage) GetName() string               { return p.Idents[len(p.Idents)-1].(*NodeIdent).Lit }
+func (p *NodePackage) GetName() string               { return p.PackagePath[len(p.PackagePath)-1].(*NodeIdent).Lit }
 func (p *NodePackage) GetPath() string {
 	var pkgPath string
-	for _, ident := range p.Idents {
+	for _, ident := range p.PackagePath {
 		pkgPath = path.Join(pkgPath, ident.(*NodeIdent).Lit)
 	}
 
 	return pkgPath
 }
 
-func NewNodePackage(idents []Node, pubs []Node) *NodePackage {
-	return &NodePackage{idents, pubs, BaseNode{}}
+func NewNodePackage(packagePath []Node, imports []Node) *NodePackage {
+	return &NodePackage{packagePath, imports, BaseNode{}}
 }
 
 // Node for type definitions

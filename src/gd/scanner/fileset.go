@@ -78,7 +78,7 @@ func (fs *FileSet) Reset() {
 	fs.mutex.Unlock()
 }
 
-func NFileSet() *FileSet {
+func NewFileSet() *FileSet {
 	return &FileSet{
 		base: 1, // 0 == NoPos
 	}

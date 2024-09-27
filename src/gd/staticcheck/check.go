@@ -17,34 +17,35 @@
  * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package analysis
+package staticcheck
 
 import (
 	"errors"
 	"gdlang/lib/runtime"
 	"gdlang/lib/tools"
 	"gdlang/src/comn"
+	"gdlang/src/gd/analysis"
 	"gdlang/src/gd/ast"
 	"gdlang/src/gd/scanner"
 )
 
 type (
-	ObjectEvaluator           = GDEvaluator[runtime.GDObject, *runtime.GDSymbolStack]
-	ObjectExpressionEvaluator = GDExpressionEvaluator[runtime.GDObject, *runtime.GDSymbolStack]
+	ObjectEvaluator           = Evaluator[runtime.GDObject, *runtime.GDSymbolStack]
+	ObjectExpressionEvaluator = ExpressionEvaluator[runtime.GDObject, *runtime.GDSymbolStack]
 )
 
-type GDStaticAnalyzer struct {
+type StaticCheck struct {
 	ObjectEvaluator           // Implements the Evaluator interface
 	ObjectExpressionEvaluator // Embeds the evaluator process to evaluate the AST nodes
 	tools.GDIdentGen
-	*GDDepAnalyzer
+	*analysis.PackageDependenciesAnalyzer
 }
 
-func (t *GDStaticAnalyzer) Check(stack *runtime.GDSymbolStack) error {
-	return t.EvalFileNodes(t.FileNodes, stack)
+func (t *StaticCheck) Check(stack *runtime.GDSymbolStack) error {
+	return t.EvalFileNodes(t.Nodes, stack)
 }
 
-func (t *GDStaticAnalyzer) EvalAtom(a *ast.NodeLiteral, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalAtom(a *ast.NodeLiteral, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	var obj runtime.GDObject
 	switch a.Token {
 	case scanner.STRING:
@@ -87,7 +88,7 @@ func (t *GDStaticAnalyzer) EvalAtom(a *ast.NodeLiteral, stack *runtime.GDSymbolS
 	return obj, nil
 }
 
-func (t *GDStaticAnalyzer) EvalIdent(i *ast.NodeIdent, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalIdent(i *ast.NodeIdent, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	ident := runtime.NewGDStringIdent(i.Lit)
 
 	symbol, err := stack.GetSymbol(ident)
@@ -104,7 +105,7 @@ func (t *GDStaticAnalyzer) EvalIdent(i *ast.NodeIdent, stack *runtime.GDSymbolSt
 	return obj, nil
 }
 
-func (t *GDStaticAnalyzer) EvalLambda(l *ast.NodeLambda, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalLambda(l *ast.NodeLambda, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	lambdaStack := stack.NewSymbolStack(runtime.LambdaCtx)
 	defer lambdaStack.Dispose()
 
@@ -122,7 +123,7 @@ func (t *GDStaticAnalyzer) EvalLambda(l *ast.NodeLambda, stack *runtime.GDSymbol
 	return lambda, nil
 }
 
-func (t *GDStaticAnalyzer) evalNewLambdaWithObject(l *ast.NodeLambda, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) evalNewLambdaWithObject(l *ast.NodeLambda, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	addArgSymbol := func(ident runtime.GDIdent, typ runtime.GDTypable) (*runtime.GDSymbol, error) {
 		obj, err := runtime.ZObjectForType(typ, stack)
 		if err != nil {
@@ -186,7 +187,7 @@ func (t *GDStaticAnalyzer) evalNewLambdaWithObject(l *ast.NodeLambda, stack *run
 	return lambdaObj, nil
 }
 
-func (t *GDStaticAnalyzer) EvalExprOp(e *ast.NodeExprOperation, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalExprOp(e *ast.NodeExprOperation, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	leftObj, err := t.EvalNode(e.L, stack)
 	if err != nil {
 		return nil, err
@@ -282,7 +283,7 @@ func (t *GDStaticAnalyzer) EvalExprOp(e *ast.NodeExprOperation, stack *runtime.G
 	return objects[0], nil
 }
 
-func (t *GDStaticAnalyzer) EvalExpEllipsis(e *ast.NodeEllipsisExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalExpEllipsis(e *ast.NodeEllipsisExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	obj, err := t.EvalNode(e.Expr, stack)
 	if err != nil {
 		return nil, err
@@ -297,12 +298,12 @@ func (t *GDStaticAnalyzer) EvalExpEllipsis(e *ast.NodeEllipsisExpr, stack *runti
 		return spreadObj, nil
 	}
 
-	return nil, comn.NErr(comn.InvalidSpreadableTypeErrCode, comn.InvalidArraySpreadExpressionErrorMsg, comn.FatalError, e.GetPosition(), nil)
+	return nil, comn.NewError(comn.InvalidSpreadableTypeErrCode, comn.InvalidArraySpreadExpressionErrorMsg, comn.FatalError, e.GetPosition(), nil)
 }
 
 // Structure of a function node:
 // func Ident(param: Type, ...) => Type { ... }
-func (t *GDStaticAnalyzer) EvalFunc(f *ast.NodeFunc, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalFunc(f *ast.NodeFunc, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	lambdaStack := stack.NewSymbolStack(runtime.LambdaCtx)
 	defer lambdaStack.Dispose()
 
@@ -336,7 +337,7 @@ func (t *GDStaticAnalyzer) EvalFunc(f *ast.NodeFunc, stack *runtime.GDSymbolStac
 	return lambda, nil
 }
 
-func (t *GDStaticAnalyzer) EvalTuple(tu *ast.NodeTuple, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalTuple(tu *ast.NodeTuple, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	if len(tu.Nodes) == 0 {
 		tuple := runtime.NewGDTuple()
 		tu.SetInferredType(tuple.GetType())
@@ -362,7 +363,7 @@ func (t *GDStaticAnalyzer) EvalTuple(tu *ast.NodeTuple, stack *runtime.GDSymbolS
 	return tuple, nil
 }
 
-func (t *GDStaticAnalyzer) EvalStruct(s *ast.NodeStruct, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalStruct(s *ast.NodeStruct, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	attrTypes := make([]runtime.GDStructAttrType, len(s.Nodes))
 	objects := make([]runtime.GDObject, len(s.Nodes))
 	for i, expr := range s.Nodes {
@@ -403,7 +404,7 @@ func (t *GDStaticAnalyzer) EvalStruct(s *ast.NodeStruct, stack *runtime.GDSymbol
 	return structObj, nil
 }
 
-func (t *GDStaticAnalyzer) EvalArray(a *ast.NodeArray, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalArray(a *ast.NodeArray, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	if len(a.Nodes) == 0 {
 		array := runtime.NewGDEmptyArray()
 		a.SetInferredType(array.GetType())
@@ -432,7 +433,7 @@ func (t *GDStaticAnalyzer) EvalArray(a *ast.NodeArray, stack *runtime.GDSymbolSt
 	return array, nil
 }
 
-func (t *GDStaticAnalyzer) EvalReturn(r *ast.NodeReturn, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalReturn(r *ast.NodeReturn, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	// Return with not expression
 	// For example: `return`
 	r.SetInferredObject(runtime.GDZNil)
@@ -451,7 +452,7 @@ func (t *GDStaticAnalyzer) EvalReturn(r *ast.NodeReturn, stack *runtime.GDSymbol
 	return obj, nil
 }
 
-func (t *GDStaticAnalyzer) EvalIterIdxExpr(a *ast.NodeIterIdxExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalIterIdxExpr(a *ast.NodeIterIdxExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	exprObj, err := t.EvalNode(a.Expr, stack)
 	if err != nil {
 		return nil, err
@@ -478,7 +479,7 @@ func (t *GDStaticAnalyzer) EvalIterIdxExpr(a *ast.NodeIterIdxExpr, stack *runtim
 	}
 }
 
-func (t *GDStaticAnalyzer) EvalCallExpr(c *ast.NodeCallExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalCallExpr(c *ast.NodeCallExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	exprObj, err := t.EvalNode(c.Expr, stack)
 	if err != nil {
 		return nil, err
@@ -516,7 +517,7 @@ func (t *GDStaticAnalyzer) EvalCallExpr(c *ast.NodeCallExpr, stack *runtime.GDSy
 	return obj, nil
 }
 
-func (t *GDStaticAnalyzer) EvalSafeDotExpr(s *ast.NodeSafeDotExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalSafeDotExpr(s *ast.NodeSafeDotExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	switch identExpr := s.Ident.(type) {
 	case *ast.NodeTokenInfo:
 		idxExpr := ast.NewNodeIterIdxExpr(s.IsNilSafe, s.Expr, ast.NewNodeLiteral(identExpr))
@@ -559,7 +560,7 @@ func (t *GDStaticAnalyzer) EvalSafeDotExpr(s *ast.NodeSafeDotExpr, stack *runtim
 	return nil, nil
 }
 
-func (t *GDStaticAnalyzer) EvalSets(s *ast.NodeSets, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalSets(s *ast.NodeSets, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	for _, node := range s.Nodes {
 		_, err := t.EvalNode(node, stack)
 		if err != nil {
@@ -570,7 +571,7 @@ func (t *GDStaticAnalyzer) EvalSets(s *ast.NodeSets, stack *runtime.GDSymbolStac
 	return nil, nil
 }
 
-func (t *GDStaticAnalyzer) checkNodeSetExpr(set *ast.NodeSet, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) checkNodeSetExpr(set *ast.NodeSet, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	var exprObj runtime.GDObject = runtime.GDZNil
 	if set.Expr != nil {
 		switch expr := set.Expr.(type) {
@@ -613,7 +614,7 @@ func (t *GDStaticAnalyzer) checkNodeSetExpr(set *ast.NodeSet, stack *runtime.GDS
 	return exprObj, nil
 }
 
-func (t *GDStaticAnalyzer) EvalSet(s *ast.NodeSet, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalSet(s *ast.NodeSet, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	exprObj, err := t.checkNodeSetExpr(s, stack)
 	if err != nil {
 		return nil, err
@@ -674,7 +675,7 @@ func (t *GDStaticAnalyzer) EvalSet(s *ast.NodeSet, stack *runtime.GDSymbolStack)
 	return runtime.NewGDIdObject(ident, exprObj), nil
 }
 
-func (t *GDStaticAnalyzer) EvalUpdateSet(u *ast.NodeUpdateSet, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalUpdateSet(u *ast.NodeUpdateSet, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	assignObj, err := t.EvalNode(u.Expr, stack)
 	if err != nil {
 		return nil, err
@@ -740,11 +741,11 @@ func (t *GDStaticAnalyzer) EvalUpdateSet(u *ast.NodeUpdateSet, stack *runtime.GD
 	return nil, nil
 }
 
-func (t *GDStaticAnalyzer) EvalLabel(l *ast.NodeLabel, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalLabel(l *ast.NodeLabel, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	return nil, nil
 }
 
-func (t *GDStaticAnalyzer) EvalIfElse(i *ast.NodeIfElse, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalIfElse(i *ast.NodeIfElse, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	evalIfNode := func(ifNode ast.Node, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 		if ifNode, isIfNode := ifNode.(*ast.NodeIf); isIfNode {
 			_, err := t.evalIfNode(ifNode, stack)
@@ -776,7 +777,7 @@ func (t *GDStaticAnalyzer) EvalIfElse(i *ast.NodeIfElse, stack *runtime.GDSymbol
 	return nil, nil
 }
 
-func (t *GDStaticAnalyzer) EvalTernaryIf(tIf *ast.NodeTernaryIf, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalTernaryIf(tIf *ast.NodeTernaryIf, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	ifObj, err := t.EvalNode(tIf.Expr, stack)
 	if err != nil {
 		return nil, err
@@ -809,7 +810,7 @@ func (t *GDStaticAnalyzer) EvalTernaryIf(tIf *ast.NodeTernaryIf, stack *runtime.
 	return obj, nil
 }
 
-func (t *GDStaticAnalyzer) EvalForIn(f *ast.NodeForIn, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalForIn(f *ast.NodeForIn, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	// Create a new stack for the for loop
 	forStack := stack.NewSymbolStack(runtime.ForCtx)
 	defer forStack.Dispose()
@@ -905,7 +906,7 @@ func (t *GDStaticAnalyzer) EvalForIn(f *ast.NodeForIn, stack *runtime.GDSymbolSt
 	return nil, nil
 }
 
-func (t *GDStaticAnalyzer) EvalForIf(f *ast.NodeForIf, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalForIf(f *ast.NodeForIf, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	// Create a new stack for the for loop
 	forStack := stack.NewSymbolStack(runtime.ForCtx)
 	defer forStack.Dispose()
@@ -932,7 +933,7 @@ func (t *GDStaticAnalyzer) EvalForIf(f *ast.NodeForIf, stack *runtime.GDSymbolSt
 	return nil, nil
 }
 
-func (t *GDStaticAnalyzer) EvalCollectableOp(c *ast.NodeMutCollectionOp, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalCollectableOp(c *ast.NodeMutCollectionOp, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	exprLObj, err := t.EvalNode(c.L, stack)
 	if err != nil {
 		return nil, err
@@ -995,7 +996,7 @@ func (t *GDStaticAnalyzer) EvalCollectableOp(c *ast.NodeMutCollectionOp, stack *
 	return nil, comn.WrapFatalErr(runtime.InvalidMutableCollectionTypeErr(exprLObj.GetType()), c.GetPosition())
 }
 
-func (t *GDStaticAnalyzer) EvalTypeAlias(ta *ast.NodeTypeAlias, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalTypeAlias(ta *ast.NodeTypeAlias, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	ident := runtime.NewGDStringIdent(ta.Ident.Lit)
 	_, err := stack.AddSymbol(ident, ta.IsPub, true, ta.Type, nil)
 	if err != nil {
@@ -1007,7 +1008,7 @@ func (t *GDStaticAnalyzer) EvalTypeAlias(ta *ast.NodeTypeAlias, stack *runtime.G
 	return nil, nil
 }
 
-func (t *GDStaticAnalyzer) EvalCastExpr(c *ast.NodeCastExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalCastExpr(c *ast.NodeCastExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	exprObj, err := t.EvalNode(c.Expr, stack)
 	if err != nil {
 		return nil, err
@@ -1024,7 +1025,7 @@ func (t *GDStaticAnalyzer) EvalCastExpr(c *ast.NodeCastExpr, stack *runtime.GDSy
 	return castObj, nil
 }
 
-func (t *GDStaticAnalyzer) evalIfNode(i *ast.NodeIf, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) evalIfNode(i *ast.NodeIf, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	err := t.checkIfConditions(i.Conditions, stack)
 	if err != nil {
 		return nil, err
@@ -1037,7 +1038,7 @@ func (t *GDStaticAnalyzer) evalIfNode(i *ast.NodeIf, stack *runtime.GDSymbolStac
 // Checks that all the conditions are of type bool
 // and returns an error if any of them is not.
 // if condition, ... { ... }
-func (t *GDStaticAnalyzer) checkIfConditions(conditions []ast.Node, stack *runtime.GDSymbolStack) error {
+func (t *StaticCheck) checkIfConditions(conditions []ast.Node, stack *runtime.GDSymbolStack) error {
 	for _, cond := range conditions {
 		condObj, err := t.EvalNode(cond, stack)
 		if err != nil {
@@ -1053,7 +1054,7 @@ func (t *GDStaticAnalyzer) checkIfConditions(conditions []ast.Node, stack *runti
 	return nil
 }
 
-func (t *GDStaticAnalyzer) evalBlock(b *ast.NodeBlock, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) evalBlock(b *ast.NodeBlock, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	funcStack := stack.NewSymbolStack(runtime.BlockCtx)
 	defer funcStack.Dispose()
 
@@ -1091,9 +1092,9 @@ func (t *GDStaticAnalyzer) evalBlock(b *ast.NodeBlock, stack *runtime.GDSymbolSt
 	return nil, nil
 }
 
-func NewGDStaticAnalyzer(depAnalyzer *GDDepAnalyzer) *GDStaticAnalyzer {
-	staticAnalyzer := &GDStaticAnalyzer{GDDepAnalyzer: depAnalyzer, GDIdentGen: NewIdentGenerator()}
-	staticAnalyzer.ObjectExpressionEvaluator = ObjectExpressionEvaluator{staticAnalyzer}
+func NewStaticCheck(analyzer *analysis.PackageDependenciesAnalyzer) *StaticCheck {
+	staticCheck := &StaticCheck{PackageDependenciesAnalyzer: analyzer, GDIdentGen: NewIdentGenerator()}
+	staticCheck.ObjectExpressionEvaluator = ObjectExpressionEvaluator{staticCheck}
 
-	return staticAnalyzer
+	return staticCheck
 }

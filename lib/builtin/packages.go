@@ -1,6 +1,3 @@
-//go:build !debug
-// +build !debug
-
 /*
  * Copyright (C) 2023 The GDLang Team.
  *
@@ -20,10 +17,15 @@
  * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package analysis
+package builtin
 
-import "gdlang/lib/tools"
+import (
+	"gdlang/lib/runtime"
+)
 
-func NewIdentGenerator() tools.GDIdentGen {
-	return tools.NewGDUint16IdentGen()
-}
+var (
+	// Packages is a map of all builtin packages
+	Packages = map[string]*runtime.GDPackage[runtime.GDObject]{
+		"http": HttpPackage(),
+	}
+)

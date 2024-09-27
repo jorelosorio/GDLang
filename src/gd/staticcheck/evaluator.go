@@ -17,7 +17,7 @@
  * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package analysis
+package staticcheck
 
 import (
 	"fmt"
@@ -26,13 +26,13 @@ import (
 
 // The evaluator is an interface that is used to evaluate the analyzed AST,
 // and it is used for static analysis and code generation.
-type GDEvaluator[T interface{}, E interface{}] interface {
+type Evaluator[T interface{}, E interface{}] interface {
 	EvalAtom(a *ast.NodeLiteral, stack E) (T, error)
 	EvalIdent(i *ast.NodeIdent, stack E) (T, error)
+	EvalFunc(f *ast.NodeFunc, stack E) (T, error)
 	EvalLambda(l *ast.NodeLambda, stack E) (T, error)
 	EvalExprOp(e *ast.NodeExprOperation, stack E) (T, error)
 	EvalExpEllipsis(e *ast.NodeEllipsisExpr, stack E) (T, error)
-	EvalFunc(f *ast.NodeFunc, stack E) (T, error)
 	EvalTuple(t *ast.NodeTuple, stack E) (T, error)
 	EvalStruct(s *ast.NodeStruct, stack E) (T, error)
 	EvalArray(a *ast.NodeArray, stack E) (T, error)
@@ -53,11 +53,11 @@ type GDEvaluator[T interface{}, E interface{}] interface {
 	EvalCastExpr(c *ast.NodeCastExpr, stack E) (T, error)
 }
 
-type GDExpressionEvaluator[T interface{}, E interface{}] struct{ GDEvaluator[T, E] }
+type ExpressionEvaluator[T interface{}, E interface{}] struct{ Evaluator[T, E] }
 
-func (e *GDExpressionEvaluator[T, E]) EvalFileNodes(fileNodes []*GDFileNode, stack E) error {
-	for _, fileNode := range fileNodes {
-		_, err := e.EvalNode(fileNode.Node, stack)
+func (e *ExpressionEvaluator[T, E]) EvalFileNodes(nodes []ast.Node, stack E) error {
+	for _, node := range nodes {
+		_, err := e.EvalNode(node, stack)
 		if err != nil {
 			return err
 		}
@@ -66,7 +66,7 @@ func (e *GDExpressionEvaluator[T, E]) EvalFileNodes(fileNodes []*GDFileNode, sta
 	return nil
 }
 
-func (e *GDExpressionEvaluator[T, E]) EvalNode(node ast.Node, stack E) (T, error) {
+func (e *ExpressionEvaluator[T, E]) EvalNode(node ast.Node, stack E) (T, error) {
 	var zeroT T
 	switch node := node.(type) {
 	case *ast.NodeLiteral:

@@ -30,7 +30,7 @@ type tokenLitPos struct {
 	pos Position
 }
 
-var fset = NFileSet()
+var fset = NewFileSet()
 
 type errorCollector struct {
 	cnt int      // number of errors encountered

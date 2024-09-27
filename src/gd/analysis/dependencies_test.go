@@ -20,8 +20,8 @@
 package analysis_test
 
 import (
-	"gdlang/src/analysis"
 	"gdlang/src/comn"
+	"gdlang/src/gd/analysis"
 	"gdlang/src/test_helper"
 	"strings"
 	"testing"
@@ -31,31 +31,32 @@ func init() {
 	comn.PrettyPrintErrors = false
 }
 
-func TestDependencyAnalysisCases(t *testing.T) {
-	depAnalyzer := analysis.NDepAnalyzerProc()
+func TestCases(t *testing.T) {
+	dA := analysis.NewPackageDependenciesAnalyzer()
 
 	tests := []struct {
 		ErrMsg string
 		Pkgs   test_helper.FNode
 	}{
 		{
-			"public object `pkg1A` was not found in package `pkg1`",
+			"public object `pkg1B` was not found in package `pkg1`",
 			test_helper.NDir("",
 				test_helper.NDir("pkg1", test_helper.NFile("pk1.gd", `set pkg1A = 1`)),
-				test_helper.NMFile(`use pkg1.pkg1A
+				test_helper.NMFile(`use pkg1 { pkg1B }
 				pub func main() {
-					print(pkg1A)
+					print(pkg1B)
 				}`),
 			),
 		},
 		{
 			"",
 			test_helper.NDir("",
-				test_helper.NDir("pkg1", test_helper.NDir("subpkg1", test_helper.NFile("pk1.gd", `pub set a = 1;`))),
-				test_helper.NMFile(`use pkg1.subpkg1.a
+				test_helper.NDir("types", test_helper.NDir("subtypes", test_helper.NFile("type1.gd", `typealias user = {name: string}`))),
+				test_helper.NMFile(`use types.subtypes { user }
 
 				pub func main() {
-					print(a)
+					set u: user = {name: "John"}
+					print(u)
 				}`),
 			),
 		},
@@ -63,9 +64,9 @@ func TestDependencyAnalysisCases(t *testing.T) {
 
 	for _, test := range tests {
 		err := test_helper.BuildPackageTree(test.Pkgs, func(tmpDir string) error {
-			defer depAnalyzer.Dispose()
+			defer dA.Dispose()
 
-			return depAnalyzer.Build(tmpDir, analysis.DepAnalyzerOpt{MainAsEntryPoint: false})
+			return dA.Analyze(tmpDir, analysis.PackageDependenciesAnalyzerOptions{ShouldLookUpFromMain: false})
 		})
 
 		if err != nil {

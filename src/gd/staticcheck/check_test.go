@@ -17,13 +17,14 @@
  * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package analysis_test
+package staticcheck_test
 
 import (
 	"gdlang/lib/builtin"
 	"gdlang/lib/runtime"
-	"gdlang/src/analysis"
 	"gdlang/src/comn"
+	"gdlang/src/gd/analysis"
+	"gdlang/src/gd/staticcheck"
 	"gdlang/src/test_helper"
 	"strings"
 	"testing"
@@ -33,15 +34,15 @@ func init() {
 	comn.PrettyPrintErrors = false
 }
 
-func TestStaticAnalysisCases(t *testing.T) {
+func TestCases(t *testing.T) {
 	stack := runtime.NewGDSymbolStack()
 	err := builtin.Import(stack)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	depAnalyzer := analysis.NDepAnalyzerProc()
-	staticAnalyzer := analysis.NewGDStaticAnalyzer(depAnalyzer)
+	dependencyAnalyzer := analysis.NewPackageDependenciesAnalyzer()
+	staticCheck := staticcheck.NewStaticCheck(dependencyAnalyzer)
 
 	type Test struct {
 		SrcNode test_helper.FNode
@@ -54,15 +55,15 @@ func TestStaticAnalysisCases(t *testing.T) {
 				mainStack := stack.NewSymbolStack(runtime.GlobalCtx)
 				defer (func() {
 					mainStack.Dispose()
-					depAnalyzer.Dispose()
+					dependencyAnalyzer.Dispose()
 				})()
 
-				err := depAnalyzer.Build(tmpDir, analysis.DepAnalyzerOpt{MainAsEntryPoint: false})
+				err := dependencyAnalyzer.Analyze(tmpDir, analysis.PackageDependenciesAnalyzerOptions{ShouldLookUpFromMain: false})
 				if err != nil {
 					return err
 				}
 
-				err = staticAnalyzer.Check(mainStack)
+				err = staticCheck.Check(mainStack)
 				if err != nil {
 					return err
 				}
@@ -119,25 +120,34 @@ func TestStaticAnalysisCases(t *testing.T) {
 		packageCases := []Test{
 			// Check use of packages
 			{test_helper.NRDir(
-				test_helper.NDir("pkg1",
-					test_helper.NFile("pkg1.gd", `pub func pkg1() => int {
-					return 1
-				}
-				pub func pkg1_2() => string {
-					return 1
-				}`),
+				test_helper.NDir(
+					"pkg1",
+					test_helper.NFile(
+						"pkg1.gd",
+						`pub func pkg1() => int {
+							return 1
+						}
+						pub func pkg1_2() => string {
+							return 1
+						}`,
+					),
 				),
-				test_helper.NMFile(`use pkg1.pkg1
-			pub func main() {
-				set p1 = pkg1()
-			}`),
-			), "pkg1.gd 5:6-11 fatal error: expected `string` but got `int`"},
+				test_helper.NMFile(
+					`use pkg1{pkg1}
+					pub func main() {
+						set p1 = pkg1()
+					}`,
+				),
+			), "expected `string` but got `int`"},
 			// Pkg1 is never used, so it should not throw an error even though it returns an int while expected a string
 			{test_helper.NRDir(
 				test_helper.NDir("pkg1",
-					test_helper.NFile("pkg1.gd", `pub func pkg1() => string {
-					return 1
-				}`),
+					test_helper.NFile(
+						"pkg1.gd",
+						`pub func pkg1() => string {
+							return 1
+						}`,
+					),
 				),
 				test_helper.NMFile(`pub func main() {}`),
 			), ""},
@@ -145,40 +155,58 @@ func TestStaticAnalysisCases(t *testing.T) {
 			{test_helper.NRDir(
 				test_helper.NDir("pkg1",
 					test_helper.NDir("pkg2",
-						test_helper.NFile("pkg2.gd", `pub func pkg2() => string {
-						return "pkg2"
-					}
-					pub func pkg2_2() => int {
-						return "wrong"
-					}`),
+						test_helper.NFile(
+							"pkg2.gd",
+							`pub func pkg2() => string {
+								return "pkg2"
+							}
+							pub func pkg2_2() => int {
+								return "wrong"
+							}`,
+						),
 					),
-					test_helper.NFile("pkg1.gd", `use pkg2.pkg2
-				pub func pkg1() => string {
-					return pkg2()
-				}`),
+					test_helper.NFile(
+						"pkg1.gd",
+						`use pkg1.pkg2 {pkg2}
+						pub func pkg1() => string {
+							return pkg2()
+						}`,
+					),
 				),
-				test_helper.NMFile(`use pkg1.pkg1
-			pub func main() {
-				set p1 = pkg1()
-			}`),
-			), "pkg2.gd 5:7-12 fatal error: expected `int` but got `string`"},
+				test_helper.NMFile(
+					`use pkg1 {pkg1}
+					pub func main() {
+						set p1 = pkg1()
+					}`,
+				),
+			), "expected `int` but got `string`"},
 			// Try to use outer package function in inner package
 			{test_helper.NRDir(
-				test_helper.NDir("pkg1",
-					test_helper.NDir("pkg2",
-						test_helper.NFile("pkg2.gd", `use pkg1.pkg1
-					pub func pkg2() => string {
-						return pkg1()
-					}`),
+				test_helper.NDir(
+					"pkg1",
+					test_helper.NDir(
+						"pkg2",
+						test_helper.NFile(
+							"pkg2.gd",
+							`use pkg1 {pkg1}
+							pub func pkg2() => string {
+								return pkg1()
+							}`,
+						),
 					),
-					test_helper.NFile("pkg1.gd", `pub func pkg1() => string {
-					return "hola, soy pkg1"
-				}`),
+					test_helper.NFile(
+						"pkg1.gd",
+						`pub func pkg1() => string {
+							return "hola, soy pkg1"
+						}`,
+					),
 				),
-				test_helper.NMFile(`use pkg1.pkg2.pkg2
-			pub func main() {
-				set p1 = pkg2()
-			}`),
+				test_helper.NMFile(
+					`use pkg1.pkg2 {pkg2}
+					pub func main() {
+						set p1 = pkg2()
+					}`,
+				),
 			), ""},
 		}
 

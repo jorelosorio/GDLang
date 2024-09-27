@@ -37,8 +37,8 @@ func (e ErrCode) formatErrorMessage(params ...string) string {
 	return fmt.Sprintf(errorMessage[e], params)
 }
 
-func (e ErrCode) Errorf(params ...string) ProcErr {
-	return ProcErr{Code: e, Msg: e.formatErrorMessage(params...), Severity: FatalError}
+func (e ErrCode) Errorf(params ...string) Error {
+	return Error{Code: e, Msg: e.formatErrorMessage(params...), Severity: FatalError}
 }
 
 const (
@@ -67,7 +67,7 @@ var SeverityMap = map[SeverityType]string{
 	SyntaxError: "syntax error",
 }
 
-type ProcErr struct {
+type Error struct {
 	Position scanner.Position
 	Code     ErrCode
 	Msg      string
@@ -75,7 +75,7 @@ type ProcErr struct {
 	Hints    []string
 }
 
-func (e ProcErr) Error() string {
+func (e Error) Error() string {
 	hints := ""
 	if len(e.Hints) > 0 {
 		hints = "\n\t " + strings.Join(e.Hints, "\n\t-")
@@ -103,75 +103,81 @@ func (e ProcErr) Error() string {
 	}
 }
 
-func NErr(code ErrCode, msg string, severity SeverityType, errPos scanner.Position, hints []string) ProcErr {
-	return ProcErr{errPos, code, msg, severity, hints}
+func NewError(code ErrCode, msg string, severity SeverityType, errPos scanner.Position, hints []string) Error {
+	return Error{errPos, code, msg, severity, hints}
 }
 
-func WrapSyntaxErr(err error, errPos scanner.Position) ProcErr {
-	return NErr(DefaultSyntaxErrCode, err.Error(), SyntaxError, errPos, nil)
+// TODO: Only use this function for errors
+// All other functions must be removed and implemented in their respective use cases
+func NewErrorf(code ErrCode, severity SeverityType, errPos scanner.Position, msg string, params ...any) Error {
+	return Error{errPos, code, fmt.Sprintf(msg, params...), severity, nil}
 }
 
-func WrapFatalErr(err error, errPos scanner.Position) ProcErr {
-	return NErr(DefaultFatalErrCode, err.Error(), FatalError, errPos, nil)
+func WrapSyntaxErr(err error, errPos scanner.Position) Error {
+	return NewError(DefaultSyntaxErrCode, err.Error(), SyntaxError, errPos, nil)
 }
 
-func CompilerErr(msg string, errPos scanner.Position) ProcErr {
-	return NErr(DefaultCompilerErrCode, msg, FatalError, errPos, nil)
+func WrapFatalErr(err error, errPos scanner.Position) Error {
+	return NewError(DefaultFatalErrCode, err.Error(), FatalError, errPos, nil)
 }
 
-func AnalysisErr(msg string, errPos scanner.Position) ProcErr {
-	return NErr(DefaultAnalysisErrCode, msg, FatalError, errPos, nil)
+func CompilerErr(msg string, errPos scanner.Position) Error {
+	return NewError(DefaultCompilerErrCode, msg, FatalError, errPos, nil)
+}
+
+func AnalysisErr(msg string, errPos scanner.Position) Error {
+	return NewError(DefaultAnalysisErrCode, msg, FatalError, errPos, nil)
 }
 
 func DispatchCompilerWarning(msg string, errPos scanner.Position) {
-	fmt.Println(NErr(DefaultCompilerWarningWarningCode, msg, Warning, errPos, nil))
+	fmt.Println(NewError(DefaultCompilerWarningWarningCode, msg, Warning, errPos, nil))
 }
 
-func WrapCompilerErr(err error, errPos scanner.Position) ProcErr {
-	return NErr(DefaultCompilerErrCode, err.Error(), FatalError, errPos, nil)
+func WrapCompilerErr(err error, errPos scanner.Position) Error {
+	return NewError(DefaultCompilerErrCode, err.Error(), FatalError, errPos, nil)
 }
 
-func CreateUnexpectedSyntaxError(unexpected string, expecting []string, errPos scanner.Position) ProcErr {
+func CreateUnexpectedSyntaxError(unexpected string, expecting []string, errPos scanner.Position) Error {
 	switch len(expecting) {
 	case 0:
 		msg := fmt.Sprintf("an unexpected `%s` was encountered", unexpected)
-		return NErr(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
+		return NewError(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
 	case 1:
 		msg := fmt.Sprintf("an unexpected `%s` was encountered when expecting a `%s`", unexpected, expecting[0])
-		return NErr(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
+		return NewError(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
 	case 2:
 		msg := fmt.Sprintf("an unexpected `%s` was encountered when expecting a `%s` or `%s`", unexpected, expecting[0], expecting[1])
-		return NErr(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
+		return NewError(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
 	default:
 		msg := fmt.Sprintf("an unexpected `%s` was encountered when expecting one of the following: %s", unexpected, runtime.JoinSlice(expecting, func(token string, _ int) string {
 			return fmt.Sprintf("`%s`", token)
 		}, ", "))
-		return NErr(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
+		return NewError(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
 	}
 }
 
-func CreateExpSymbolsErr(expecting []string, errPos scanner.Position) ProcErr {
+func CreateExpSymbolsErr(expecting []string, errPos scanner.Position) Error {
 	switch len(expecting) {
 	case 1:
 		msg := fmt.Sprintf("expected a `%s`", expecting[0])
-		return NErr(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
+		return NewError(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
 	case 2:
 		msg := fmt.Sprintf("expected a `%s` or `%s`", expecting[0], expecting[1])
-		return NErr(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
+		return NewError(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
 	default:
 		msg := fmt.Sprintf("expected one of the following symbols: %s", runtime.JoinSlice(expecting, func(token string, _ int) string {
 			return fmt.Sprintf("`%s`", token)
 		}, ", "))
-		return NErr(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
+		return NewError(DefaultSyntaxErrCode, msg, SyntaxError, errPos, nil)
 	}
 }
 
-func GDFileParsingErr(pkgName string, errPos scanner.Position) ProcErr {
+func GDFileParsingErr(pkgName string, errPos scanner.Position) Error {
 	msg := fmt.Sprintf(PackageSourceCodeFileParsingErrMsg, pkgName)
-	return NErr(PackageSourceCodeFileParsingErrCode, msg, FatalError, errPos, nil)
+	return NewError(PackageSourceCodeFileParsingErrCode, msg, FatalError, errPos, nil)
 }
 
-func CreatePackageNotFoundErr(pkgName string, errPos scanner.Position) ProcErr {
+func PackageNotFoundErr(pkgName string, errPos scanner.Position) Error {
 	msg := fmt.Sprintf(PackageNotFoundMsg, pkgName)
-	return NErr(PackageNotFoundErrCode, msg, FatalError, errPos, nil)
+	return NewError(PackageNotFoundErrCode, msg, FatalError, errPos, nil)
 }
