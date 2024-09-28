@@ -285,7 +285,7 @@ func (d *PackageDependenciesAnalyzer) BuildSourceFile(sourceFilePath string, pkg
 
 		// Try to find the package in the filesystem
 		_, err = os.Stat(packagePath)
-		// If no error, then the package exists
+		// If no error, then the package exists,
 		// and it is possible to build it
 		if err == nil {
 			pkg = NewSourcePackage(nodePackage.GetName(), packagePath)
