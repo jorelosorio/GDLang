@@ -21,25 +21,17 @@ The syntax is designed to feel intuitive for developers with a background in web
 
 ## How it looks like?
 
-Here's a simple example of a GDLang program, that demonstrates the basic syntax, with functions, variables, comments, and the `main` function:
+Here's a simple example of a GDLang program that creates a basic HTTP server:
 
 ```gdlang
-typealias route = {
-    name: string,
-    handler: func() => string,
-}
+use http { host, get, ok, response }
 
-set index: route = {
-    name: "/",
-    handler: func() => string {
-        return "GDLang!"
-    },
-}
-
-// Every program needs a main function
 pub func main() {
-    set message = "Hello, " + index.handler()
-    println(message)
+  set hi = get("/hi", func () => response {
+    return ok("<h1>Hello, world!</h1>", [])
+  })
+
+  host(":8080", [hi])
 }
 ```
 
@@ -108,11 +100,10 @@ Hello, GDLang!
 
 🎉 Congratulations! You have successfully compiled and run your first GDLang program.
 
-
 ## 🚀 What's Coming Next?
 
 - 🔄 **Threads and Channels Support**: Introduce support for threads and channels, similar to Go's concurrency model.
-- 📡 **Networking and I/O**: Add support for networking and I/O operations to enable communication with external systems. `WIP`
+- 📡 **Networking**: Add support for HTTP to allow building servers and clients. `WIP`
 - 📦 **Shared Libraries and SDKs**: Build a robust library ecosystem to be shared across other programs.
 - 📜 **Standard Library**: Introduce a comprehensive standard library with built-in functions and utilities.
 
