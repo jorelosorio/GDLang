@@ -1,6 +1,6 @@
 # Debian 11
 
-FROM golang:1.22.6-bullseye
+FROM golang:1.23.1-bullseye
 
 RUN apt-get update && \
     apt-get install -y build-essential
