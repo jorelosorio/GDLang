@@ -101,10 +101,10 @@ func (gd *GDStruct) SetAttr(ident GDIdent, object GDObject) (*GDSymbol, error) {
 	return symbol, nil
 }
 
-func NewGDStruct(structType GDStructType, stack *GDSymbolStack) (*GDStruct, error) {
+func NewGDStruct(typ GDStructType, stack *GDSymbolStack) (*GDStruct, error) {
 	structStack := stack.NewSymbolStack(StructCtx)
 
-	for _, attr := range structType {
+	for _, attr := range typ {
 		// Struct attributes are not constants
 		_, err := structStack.AddSymbol(attr.Ident, true, false, attr.Type, GDZNil)
 		if err != nil {
@@ -112,5 +112,23 @@ func NewGDStruct(structType GDStructType, stack *GDSymbolStack) (*GDStruct, erro
 		}
 	}
 
-	return &GDStruct{structType, structStack}, nil
+	return &GDStruct{typ, structStack}, nil
+}
+
+func QuickGDStruct(stack *GDSymbolStack, typ GDStructType, attrs ...GDObject) (*GDStruct, error) {
+	structStack := stack.NewSymbolStack(StructCtx)
+
+	if len(attrs) != len(typ) {
+		panic("attributes count must be equal to structType count")
+	}
+
+	for i, attr := range typ {
+		// Struct attributes are not constants
+		_, err := structStack.AddSymbol(attr.Ident, true, false, attr.Type, attrs[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &GDStruct{typ, structStack}, nil
 }
