@@ -21,6 +21,56 @@ package builtin
 
 import "gdlang/lib/runtime"
 
+type BuiltinMap = map[string]func(stack *runtime.GDSymbolStack) (runtime.GDObject, error)
+
+var coreBuiltins = BuiltinMap{
+	"print":   print,
+	"println": println,
+	"typeof":  typeof,
+}
+
+func ImportCoreBuiltins(stack *runtime.GDSymbolStack) error {
+	for ident, fn := range coreBuiltins {
+		obj, err := fn(stack)
+		if err != nil {
+			return err
+		}
+
+		ident := runtime.NewGDStringIdent(ident)
+		_, err = stack.AddSymbol(ident, true, true, obj.GetType(), obj)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Type functions
+
+func typeof(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+	objParam := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("obj"))
+	funcType := runtime.NewGDLambdaType(
+		runtime.GDLambdaArgTypes{
+			{Key: objParam, Value: runtime.GDAnyType},
+		},
+		runtime.GDStringType,
+		false,
+	)
+	typeOfFunc := runtime.NewGDLambdaWithType(
+		funcType,
+		stack,
+		func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
+			typeName := args.Get(objParam).GetType().ToString()
+			return runtime.GDString(typeName), nil
+		},
+	)
+
+	return typeOfFunc, nil
+}
+
+// Print functions
+
 func print(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	printFunc := printFunc(stack, false)
 	return printFunc, nil

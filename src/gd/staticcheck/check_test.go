@@ -36,7 +36,7 @@ func init() {
 
 func TestCases(t *testing.T) {
 	stack := runtime.NewGDSymbolStack()
-	err := builtin.Import(stack)
+	err := builtin.ImportCoreBuiltins(stack)
 	if err != nil {
 		t.Fatal(err)
 	}

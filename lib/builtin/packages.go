@@ -29,6 +29,7 @@ var Packages = map[string]*runtime.GDPackage[*runtime.GDSymbol]{}
 func init() {
 	packages := map[string]func() (*runtime.GDPackage[*runtime.GDSymbol], error){
 		"http": HttpPackage,
+		"math": MathPackage,
 	}
 
 	for name, pkg := range packages {

@@ -23,15 +23,18 @@ import "testing"
 
 func TestCompositeInBuiltinFunction(t *testing.T) {
 	RunTests(t, []Test{
-		{`pub func main() {
-			set a = abs(1)
-			print(typeof(a), a)
+		{`use math {abs}
+		pub func main() {
+		set a = abs(1)
+		print(typeof(a), a)
 		}`, "int1", ""},
-		{`pub func main() {
+		{`use math {abs}
+		pub func main() {
 			set a: int = abs(-1.0)
 			print(typeof(a), a)
 		}`, "", "expected `int` but got `(int | float | complex)`"},
-		{`pub func main() {
+		{`use math {abs}
+		pub func main() {
 			set a: any = abs(-1.0)
 			print(typeof(a), a)
 		}`, "float1", ""},

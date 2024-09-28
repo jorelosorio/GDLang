@@ -51,7 +51,7 @@ type GDCompiler struct {
 
 func (c *GDCompiler) Compile(mainPkg string) error {
 	stack := runtime.NewGDSymbolStack()
-	err := builtin.Import(stack)
+	err := builtin.ImportCoreBuiltins(stack)
 	if err != nil {
 		return err
 	}

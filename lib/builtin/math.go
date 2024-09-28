@@ -31,8 +31,39 @@ var (
 	}
 )
 
-func abs(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func MathPackage() (*runtime.GDPackage[*runtime.GDSymbol], error) {
+	pkg := runtime.NewGDPackage[*runtime.GDSymbol](runtime.NewGDStringIdent("math"), "math", runtime.PackageModeBuiltin)
+	symbols := map[string]*runtime.GDSymbol{
+		"abs":   abs(),
+		"sqrt":  sqrt(),
+		"pow":   pow(),
+		"cos":   cos(),
+		"sin":   sin(),
+		"log":   log(),
+		"tan":   tan(),
+		"asin":  asin(),
+		"acos":  acos(),
+		"atan":  atan(),
+		"atan2": atan2(),
+		"exp":   exp(),
+		"ceil":  ceil(),
+		"floor": floor(),
+		"round": round(),
+		// Constants
+		"pi": runtime.NewGDSymbol(true, false, runtime.GDFloatType, runtime.NewGDFloatNumber(runtime.GDFloat64(math.Pi))),
+	}
+	for ident, symbol := range symbols {
+		err := pkg.AddPublic(runtime.NewGDStringIdent(ident), symbol)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return pkg, nil
+}
+
+func abs() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -60,8 +91,8 @@ func abs(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func sqrt(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func sqrt() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -91,8 +122,8 @@ func sqrt(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func pow(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func pow() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -114,8 +145,8 @@ func pow(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func cos(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func cos() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -137,8 +168,8 @@ func cos(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func sin(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func sin() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -160,8 +191,8 @@ func sin(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func log(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func log() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -183,8 +214,8 @@ func log(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func tan(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func tan() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -206,8 +237,8 @@ func tan(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func asin(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func asin() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -229,8 +260,8 @@ func asin(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func acos(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func acos() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -252,8 +283,8 @@ func acos(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func atan(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func atan() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -275,10 +306,11 @@ func atan(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func atan2(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func atan2() *runtime.GDSymbol {
 	yParam := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("y"))
 	xParam := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("x"))
-	funcType := runtime.NewGDLambdaType(
+
+	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
 			{Key: yParam, Value: runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType)},
 			{Key: xParam, Value: runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType)},
@@ -286,9 +318,10 @@ func atan2(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 		runtime.GDFloatType,
 		false,
 	)
-	return runtime.NewGDLambdaWithType(
-		funcType,
-		stack,
+
+	lambda := runtime.NewGDLambdaWithType(
+		typ,
+		nil,
 		func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
 			x := args.Get(xParam)
 			y := args.Get(yParam)
@@ -305,11 +338,13 @@ func atan2(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 
 			return runtime.NewGDFloatNumber(runtime.GDFloat64(math.Atan2(float64(xFloat), float64(yFloat)))), nil
 		},
-	), nil
+	)
+
+	return runtime.NewGDSymbol(true, true, typ, lambda)
 }
 
-func exp(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func exp() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -331,8 +366,8 @@ func exp(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func ceil(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func ceil() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -349,8 +384,8 @@ func ceil(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func floor(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func floor() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -367,8 +402,8 @@ func floor(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func round(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	return mathOp(stack, func(num runtime.GDObject) (runtime.GDObject, error) {
+func round() *runtime.GDSymbol {
+	return mathOp(func(num runtime.GDObject) (runtime.GDObject, error) {
 		switch num := num.(type) {
 		case runtime.GDFloat32, runtime.GDFloat64:
 			fNum, err := runtime.ToFloat(num)
@@ -385,21 +420,25 @@ func round(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 	})
 }
 
-func mathOp(stack *runtime.GDSymbolStack, opFunc func(num runtime.GDObject) (runtime.GDObject, error)) (runtime.GDObject, error) {
-	numParam := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("num"))
-	funcType := runtime.NewGDLambdaType(
+func mathOp(opFunc func(num runtime.GDObject) (runtime.GDObject, error)) *runtime.GDSymbol {
+	num := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("num"))
+
+	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{Key: numParam, Value: runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType, runtime.GDComplexType)},
+			{Key: num, Value: runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType, runtime.GDComplexType)},
 		},
 		runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType, runtime.GDComplexType),
 		false,
 	)
-	return runtime.NewGDLambdaWithType(
-		funcType,
-		stack,
+
+	lambda := runtime.NewGDLambdaWithType(
+		typ,
+		nil,
 		func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
-			num := args.Get(numParam)
+			num := args.Get(num)
 			return opFunc(num)
 		},
-	), nil
+	)
+
+	return runtime.NewGDSymbol(true, true, typ, lambda)
 }

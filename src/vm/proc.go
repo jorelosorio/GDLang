@@ -42,7 +42,7 @@ func (p *GDVMProc) Init(bytes []byte) error {
 	p.Stack = runtime.NewRootGDSymbolStack()
 
 	// Import builtins into the main stack
-	err := builtin.Import(p.Stack)
+	err := builtin.ImportCoreBuiltins(p.Stack)
 	if err != nil {
 		return err
 	}

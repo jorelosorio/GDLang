@@ -50,7 +50,7 @@ func HttpPackage() (*runtime.GDPackage[*runtime.GDSymbol], error) {
 func get() *runtime.GDSymbol {
 	url := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("url"))
 
-	funcType := runtime.NewGDLambdaType(
+	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
 			{Key: url, Value: runtime.GDStringType},
 		},
@@ -58,8 +58,8 @@ func get() *runtime.GDSymbol {
 		false,
 	)
 
-	getFunc := runtime.NewGDLambdaWithType(
-		funcType,
+	lambda := runtime.NewGDLambdaWithType(
+		typ,
 		nil,
 		func(stack *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
 			url := args.Get(url).ToString()
@@ -84,5 +84,5 @@ func get() *runtime.GDSymbol {
 		},
 	)
 
-	return runtime.NewGDSymbol(true, true, funcType, getFunc)
+	return runtime.NewGDSymbol(true, true, typ, lambda)
 }
