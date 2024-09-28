@@ -19,6 +19,21 @@
 
 package runtime
 
+type GDPackageMode byte
+
+const (
+	PackageModeSource GDPackageMode = iota
+	PackageModeBuiltin
+	PackageModeLib
+)
+
+// Map of package types
+var PackageModeMap = map[GDPackageMode]string{
+	PackageModeSource:  "sourced",
+	PackageModeBuiltin: "builtin",
+	PackageModeLib:     "lib",
+}
+
 type GDMemberType byte
 
 const (
@@ -31,40 +46,42 @@ type GDMember[T any] struct {
 	Value T
 }
 
-type GDMembers[T any] map[string]GDMember[T]
+type GDMembers[T any] map[any]GDMember[T]
 
 type GDPackage[T any] struct {
-	Name, Path string       // The name and the path of the package
-	Members    GDMembers[T] // A list of public references in the package
+	Ident   GDIdent
+	Path    string        // The name and the path of the package
+	Mode    GDPackageMode // The type of the package
+	Members GDMembers[T]  // A list of public references in the package
 }
 
-func (p *GDPackage[T]) AddPublic(ident string, member T) error {
+func (p *GDPackage[T]) AddPublic(ident GDIdent, member T) error {
 	return p.add(ident, GDMemberPublic, member)
 }
 
-func (p *GDPackage[T]) AddLocal(ident string, member T) error {
+func (p *GDPackage[T]) AddLocal(ident GDIdent, member T) error {
 	return p.add(ident, GDMemberLocal, member)
 }
 
-func (p *GDPackage[T]) GetMember(ident string) (T, error) {
-	if member, ok := p.Members[ident]; ok {
+func (p *GDPackage[T]) GetMember(ident GDIdent) (T, error) {
+	if member, ok := p.Members[ident.GetRawValue()]; ok {
 		return member.Value, nil
 	}
 
 	var zT T
-	return zT, ObjectNotFoundErr(ident)
+	return zT, ObjectNotFoundErr(ident.ToString())
 }
 
-func (p *GDPackage[T]) add(ident string, memberType GDMemberType, value T) error {
-	if _, ok := p.Members[ident]; ok {
+func (p *GDPackage[T]) add(ident GDIdent, memberType GDMemberType, value T) error {
+	if _, ok := p.Members[ident.GetRawValue()]; ok {
 		return DuplicatedObjectCreationErr(ident)
 	}
 
-	p.Members[ident] = GDMember[T]{memberType, value}
+	p.Members[ident.GetRawValue()] = GDMember[T]{memberType, value}
 
 	return nil
 }
 
-func NewGDPackage[T any](name, path string) *GDPackage[T] {
-	return &GDPackage[T]{name, path, make(GDMembers[T])}
+func NewGDPackage[T any](name GDIdent, path string, typ GDPackageMode) *GDPackage[T] {
+	return &GDPackage[T]{name, path, typ, make(GDMembers[T])}
 }

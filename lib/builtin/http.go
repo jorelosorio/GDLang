@@ -21,13 +21,20 @@ package builtin
 
 import (
 	"gdlang/lib/runtime"
+	"io"
 	"net/http"
 )
 
-func HttpPackage() *runtime.GDPackage[*runtime.GDSymbol] {
-	pkg := runtime.NewGDPackage[*runtime.GDSymbol]("http", ".")
+var HTTPResponseType = runtime.QuickGDStructType(
+	"status", runtime.GDStringType,
+	"statusCode", runtime.GDIntType,
+	"body", runtime.GDStringType,
+)
 
-	err := pkg.AddPublic("get", get())
+func HttpPackage() *runtime.GDPackage[*runtime.GDSymbol] {
+	pkg := runtime.NewGDPackage[*runtime.GDSymbol](runtime.NewGDStringIdent("http"), "http", runtime.PackageModeBuiltin)
+
+	err := pkg.AddPublic(runtime.NewGDStringIdent("get"), get())
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +49,11 @@ func get() *runtime.GDSymbol {
 		runtime.GDLambdaArgTypes{
 			{Key: url, Value: runtime.GDStringType},
 		},
-		runtime.NewGDTupleType(runtime.GDStringType, runtime.GDIntType),
+		runtime.NewGDTupleType(
+			runtime.GDStringType,
+			runtime.GDIntType,
+			runtime.GDStringType,
+		),
 		false,
 	)
 
@@ -55,8 +66,18 @@ func get() *runtime.GDSymbol {
 			if err != nil {
 				return nil, err
 			}
+			defer response.Body.Close()
 
-			return runtime.NewGDTuple(runtime.GDString(response.Status), runtime.GDInt(response.StatusCode)), nil
+			body, err := io.ReadAll(response.Body)
+			if err != nil {
+				return nil, err
+			}
+
+			return runtime.NewGDTuple(
+				runtime.GDString(response.Status),
+				runtime.GDInt(response.StatusCode),
+				runtime.GDString(body),
+			), nil
 		},
 	)
 

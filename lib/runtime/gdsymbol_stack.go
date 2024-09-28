@@ -33,13 +33,11 @@ type GDSymbolStack struct {
 	Parent  *GDSymbolStack
 	Ctx     StackContext
 	Symbols map[any]*GDSymbol
-	Attrs   map[string]any
 	Buffer  *GDBuffer
 }
 
 func (s *GDSymbolStack) Dispose() {
 	s.Symbols = nil
-	s.Attrs = nil
 	s.Buffer = nil
 }
 
@@ -48,7 +46,6 @@ func (s *GDSymbolStack) NewSymbolStack(ctx StackContext) *GDSymbolStack {
 		s,
 		ctx,
 		make(map[any]*GDSymbol),
-		make(map[string]any),
 		nil,
 	}
 }
@@ -169,7 +166,6 @@ func NewGDSymbolStack() *GDSymbolStack {
 		nil,
 		GlobalCtx,
 		make(map[any]*GDSymbol),
-		make(map[string]any),
 		nil,
 	}
 }
@@ -179,7 +175,6 @@ func NewRootGDSymbolStack() *GDSymbolStack {
 		nil,
 		GlobalCtx,
 		make(map[any]*GDSymbol),
-		make(map[string]any),
 		nil,
 	}
 }

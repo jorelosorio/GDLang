@@ -1030,8 +1030,8 @@ func (t *StaticCheck) EvalCastExpr(c *ast.NodeCastExpr, stack *runtime.GDSymbolS
 // NOTE: Package must exist before evaluation
 // Those checks are performed during the dependency analysis
 func (t *StaticCheck) EvalPackage(p *ast.NodePackage, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	switch p.Type {
-	case ast.NodePackageBuiltin:
+	switch p.InferredMode {
+	case runtime.PackageModeBuiltin:
 		if pkg, found := builtin.Packages[p.InferredPath]; found {
 			for _, node := range p.Imports {
 				identNode, isIdentNode := node.(*ast.NodeIdent)
@@ -1040,7 +1040,7 @@ func (t *StaticCheck) EvalPackage(p *ast.NodePackage, stack *runtime.GDSymbolSta
 				}
 
 				ident := runtime.NewGDStringIdent(identNode.Lit)
-				if symbol, err := pkg.GetMember(identNode.Lit); err == nil {
+				if symbol, err := pkg.GetMember(ident); err == nil {
 					err := stack.AddSymbolStack(ident, symbol)
 					if err != nil {
 						return nil, comn.WrapFatalErr(err, p.GetPosition())

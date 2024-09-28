@@ -604,6 +604,25 @@ func (c *GDCompiler) EvalCastExpr(cast *ast.NodeCastExpr, stack ir.GDIRStackNode
 }
 
 func (c *GDCompiler) EvalPackage(p *ast.NodePackage, stack ir.GDIRStackNode) (ir.GDIRNode, error) {
+	switch p.InferredMode {
+	case runtime.PackageModeBuiltin, runtime.PackageModeSource:
+		ident := runtime.NewGDStringIdent(p.InferredPath)
+		importNodes := make([]runtime.GDIdent, len(p.Imports))
+		for i, node := range p.Imports {
+			identNode, isIdentNode := node.(*ast.NodeIdent)
+			if !isIdentNode {
+				panic("Invalid node type: expected *ast.NodeIdent")
+			}
+
+			importNodes[i] = runtime.NewGDStringIdent(identNode.Lit)
+		}
+
+		irUse := ir.NewGDIRUse(p.InferredMode, ident, importNodes)
+		stack.AddNode(irUse)
+
+		return irUse, nil
+	}
+
 	return nil, nil
 }
 

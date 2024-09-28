@@ -52,3 +52,30 @@ func (t GDStructType) GetAttrType(ident GDIdent) (GDTypable, error) {
 func NewGDStructType(attrs ...GDStructAttrType) GDStructType {
 	return attrs
 }
+
+// Creates a GDStructType from an array of alternating strings and GDTypable values.
+func QuickGDStructType(elements ...interface{}) GDStructType {
+	if len(elements)%2 != 0 {
+		panic("invalid number of arguments, must be even")
+	}
+
+	var attrs []GDStructAttrType
+	for i := 0; i < len(elements); i += 2 {
+		ident, ok := elements[i].(string)
+		if !ok {
+			panic("expected string")
+		}
+
+		typable, ok := elements[i+1].(GDTypable)
+		if !ok {
+			panic("expected GDTypable")
+		}
+
+		attrs = append(attrs, GDStructAttrType{
+			Ident: NewGDStringIdent(ident),
+			Type:  typable,
+		})
+	}
+
+	return NewGDStructType(attrs...)
+}

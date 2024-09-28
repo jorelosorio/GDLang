@@ -47,7 +47,7 @@ func NewSourceFile(file *scanner.File, parentPackage *SourcePackage) *SourceFile
 	return &SourceFile{
 		file:          file,
 		parentPackage: parentPackage,
-		GDPackage:     runtime.NewGDPackage[any](file.Name(), file.Name()),
+		GDPackage:     runtime.NewGDPackage[any](runtime.NewGDStringIdent(file.Name()), file.Name(), runtime.PackageModeSource),
 	}
 }
 
@@ -59,8 +59,9 @@ type NodeWithSourceFile struct {
 type SourceFiles []*SourceFile
 
 type Package interface {
-	GetName() string
+	GetName() runtime.GDIdent
 	GetPath() string
+	GetMode() runtime.GDPackageMode
 }
 
 type SourcePackage struct {
@@ -68,12 +69,13 @@ type SourcePackage struct {
 	*runtime.GDPackage[*NodeWithSourceFile]
 }
 
-func (p *SourcePackage) GetName() string { return p.GDPackage.Name }
-func (p *SourcePackage) GetPath() string { return p.GDPackage.Path }
+func (p *SourcePackage) GetName() runtime.GDIdent       { return p.GDPackage.Ident }
+func (p *SourcePackage) GetPath() string                { return p.GDPackage.Path }
+func (p *SourcePackage) GetMode() runtime.GDPackageMode { return p.GDPackage.Mode }
 
-func NewSourcePackage(name, path string) *SourcePackage {
+func NewSourcePackage(name runtime.GDIdent, path string) *SourcePackage {
 	return &SourcePackage{
-		GDPackage:   runtime.NewGDPackage[*NodeWithSourceFile](name, path),
+		GDPackage:   runtime.NewGDPackage[*NodeWithSourceFile](name, path, runtime.PackageModeSource),
 		sourceFiles: make(SourceFiles, 0),
 	}
 }
@@ -82,8 +84,9 @@ type BuiltInPackage struct {
 	*runtime.GDPackage[*runtime.GDSymbol]
 }
 
-func (p *BuiltInPackage) GetName() string { return p.Name }
-func (p *BuiltInPackage) GetPath() string { return p.Path }
+func (p *BuiltInPackage) GetName() runtime.GDIdent       { return p.Ident }
+func (p *BuiltInPackage) GetPath() string                { return p.Path }
+func (p *BuiltInPackage) GetMode() runtime.GDPackageMode { return runtime.PackageModeBuiltin }
 
 type PackageDependenciesAnalyzerOptions struct {
 	// The package that is being analyzed
@@ -111,13 +114,14 @@ func (d *PackageDependenciesAnalyzer) Analyze(mainPackagePath string, options Pa
 	d.trackedNodes = make(map[string]bool)
 	d.Nodes = make([]ast.Node, 0)
 
-	d.mainPackage = NewSourcePackage("main", mainPackagePath)
+	mainIdent := runtime.NewGDStringIdent("main")
+	d.mainPackage = NewSourcePackage(mainIdent, mainPackagePath)
 	err := d.BuildPackage(d.mainPackage)
 	if err != nil {
 		return err
 	}
 
-	main, err := d.mainPackage.GetMember("main")
+	main, err := d.mainPackage.GetMember(mainIdent)
 	if err != nil {
 		return ErrorAt(scanner.ZeroPos).MainEntryWasNotFound()
 	}
@@ -172,7 +176,7 @@ func (d *PackageDependenciesAnalyzer) BuildPackage(pkg Package) error {
 		// Walk through all the files in the package
 		err := filepath.WalkDir(pkg.Path, func(sourceFilePath string, dir fs.DirEntry, err error) error {
 			if err != nil {
-				return ErrorAt(scanner.ZeroPos).PackageNotFound(pkg.Name)
+				return ErrorAt(scanner.ZeroPos).PackageNotFound(pkg.Ident.ToString())
 			}
 
 			if dir.IsDir() {
@@ -241,9 +245,11 @@ func (d *PackageDependenciesAnalyzer) BuildSourceFile(sourceFilePath string, pkg
 		var err error
 		switch node := node.(type) {
 		case *ast.NodeFunc:
-			err = d.addMemberToSourceFile(node.Ident.Lit, node.IsPub, node, sourceFile)
+			nodeIdent := runtime.NewGDStringIdent(node.Ident.Lit)
+			err = d.addMemberToSourceFile(nodeIdent, node.IsPub, node, sourceFile)
 		case *ast.NodeTypeAlias:
-			err = d.addMemberToSourceFile(node.Ident.Lit, node.IsPub, node, sourceFile)
+			nodeIdent := runtime.NewGDStringIdent(node.Ident.Lit)
+			err = d.addMemberToSourceFile(nodeIdent, node.IsPub, node, sourceFile)
 		case *ast.NodeSets:
 			for _, node := range node.Nodes {
 				set, isNodeSet := node.(*ast.NodeSet)
@@ -251,7 +257,8 @@ func (d *PackageDependenciesAnalyzer) BuildSourceFile(sourceFilePath string, pkg
 					panic("Invalid node type: expected *ast.NodeSet")
 				}
 
-				err := d.addMemberToSourceFile(set.IdentWithType.Ident.Lit, set.IsPub, set, sourceFile)
+				nodeIdent := runtime.NewGDStringIdent(set.IdentWithType.Ident.Lit)
+				err := d.addMemberToSourceFile(nodeIdent, set.IsPub, set, sourceFile)
 				if err != nil {
 					return nil, err
 				}
@@ -278,9 +285,6 @@ func (d *PackageDependenciesAnalyzer) BuildSourceFile(sourceFilePath string, pkg
 		packageAbsolutePath := path.Join(d.mainPackage.Path, nodePackage.GetPath())
 		pkg, isTracked := d.trackedPackages[packageAbsolutePath]
 
-		nodePackage.InferredPath = packagePath
-		nodePackage.InferredAbsolutePath = packageAbsolutePath
-
 		// If the package was already tracked,
 		// then add it to the source file
 		if isTracked {
@@ -292,15 +296,13 @@ func (d *PackageDependenciesAnalyzer) BuildSourceFile(sourceFilePath string, pkg
 		// If no error, then the package exists,
 		// and it is possible to build it
 		if err == nil {
-			pkg = NewSourcePackage(nodePackage.GetName(), packageAbsolutePath)
+			ident := runtime.NewGDStringIdent(nodePackage.GetName())
+			pkg = NewSourcePackage(ident, packageAbsolutePath)
 
 			err := d.BuildPackage(pkg)
 			if err != nil {
 				return nil, err
 			}
-
-			// It is a sourced package
-			nodePackage.Type = ast.NodePackageSourced
 
 			goto next
 		}
@@ -309,10 +311,6 @@ func (d *PackageDependenciesAnalyzer) BuildSourceFile(sourceFilePath string, pkg
 		// try to find it in the builtin packages
 		if builtInPackage, ok := builtin.Packages[nodePackage.GetPath()]; ok {
 			pkg = &BuiltInPackage{builtInPackage}
-
-			// It is a builtin package
-			nodePackage.Type = ast.NodePackageBuiltin
-
 			goto next
 		}
 
@@ -327,29 +325,29 @@ func (d *PackageDependenciesAnalyzer) BuildSourceFile(sourceFilePath string, pkg
 
 			// Check if `use` imports exist, and add them as a reference in the source file
 			// as an indication of all usages of objects for the source file
-			ident := identNode.Lit
+			ident := runtime.NewGDStringIdent(identNode.Lit)
 			switch pkg := pkg.(type) {
 			case *SourcePackage:
 				nod, err := pkg.GetMember(ident)
 				if err != nil {
-					return nil, ErrorAt(identNode.GetPosition()).PackageObjectWasNotFound(ident, nodePackage.GetName())
+					return nil, ErrorAt(identNode.GetPosition()).PackageObjectWasNotFound(ident.ToString(), nodePackage.GetName())
 				}
 
 				// Add the node reference to the source file
 				err = sourceFile.AddPublic(ident, nod)
 				if err != nil {
-					return nil, ErrorAt(nod.Node.GetPosition()).DuplicatedObject(ident)
+					return nil, ErrorAt(nod.Node.GetPosition()).DuplicatedObject(ident.ToString())
 				}
 			case *BuiltInPackage:
 				obj, err := pkg.GetMember(ident)
 				if err != nil {
-					return nil, ErrorAt(identNode.GetPosition()).PackageObjectWasNotFound(ident, nodePackage.GetName())
+					return nil, ErrorAt(identNode.GetPosition()).PackageObjectWasNotFound(ident.ToString(), nodePackage.GetName())
 				}
 
 				// Add the object reference to the source file
 				err = sourceFile.AddPublic(ident, obj)
 				if err != nil {
-					return nil, ErrorAt(identNode.GetPosition()).DuplicatedObject(ident)
+					return nil, ErrorAt(identNode.GetPosition()).DuplicatedObject(ident.ToString())
 				}
 			default:
 				panic("Invalid package type, expected *SourcePackage or *BuiltInPackage")
@@ -359,6 +357,12 @@ func (d *PackageDependenciesAnalyzer) BuildSourceFile(sourceFilePath string, pkg
 		if !isTracked {
 			d.trackedPackages[packageAbsolutePath] = pkg
 
+			// Set inferred values for the package
+			nodePackage.InferredPath = packagePath
+			nodePackage.InferredAbsolutePath = packageAbsolutePath
+			nodePackage.InferredMode = pkg.GetMode()
+
+			// Append the package to the hierarchy
 			ident := "package: " + nodePackage.GetName() + "@" + sourceFile.file.Name()
 			if !d.trackIdent(ident) {
 				d.Nodes = append(d.Nodes, nodePackage)
@@ -385,8 +389,9 @@ func (d *PackageDependenciesAnalyzer) Dispose() {
 func (d *PackageDependenciesAnalyzer) analyzeType(typ runtime.GDTypable, astNode ast.Node, sourceFile *SourceFile) error {
 	switch typ := typ.(type) {
 	case runtime.GDIdent:
-		ident := typ.ToString()
-		if nodeRef := d.getNodeReference(ident, sourceFile); nodeRef != nil {
+		typeIdent := typ.ToString()
+		nodeIdent := runtime.NewGDStringIdent(typeIdent)
+		if nodeRef := d.getNodeReference(nodeIdent, sourceFile); nodeRef != nil {
 			switch nodeRef := nodeRef.(type) {
 			case *NodeWithSourceFile:
 				return d.analyzeNode(nodeRef.Node, nodeRef.SourceFile)
@@ -450,7 +455,8 @@ func (d *PackageDependenciesAnalyzer) analyzeNode(astNode ast.Node, sourceFile *
 		// Nothing to do
 		return nil
 	case *ast.NodeIdent:
-		if nodeRef := d.getNodeReference(astNode.Lit, sourceFile); nodeRef != nil {
+		nodeIdent := runtime.NewGDStringIdent(astNode.Lit)
+		if nodeRef := d.getNodeReference(nodeIdent, sourceFile); nodeRef != nil {
 			switch nodeRef := nodeRef.(type) {
 			case *NodeWithSourceFile:
 				return d.analyzeNode(nodeRef.Node, nodeRef.SourceFile)
@@ -474,7 +480,8 @@ func (d *PackageDependenciesAnalyzer) analyzeNode(astNode ast.Node, sourceFile *
 		}
 
 		// Only append and analyse the node if it is part of the first citizen objects in the source file
-		if d.getNodeReference(astNode.Ident.Lit, sourceFile) != nil {
+		nodeIdent := runtime.NewGDStringIdent(astNode.Ident.Lit)
+		if d.getNodeReference(nodeIdent, sourceFile) != nil {
 			d.Nodes = append(d.Nodes, astNode)
 		}
 
@@ -600,7 +607,8 @@ func (d *PackageDependenciesAnalyzer) analyzeNode(astNode ast.Node, sourceFile *
 			}
 		}
 
-		if d.getNodeReference(astNode.IdentWithType.Ident.Lit, sourceFile) != nil {
+		nodeIdent := runtime.NewGDStringIdent(astNode.IdentWithType.Ident.Lit)
+		if d.getNodeReference(nodeIdent, sourceFile) != nil {
 			d.Nodes = append(d.Nodes, astNode)
 		}
 
@@ -704,7 +712,8 @@ func (d *PackageDependenciesAnalyzer) analyzeNode(astNode ast.Node, sourceFile *
 			return err
 		}
 
-		if d.getNodeReference(astNode.Ident.Lit, sourceFile) != nil {
+		nodeIdent := runtime.NewGDStringIdent(astNode.Ident.Lit)
+		if d.getNodeReference(nodeIdent, sourceFile) != nil {
 			d.Nodes = append(d.Nodes, astNode)
 		}
 
@@ -730,7 +739,7 @@ func (d *PackageDependenciesAnalyzer) analyzeNode(astNode ast.Node, sourceFile *
 // but it is not found, then it should not throw an error
 // because it could be a local object that must be evaluated later
 // in another stage with a stack
-func (d *PackageDependenciesAnalyzer) getNodeReference(ident string, sourceFile *SourceFile) any {
+func (d *PackageDependenciesAnalyzer) getNodeReference(ident runtime.GDIdent, sourceFile *SourceFile) any {
 	// References are first looked up in the source file,
 	// with local references having higher priority
 	fileRef, _ := sourceFile.GetMember(ident)
@@ -761,7 +770,7 @@ func (d *PackageDependenciesAnalyzer) trackIdent(ident string) bool {
 	return false
 }
 
-func (d *PackageDependenciesAnalyzer) addMemberToSourceFile(ident string, isPub bool, node ast.Node, sourceFile *SourceFile) error {
+func (d *PackageDependenciesAnalyzer) addMemberToSourceFile(ident runtime.GDIdent, isPub bool, node ast.Node, sourceFile *SourceFile) error {
 	sourceNode := &NodeWithSourceFile{node, sourceFile}
 	if isPub {
 		err := sourceFile.parentPackage.AddPublic(ident, sourceNode)

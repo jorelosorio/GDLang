@@ -23,6 +23,7 @@ var cpuOpMap = map[GDInst]string{
 	TypeAlias:   "typealias",
 	CastObj:     "cast",
 	Set:         "set",
+	Use:         "use",
 	Lambda:      "lambda",
 	BBegin:      "block",
 	BEnd:        "end",

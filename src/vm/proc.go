@@ -106,6 +106,8 @@ func (p *GDVMProc) evalInst(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 		return p.evalTypeAlias(stack)
 	case cpu.CastObj:
 		return p.evalCastObj(stack)
+	case cpu.Use:
+		return p.evalUse(stack)
 
 	// Attributable
 	case cpu.AGet:
@@ -469,6 +471,54 @@ func (p *GDVMProc) evalCastObj(stack *runtime.GDSymbolStack) (runtime.GDObject, 
 	}
 
 	stack.PushBuffer(castObj)
+
+	return nil, nil
+}
+
+func (p *GDVMProc) evalUse(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+	mode, err := p.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+
+	packageMode := runtime.GDPackageMode(mode)
+
+	pkgIdent, err := p.ReadIdent()
+	if err != nil {
+		return nil, err
+	}
+
+	count, err := p.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+
+	imports := make([]runtime.GDIdent, count)
+	for i := range count {
+		ident, err := p.ReadIdent()
+		if err != nil {
+			return nil, err
+		}
+
+		imports[i] = ident
+	}
+
+	switch packageMode {
+	case runtime.PackageModeBuiltin:
+		if pkg, found := builtin.Packages[pkgIdent.ToString()]; found {
+			for _, ident := range imports {
+				symbol, err := pkg.GetMember(ident)
+				if err != nil {
+					return nil, err
+				}
+
+				err = stack.AddSymbolStack(ident, symbol)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
 
 	return nil, nil
 }

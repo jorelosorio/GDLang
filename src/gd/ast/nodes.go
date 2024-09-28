@@ -58,14 +58,6 @@ func NewNodeFile(packages []Node, nodes []Node) *NodeFile {
 
 // Package
 
-type NodePackageType byte
-
-const (
-	NodePackageSourced NodePackageType = iota
-	NodePackageBuiltin
-	NodePackageLib
-)
-
 type NodePackage struct {
 	// Path of the package
 	// Example: a.b.c
@@ -73,9 +65,8 @@ type NodePackage struct {
 	// Public import references that are required from the package
 	// Example: use a.b.c {object, ...}
 	Imports []Node
-	// Type of the package
-	Type NodePackageType
 	// Inferences
+	InferredMode         runtime.GDPackageMode
 	InferredPath         string
 	InferredAbsolutePath string
 	BaseNode
@@ -93,7 +84,7 @@ func (p *NodePackage) GetPath() string {
 }
 
 func NewNodePackage(packagePath []Node, imports []Node) *NodePackage {
-	return &NodePackage{packagePath, imports, NodePackageSourced, "", "", BaseNode{}}
+	return &NodePackage{packagePath, imports, runtime.PackageModeSource, "", "", BaseNode{}}
 }
 
 // Node for type definitions

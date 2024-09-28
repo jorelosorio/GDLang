@@ -25,6 +25,7 @@ type GDInst byte
 const (
 	TypeAlias   GDInst = iota // Define a type alias
 	CastObj                   // Cast an object
+	Use                       // Use a package
 	Set                       // Instance a new object
 	Mov                       // Move a value to a register
 	CSet                      // Set a value to an iterable
