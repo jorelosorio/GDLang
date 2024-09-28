@@ -173,12 +173,12 @@ func writeObject(bytecode *bytes.Buffer, obj runtime.GDObject) error {
 		}
 
 		for _, item := range obj.Type {
-			obj, err := obj.GetAttr(item.Ident)
+			symbol, err := obj.GetAttr(item.Ident)
 			if err != nil {
 				return err
 			}
 
-			err = writeObjectWithType(bytecode, obj.Object)
+			err = writeObjectWithType(bytecode, symbol.Object)
 			if err != nil {
 				return err
 			}

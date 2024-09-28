@@ -33,13 +33,13 @@ func TestStructWithNilInitialization(t *testing.T) {
 		t.Errorf("Error creating struct: %s", err.Error())
 	}
 
-	attr1Value, err := structObj.GetAttr(attr1Ident)
+	symbol, err := structObj.GetAttr(attr1Ident)
 	if err != nil && err.Error() == runtime.AttributeNotFoundErr("attr1").Error() {
 		t.Error("Attribute not found but it should be")
 	}
 
-	if attr1Value.Object != runtime.GDZNil {
-		t.Errorf("Wrong structure attribute value for attr1, expected nil but got %q", attr1Value.Object.ToString())
+	if symbol.Object != runtime.GDZNil {
+		t.Errorf("Wrong structure attribute value for attr1, expected nil but got %q", symbol.Object.ToString())
 	}
 }
 
@@ -57,13 +57,13 @@ func TestChangeTheValueOfAnAttribute(t *testing.T) {
 		t.Error("Attribute not found but it should be")
 	}
 
-	attr1Value, err := structObj.GetAttr(attr1Ident)
+	symbol, err := structObj.GetAttr(attr1Ident)
 	if err != nil {
 		t.Errorf("Error getting attribute value: %s", err.Error())
 	}
 
-	if !runtime.EqualObjects(attr1Value.Object, runtime.GDString("new value")) {
-		t.Errorf("Wrong structure attribute value for attr1, expected 'new value' but got %q", attr1Value.Object.ToString())
+	if !runtime.EqualObjects(symbol.Object, runtime.GDString("new value")) {
+		t.Errorf("Wrong structure attribute value for attr1, expected 'new value' but got %q", symbol.Object.ToString())
 	}
 }
 
@@ -83,11 +83,11 @@ func TestReturnedObjectFromStructAreCopies(t *testing.T) {
 	}
 
 	// Should store a copy of the object with the value "test"
-	attr1Value1, err := structObj.GetAttr(attr1Ident)
+	symbol1, err := structObj.GetAttr(attr1Ident)
 	if err != nil {
 		t.Errorf("Error getting attribute value: %s", err.Error())
 	}
-	eAttr1Value1 := attr1Value1.Object
+	eObj1 := symbol1.Object
 
 	_, err = structObj.SetAttr(attr1Ident, runtime.GDString("new value"))
 	if err != nil {
@@ -95,14 +95,14 @@ func TestReturnedObjectFromStructAreCopies(t *testing.T) {
 	}
 
 	// Should store a copy of the object with the value "new value"
-	attr1Value2, err := structObj.GetAttr(attr1Ident)
+	symbol2, err := structObj.GetAttr(attr1Ident)
 	if err != nil {
 		t.Errorf("Error getting attribute value: %s", err.Error())
 	}
 
 	// Attr1Value1 and Attr1Value2 should be different objects
-	if runtime.EqualObjects(eAttr1Value1, attr1Value2.Object) {
-		t.Errorf("Returned object from struct is not a copy, was expecting %q but got %q", attr1Value1.Object.ToString(), attr1Value2.Object.ToString())
+	if runtime.EqualObjects(eObj1, symbol2.Object) {
+		t.Errorf("Returned object from struct is not a copy, was expecting %q but got %q", symbol1.Object.ToString(), symbol2.Object.ToString())
 	}
 }
 
@@ -116,7 +116,7 @@ func TestAddAttributeWithSameName(t *testing.T) {
 		t.Error("Expected error adding attribute with the same name but got nil")
 	}
 
-	if err != nil && err.Error() != runtime.AttributeAlreadyExistsErr("attr1").Error() {
+	if err != nil && err.Error() != runtime.DuplicatedObjectCreationErr("attr1").Error() {
 		t.Errorf("Expected error adding attribute with the same name but got %q", err.Error())
 	}
 }

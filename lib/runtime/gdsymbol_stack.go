@@ -113,6 +113,15 @@ func (s *GDSymbolStack) SetSymbol(ident GDIdent, object GDObject, stack *GDSymbo
 	return nil
 }
 
+func (s *GDSymbolStack) GetLocalSymbol(ident GDIdent) (*GDSymbol, error) {
+	symbol, ok := s.Symbols[ident.GetRawValue()]
+	if ok {
+		return symbol, nil
+	}
+
+	return nil, ObjectNotFoundErr(ident.ToString())
+}
+
 func (s *GDSymbolStack) GetSymbol(ident GDIdent) (*GDSymbol, error) {
 	symbol, ok := s.Symbols[ident.GetRawValue()]
 	if ok {

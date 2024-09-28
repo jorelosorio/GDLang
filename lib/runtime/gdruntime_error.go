@@ -130,10 +130,6 @@ func DuplicatedObjectCreationErr(key any) GDRuntimeErr {
 	return NewGDRuntimeErr(DuplicatedObjectCreationCode, Sprintf("object `%@` was already created", key))
 }
 
-func AttributeAlreadyExistsErr(name string) GDRuntimeErr {
-	return NewGDRuntimeErr(AttrNameAlreadyExistsCode, Sprintf("attribute `%@` already exists in the struct", name))
-}
-
 func MissingNumberOfArgumentsErr(expected, got uint) GDRuntimeErr {
 	return NewGDRuntimeErr(FuncMissingArgsCode, Sprintf("missing number of arguments: expected `%@` but got `%@`", expected, got))
 }

@@ -542,12 +542,12 @@ func (t *StaticCheck) EvalSafeDotExpr(s *ast.NodeSafeDotExpr, stack *runtime.GDS
 		}
 
 		if attributable, isAttributable := obj.(runtime.GDAttributable); isAttributable {
-			attrObj, err := attributable.GetAttr(attrIdent)
+			symbol, err := attributable.GetAttr(attrIdent)
 			if err != nil {
 				return nil, comn.WrapFatalErr(err, s.GetPosition())
 			}
 
-			zObj, err := runtime.ZObjectForType(attrObj.Type, stack)
+			zObj, err := runtime.ZObjectForType(symbol.Type, stack)
 			if err != nil {
 				return nil, comn.WrapFatalErr(err, s.GetPosition())
 			}

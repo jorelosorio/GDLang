@@ -70,12 +70,12 @@ func IRObjectWithoutTypeToString(obj runtime.GDObject) string {
 	case *runtime.GDStruct:
 		strObjs := make([]string, len(obj.Type))
 		for i, attrType := range obj.Type {
-			attr, err := obj.GetAttr(attrType.Ident)
+			symbol, err := obj.GetAttr(attrType.Ident)
 			if err != nil {
 				panic(err)
 			}
 
-			strObjs[i] = IRObjectWithTypeToString(attr.Object)
+			strObjs[i] = IRObjectWithTypeToString(symbol.Object)
 		}
 		return fmt.Sprintf("{%s}", runtime.JoinSlice(strObjs, func(str string, _ int) string {
 			return str
