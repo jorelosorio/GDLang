@@ -23,9 +23,19 @@ import (
 	"gdlang/lib/runtime"
 )
 
-var (
-	// Packages is a map of all builtin packages
-	Packages = map[string]*runtime.GDPackage[*runtime.GDSymbol]{
-		"http": HttpPackage(),
+// Packages is a map of all builtin packages
+var Packages = map[string]*runtime.GDPackage[*runtime.GDSymbol]{}
+
+func init() {
+	packages := map[string]func() (*runtime.GDPackage[*runtime.GDSymbol], error){
+		"http": HttpPackage,
 	}
-)
+
+	for name, pkg := range packages {
+		p, err := pkg()
+		if err != nil {
+			panic(err)
+		}
+		Packages[name] = p
+	}
+}
