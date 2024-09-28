@@ -21,6 +21,7 @@ package staticcheck
 
 import (
 	"errors"
+	"gdlang/lib/builtin"
 	"gdlang/lib/runtime"
 	"gdlang/lib/tools"
 	"gdlang/src/comn"
@@ -1023,6 +1024,33 @@ func (t *StaticCheck) EvalCastExpr(c *ast.NodeCastExpr, stack *runtime.GDSymbolS
 	c.SetInferredObject(castObj)
 
 	return castObj, nil
+}
+
+// Register a new package in the symbol stack
+// NOTE: Package must exist before evaluation
+// Those checks are performed during the dependency analysis
+func (t *StaticCheck) EvalPackage(p *ast.NodePackage, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+	switch p.Type {
+	case ast.NodePackageBuiltin:
+		if pkg, found := builtin.Packages[p.InferredPath]; found {
+			for _, node := range p.Imports {
+				identNode, isIdentNode := node.(*ast.NodeIdent)
+				if !isIdentNode {
+					panic("Invalid node type: expected *ast.NodeIdent")
+				}
+
+				ident := runtime.NewGDStringIdent(identNode.Lit)
+				if symbol, err := pkg.GetMember(identNode.Lit); err == nil {
+					err := stack.AddSymbolStack(ident, symbol)
+					if err != nil {
+						return nil, comn.WrapFatalErr(err, p.GetPosition())
+					}
+				}
+			}
+		}
+	}
+
+	return nil, nil
 }
 
 func (t *StaticCheck) evalIfNode(i *ast.NodeIf, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {

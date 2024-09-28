@@ -24,8 +24,8 @@ import (
 	"net/http"
 )
 
-func HttpPackage() *runtime.GDPackage[runtime.GDObject] {
-	pkg := runtime.NewGDPackage[runtime.GDObject]("http", ".")
+func HttpPackage() *runtime.GDPackage[*runtime.GDSymbol] {
+	pkg := runtime.NewGDPackage[*runtime.GDSymbol]("http", ".")
 
 	err := pkg.AddPublic("get", get())
 	if err != nil {
@@ -35,7 +35,7 @@ func HttpPackage() *runtime.GDPackage[runtime.GDObject] {
 	return pkg
 }
 
-func get() runtime.GDObject {
+func get() *runtime.GDSymbol {
 	url := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("url"))
 
 	funcType := runtime.NewGDLambdaType(
@@ -60,5 +60,5 @@ func get() runtime.GDObject {
 		},
 	)
 
-	return getFunc
+	return runtime.NewGDSymbol(true, true, funcType, getFunc)
 }

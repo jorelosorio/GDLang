@@ -79,7 +79,7 @@ func NewSourcePackage(name, path string) *SourcePackage {
 }
 
 type BuiltInPackage struct {
-	*runtime.GDPackage[runtime.GDObject]
+	*runtime.GDPackage[*runtime.GDSymbol]
 }
 
 func (p *BuiltInPackage) GetName() string { return p.Name }
@@ -96,7 +96,7 @@ type PackageDependenciesAnalyzer struct {
 	mainPackage     *SourcePackage
 	trackedPackages map[string]Package
 	trackedNodes    map[string]bool
-	// Computed nodes based on the dependency herarchy
+	// Computed nodes based on the dependency hierarchy
 	Nodes []ast.Node
 	// A reference to the main entry point of the package
 	MainEntry ast.Node
@@ -147,7 +147,7 @@ func (d *PackageDependenciesAnalyzer) Analyze(mainPackagePath string, options Pa
 							if err != nil {
 								return err
 							}
-						case runtime.GDObject:
+						case *runtime.GDSymbol:
 							// Nothing to do
 						}
 					}
@@ -274,8 +274,12 @@ func (d *PackageDependenciesAnalyzer) BuildSourceFile(sourceFilePath string, pkg
 		var err error
 
 		// Check if the package exists
-		packagePath := path.Join(d.mainPackage.Path, nodePackage.GetPath())
-		pkg, isTracked := d.trackedPackages[packagePath]
+		packagePath := nodePackage.GetPath()
+		packageAbsolutePath := path.Join(d.mainPackage.Path, nodePackage.GetPath())
+		pkg, isTracked := d.trackedPackages[packageAbsolutePath]
+
+		nodePackage.InferredPath = packagePath
+		nodePackage.InferredAbsolutePath = packageAbsolutePath
 
 		// If the package was already tracked,
 		// then add it to the source file
@@ -284,16 +288,19 @@ func (d *PackageDependenciesAnalyzer) BuildSourceFile(sourceFilePath string, pkg
 		}
 
 		// Try to find the package in the filesystem
-		_, err = os.Stat(packagePath)
+		_, err = os.Stat(packageAbsolutePath)
 		// If no error, then the package exists,
 		// and it is possible to build it
 		if err == nil {
-			pkg = NewSourcePackage(nodePackage.GetName(), packagePath)
+			pkg = NewSourcePackage(nodePackage.GetName(), packageAbsolutePath)
 
 			err := d.BuildPackage(pkg)
 			if err != nil {
 				return nil, err
 			}
+
+			// It is a sourced package
+			nodePackage.Type = ast.NodePackageSourced
 
 			goto next
 		}
@@ -302,13 +309,16 @@ func (d *PackageDependenciesAnalyzer) BuildSourceFile(sourceFilePath string, pkg
 		// try to find it in the builtin packages
 		if builtInPackage, ok := builtin.Packages[nodePackage.GetPath()]; ok {
 			pkg = &BuiltInPackage{builtInPackage}
+
+			// It is a builtin package
+			nodePackage.Type = ast.NodePackageBuiltin
+
 			goto next
 		}
 
 		return nil, ErrorAt(nodePackage.GetPosition()).PackageNotFound(nodePackage.GetName())
 
 	next:
-
 		for _, ident := range nodePackage.Imports {
 			identNode, isIdentNode := ident.(*ast.NodeIdent)
 			if !isIdentNode {
@@ -347,7 +357,12 @@ func (d *PackageDependenciesAnalyzer) BuildSourceFile(sourceFilePath string, pkg
 		}
 
 		if !isTracked {
-			d.trackedPackages[packagePath] = pkg
+			d.trackedPackages[packageAbsolutePath] = pkg
+
+			ident := "package: " + nodePackage.GetName() + "@" + sourceFile.file.Name()
+			if !d.trackIdent(ident) {
+				d.Nodes = append(d.Nodes, nodePackage)
+			}
 		}
 
 		// Register the package into the source file
@@ -375,10 +390,10 @@ func (d *PackageDependenciesAnalyzer) analyzeType(typ runtime.GDTypable, astNode
 			switch nodeRef := nodeRef.(type) {
 			case *NodeWithSourceFile:
 				return d.analyzeNode(nodeRef.Node, nodeRef.SourceFile)
-			case runtime.GDObject:
+			case *runtime.GDSymbol:
 				// Nothing to do
 			default:
-				panic("Invalid member type, expected *NodeWithSourceFile or runtime.GDObject")
+				panic("Invalid member type, expected *NodeWithSourceFile or *runtime.GDSymbol")
 			}
 		}
 
@@ -439,10 +454,10 @@ func (d *PackageDependenciesAnalyzer) analyzeNode(astNode ast.Node, sourceFile *
 			switch nodeRef := nodeRef.(type) {
 			case *NodeWithSourceFile:
 				return d.analyzeNode(nodeRef.Node, nodeRef.SourceFile)
-			case runtime.GDObject:
+			case *runtime.GDSymbol:
 				// Nothing to do
 			default:
-				panic("Invalid member type, expected *NodeWithSourceFile or runtime.GDObject")
+				panic("Invalid member type, expected *NodeWithSourceFile or *runtime.GDSymbol")
 			}
 		}
 

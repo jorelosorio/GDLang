@@ -24,8 +24,8 @@ import (
 	"gdlang/src/gd/ast"
 )
 
-// The evaluator is an interface that is used to evaluate the analyzed AST,
-// and it is used for static analysis and code generation.
+// Evaluator is an interface that traverses the analyzed AST, and
+// it is used for static analysis and code generation.
 type Evaluator[T interface{}, E interface{}] interface {
 	EvalAtom(a *ast.NodeLiteral, stack E) (T, error)
 	EvalIdent(i *ast.NodeIdent, stack E) (T, error)
@@ -51,6 +51,7 @@ type Evaluator[T interface{}, E interface{}] interface {
 	EvalCollectableOp(c *ast.NodeMutCollectionOp, stack E) (T, error)
 	EvalTypeAlias(t *ast.NodeTypeAlias, stack E) (T, error)
 	EvalCastExpr(c *ast.NodeCastExpr, stack E) (T, error)
+	EvalPackage(p *ast.NodePackage, stack E) (T, error)
 }
 
 type ExpressionEvaluator[T interface{}, E interface{}] struct{ Evaluator[T, E] }
@@ -119,6 +120,8 @@ func (e *ExpressionEvaluator[T, E]) EvalNode(node ast.Node, stack E) (T, error) 
 		return e.EvalCollectableOp(node, stack)
 	case *ast.NodeBreak:
 		return zeroT, nil
+	case *ast.NodePackage:
+		return e.EvalPackage(node, stack)
 	}
 
 	panic(fmt.Errorf("unhandled node type: %T", node))

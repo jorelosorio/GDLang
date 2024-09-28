@@ -25,7 +25,7 @@ import (
 
 var (
 	// Packages is a map of all builtin packages
-	Packages = map[string]*runtime.GDPackage[runtime.GDObject]{
+	Packages = map[string]*runtime.GDPackage[*runtime.GDSymbol]{
 		"http": HttpPackage(),
 	}
 )

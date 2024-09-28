@@ -603,6 +603,10 @@ func (c *GDCompiler) EvalCastExpr(cast *ast.NodeCastExpr, stack ir.GDIRStackNode
 	}
 }
 
+func (c *GDCompiler) EvalPackage(p *ast.NodePackage, stack ir.GDIRStackNode) (ir.GDIRNode, error) {
+	return nil, nil
+}
+
 func (c *GDCompiler) evalBlock(b *ast.NodeBlock, _ ir.GDIRStackNode) (ir.GDIRNode, error) {
 	block := ir.NewGDIRBlock()
 
