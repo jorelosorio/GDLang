@@ -21,19 +21,8 @@ package ast_test
 
 import (
 	"gdlang/src/comn"
-	"gdlang/src/gd/ast"
-	"gdlang/src/gd/scanner"
-)
-
-var (
-	fileSet = scanner.NewFileSet()
-	astObj  = ast.NAst()
 )
 
 func init() {
 	comn.PrettyPrintErrors = false
-}
-
-func newTestFile(srcLen int) (*scanner.File, error) {
-	return fileSet.AddFile("test.gd", fileSet.Base(), srcLen)
 }
