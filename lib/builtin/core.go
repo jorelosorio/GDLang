@@ -49,7 +49,7 @@ func ImportCoreBuiltins(stack *runtime.GDSymbolStack) error {
 // Type functions
 
 func typeof(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	objParam := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("obj"))
+	objParam := runtime.NewStrRefType("obj")
 	funcType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
 			{Key: objParam, Value: runtime.GDAnyType},
@@ -82,7 +82,7 @@ func println(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 }
 
 func printFunc(stack *runtime.GDSymbolStack, newLine bool) runtime.GDObject {
-	argIdent := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("args"))
+	argIdent := runtime.NewStrRefType("args")
 	argType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
 			{Key: argIdent, Value: runtime.GDAnyType},

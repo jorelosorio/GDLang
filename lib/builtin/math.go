@@ -307,8 +307,8 @@ func atan() *runtime.GDSymbol {
 }
 
 func atan2() *runtime.GDSymbol {
-	yParam := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("y"))
-	xParam := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("x"))
+	yParam := runtime.NewStrRefType("y")
+	xParam := runtime.NewStrRefType("x")
 
 	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
@@ -421,7 +421,7 @@ func round() *runtime.GDSymbol {
 }
 
 func mathOp(opFunc func(num runtime.GDObject) (runtime.GDObject, error)) *runtime.GDSymbol {
-	num := runtime.NewGDIdentRefType(runtime.NewGDStringIdent("num"))
+	num := runtime.NewStrRefType("num")
 
 	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{

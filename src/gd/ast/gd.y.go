@@ -1087,7 +1087,7 @@ yydefault:
 	case 62:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.gd_type = runtime.NewGDIdentRefType(runtime.NewGDStringIdent(yyDollar[1].token.Lit))
+			yyVAL.gd_type = runtime.NewStrRefType(yyDollar[1].token.Lit)
 		}
 	case 63:
 		yyDollar = yyS[yypt-1 : yypt+1]

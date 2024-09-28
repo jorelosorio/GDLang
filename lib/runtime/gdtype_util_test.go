@@ -316,8 +316,8 @@ func TestTypeInference(t *testing.T) {
 		// set a func2 = func1
 		{func2, func1, nil, "expected `() => string` but got `() => any`"},
 		// string as type
-		{runtime.NewGDIdentRefType(runtime.NewGDStringIdent("typ")), runtime.GDStringType, runtime.NewGDIdentRefType(runtime.NewGDStringIdent("typ")), ""},
-		{runtime.NewGDIdentRefType(runtime.NewGDStringIdent("typ")), runtime.GDIntType, nil, "expected `typ` but got `int`"},
+		{runtime.NewStrRefType("typ"), runtime.GDStringType, runtime.NewStrRefType("typ"), ""},
+		{runtime.NewStrRefType("typ"), runtime.GDIntType, nil, "expected `typ` but got `int`"},
 	}
 
 	TypeTests(t, tests, func(t *testing.T, test TypeTest) error {

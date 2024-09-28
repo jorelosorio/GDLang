@@ -24,4 +24,8 @@ type GDIdentRefType struct{ GDIdent }
 func (t GDIdentRefType) GetCode() GDTypableCode { return GDTypeRefTypeCode }
 func (t GDIdentRefType) ToString() string       { return t.GDIdent.ToString() }
 
-func NewGDIdentRefType(ident GDIdent) GDIdentRefType { return GDIdentRefType{ident} }
+func NewRefType(ident GDIdent) GDIdentRefType { return GDIdentRefType{ident} }
+
+func NewStrRefType(ident string) GDIdentRefType {
+	return NewRefType(NewGDStringIdent(ident))
+}
