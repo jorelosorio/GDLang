@@ -151,7 +151,7 @@ func determineTypeCompatibility(toType, fromType GDTypable, isAssignmentNeeded b
 	}
 
 	switch toType := toType.(type) {
-	case GDIdentRefType:
+	case GDRefType:
 		// TODO: It might be also possible to check for ident names are similar
 		symbol, err := stack.GetSymbol(toType)
 		if err != nil {

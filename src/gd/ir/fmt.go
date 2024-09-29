@@ -48,7 +48,7 @@ func IRObjectTypeToString(obj runtime.GDObject) string {
 func formatTypeToString(typ runtime.GDTypable) string {
 	typeCode := runtime.GDTypeCodeMap[typ.GetCode()]
 	switch typ := typ.(type) {
-	case runtime.GDIdentRefType:
+	case runtime.GDRefType:
 		return fmt.Sprintf("(%s: %s)", typeCode, typ.ToString())
 	case runtime.GDObjRefType:
 		return fmt.Sprintf("(%s: %s)", typeCode, typ.ToString())

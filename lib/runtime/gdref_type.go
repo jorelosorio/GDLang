@@ -19,13 +19,14 @@
 
 package runtime
 
-type GDIdentRefType struct{ GDIdent }
+// This wrapper for GDIdent represents a type or object in the stack.
+type GDRefType struct{ GDIdent }
 
-func (t GDIdentRefType) GetCode() GDTypableCode { return GDTypeRefTypeCode }
-func (t GDIdentRefType) ToString() string       { return t.GDIdent.ToString() }
+func (t GDRefType) GetCode() GDTypableCode { return GDRefTypeCode }
+func (t GDRefType) ToString() string       { return t.GDIdent.ToString() }
 
-func NewRefType(ident GDIdent) GDIdentRefType { return GDIdentRefType{ident} }
+func NewGDRefType(ident GDIdent) GDRefType { return GDRefType{ident} }
 
-func NewStrRefType(ident string) GDIdentRefType {
-	return NewRefType(NewGDStringIdent(ident))
+func NewGDStrRefType(ident string) GDRefType {
+	return NewGDRefType(NewGDStrIdent(ident))
 }

@@ -1087,7 +1087,7 @@ yydefault:
 	case 62:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.gd_type = runtime.NewStrRefType(yyDollar[1].token.Lit)
+			yyVAL.gd_type = runtime.NewGDStrRefType(yyDollar[1].token.Lit)
 		}
 	case 63:
 		yyDollar = yyS[yypt-1 : yypt+1]
@@ -1211,7 +1211,7 @@ yydefault:
 	case 86:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
-			ident := runtime.NewGDStringIdent(yyDollar[1].node.(*NodeIdent).Lit)
+			ident := runtime.NewGDStrIdent(yyDollar[1].node.(*NodeIdent).Lit)
 			yyVAL.gd_type = runtime.GDStructAttrType{Ident: ident, Type: yyDollar[3].gd_type}
 		}
 	case 87:

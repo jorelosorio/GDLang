@@ -36,7 +36,7 @@ func ImportCoreBuiltins(stack *runtime.GDSymbolStack) error {
 			return err
 		}
 
-		ident := runtime.NewGDStringIdent(ident)
+		ident := runtime.NewGDStrIdent(ident)
 		_, err = stack.AddSymbol(ident, true, true, obj.GetType(), obj)
 		if err != nil {
 			return err
@@ -49,7 +49,7 @@ func ImportCoreBuiltins(stack *runtime.GDSymbolStack) error {
 // Type functions
 
 func typeof(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	objParam := runtime.NewStrRefType("obj")
+	objParam := runtime.NewGDStrRefType("obj")
 	funcType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
 			{Key: objParam, Value: runtime.GDAnyType},
@@ -82,7 +82,7 @@ func println(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
 }
 
 func printFunc(stack *runtime.GDSymbolStack, newLine bool) runtime.GDObject {
-	argIdent := runtime.NewStrRefType("args")
+	argIdent := runtime.NewGDStrRefType("args")
 	argType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
 			{Key: argIdent, Value: runtime.GDAnyType},

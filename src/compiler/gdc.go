@@ -572,7 +572,7 @@ func (c *GDCompiler) EvalCollectableOp(collectable *ast.NodeMutCollectionOp, sta
 }
 
 func (c *GDCompiler) EvalTypeAlias(ta *ast.NodeTypeAlias, stack ir.GDIRStackNode) (ir.GDIRNode, error) {
-	disc := ir.NewGDIRDiscoverable(ta.IsPub, true, runtime.NewGDStringIdent(ta.Ident.Lit), ta)
+	disc := ir.NewGDIRDiscoverable(ta.IsPub, true, runtime.NewGDStrIdent(ta.Ident.Lit), ta)
 
 	alias := ir.NewGDIRTypeAlias(disc, ta.Type, ta)
 	stack.AddNode(alias)
@@ -606,7 +606,7 @@ func (c *GDCompiler) EvalCastExpr(cast *ast.NodeCastExpr, stack ir.GDIRStackNode
 func (c *GDCompiler) EvalPackage(p *ast.NodePackage, stack ir.GDIRStackNode) (ir.GDIRNode, error) {
 	switch p.InferredMode {
 	case runtime.PackageModeBuiltin, runtime.PackageModeSource:
-		ident := runtime.NewGDStringIdent(p.InferredPath)
+		ident := runtime.NewGDStrIdent(p.InferredPath)
 		importNodes := make([]runtime.GDIdent, len(p.Imports))
 		for i, node := range p.Imports {
 			identNode, isIdentNode := node.(*ast.NodeIdent)
@@ -614,7 +614,7 @@ func (c *GDCompiler) EvalPackage(p *ast.NodePackage, stack ir.GDIRStackNode) (ir
 				panic("Invalid node type: expected *ast.NodeIdent")
 			}
 
-			importNodes[i] = runtime.NewGDStringIdent(identNode.Lit)
+			importNodes[i] = runtime.NewGDStrIdent(identNode.Lit)
 		}
 
 		irUse := ir.NewGDIRUse(p.InferredMode, ident, importNodes)

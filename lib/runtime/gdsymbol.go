@@ -20,7 +20,7 @@
 package runtime
 
 type GDSymbol struct {
-	Ident   GDIdent
+	Ident   GDIdent // TODO: Remove this field
 	IsPub   bool
 	IsConst bool
 	Type    GDTypable

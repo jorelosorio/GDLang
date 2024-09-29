@@ -95,8 +95,8 @@ func TestCastObject(t *testing.T) {
 	defer stack.Dispose()
 
 	userStruct, err := runtime.NewGDStruct(runtime.GDStructType{
-		{runtime.NewGDStringIdent("name"), runtime.GDStringType},
-		{runtime.NewGDStringIdent("age"), runtime.GDIntType},
+		{runtime.NewGDStrIdent("name"), runtime.GDStringType},
+		{runtime.NewGDStrIdent("age"), runtime.GDIntType},
 	}, stack)
 	if err != nil {
 		t.Fatalf("Error creating user struct: %v", err)
@@ -193,15 +193,15 @@ func TestCastObject(t *testing.T) {
 		{runtime.NewGDTuple(runtime.GDChar('h')), runtime.NewGDTupleType(runtime.GDStringType), ""},
 		// Struct cases
 		{userStruct, runtime.GDStructType{
-			{runtime.NewGDStringIdent("name"), runtime.GDStringType},
-			{runtime.NewGDStringIdent("age"), runtime.GDIntType},
+			{runtime.NewGDStrIdent("name"), runtime.GDStringType},
+			{runtime.NewGDStrIdent("age"), runtime.GDIntType},
 		}, ""},
 		{userStruct, runtime.GDStructType{
-			{runtime.NewGDStringIdent("name"), runtime.GDStringType},
+			{runtime.NewGDStrIdent("name"), runtime.GDStringType},
 		}, "attribute `age`, not found"},
 		{userStruct, runtime.GDStructType{
-			{runtime.NewGDStringIdent("name"), runtime.GDStringType},
-			{runtime.NewGDStringIdent("age"), runtime.GDStringType},
+			{runtime.NewGDStrIdent("name"), runtime.GDStringType},
+			{runtime.NewGDStrIdent("age"), runtime.GDStringType},
 		}, ""},
 	}
 

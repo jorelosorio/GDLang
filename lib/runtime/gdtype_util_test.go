@@ -190,7 +190,7 @@ func TestTypeInference(t *testing.T) {
 	func3 := runtime.NewGDLambdaType(runtime.GDLambdaArgTypes{}, runtime.GDIntType, false)
 
 	// Register a type alias
-	typeAliasIdent := runtime.NewGDStringIdent("typ")
+	typeAliasIdent := runtime.NewGDStrIdent("typ")
 	_, err := stack.AddSymbol(typeAliasIdent, true, true, runtime.GDStringType, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -287,7 +287,7 @@ func TestTypeInference(t *testing.T) {
 		// set a: struct = untyped
 		{structType1, runtime.GDUntypedType, structType1, ""},
 		// set a: {a: untyped} = {a: int}
-		{runtime.NewGDStructType(runtime.GDStructAttrType{runtime.NewGDStringIdent("a"), runtime.GDUntypedType}), runtime.NewGDStructType(runtime.GDStructAttrType{runtime.NewGDStringIdent("a"), runtime.GDIntType}), runtime.NewGDStructType(runtime.GDStructAttrType{runtime.NewGDStringIdent("a"), runtime.GDIntType}), ""},
+		{runtime.NewGDStructType(runtime.GDStructAttrType{runtime.NewGDStrIdent("a"), runtime.GDUntypedType}), runtime.NewGDStructType(runtime.GDStructAttrType{runtime.NewGDStrIdent("a"), runtime.GDIntType}), runtime.NewGDStructType(runtime.GDStructAttrType{runtime.NewGDStrIdent("a"), runtime.GDIntType}), ""},
 		// set a: struct = {untyped}
 		{structType1, runtime.NewGDStructType(), structType1, ""},
 		// set a: struct{a: int} = struct{b: int}
@@ -316,8 +316,8 @@ func TestTypeInference(t *testing.T) {
 		// set a func2 = func1
 		{func2, func1, nil, "expected `() => string` but got `() => any`"},
 		// string as type
-		{runtime.NewStrRefType("typ"), runtime.GDStringType, runtime.NewStrRefType("typ"), ""},
-		{runtime.NewStrRefType("typ"), runtime.GDIntType, nil, "expected `typ` but got `int`"},
+		{runtime.NewGDStrRefType("typ"), runtime.GDStringType, runtime.NewGDStrRefType("typ"), ""},
+		{runtime.NewGDStrRefType("typ"), runtime.GDIntType, nil, "expected `typ` but got `int`"},
 	}
 
 	TypeTests(t, tests, func(t *testing.T, test TypeTest) error {

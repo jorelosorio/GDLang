@@ -32,7 +32,7 @@ var (
 )
 
 func MathPackage() (*runtime.GDPackage[*runtime.GDSymbol], error) {
-	pkg := runtime.NewGDPackage[*runtime.GDSymbol](runtime.NewGDStringIdent("math"), "math", runtime.PackageModeBuiltin)
+	pkg := runtime.NewGDPackage[*runtime.GDSymbol](runtime.NewGDStrIdent("math"), "math", runtime.PackageModeBuiltin)
 	symbols := map[string]*runtime.GDSymbol{
 		"abs":   abs(),
 		"sqrt":  sqrt(),
@@ -53,7 +53,7 @@ func MathPackage() (*runtime.GDPackage[*runtime.GDSymbol], error) {
 		"pi": runtime.NewGDSymbol(true, false, runtime.GDFloatType, runtime.NewGDFloatNumber(runtime.GDFloat64(math.Pi))),
 	}
 	for ident, symbol := range symbols {
-		err := pkg.AddPublic(runtime.NewGDStringIdent(ident), symbol)
+		err := pkg.AddPublic(runtime.NewGDStrIdent(ident), symbol)
 		if err != nil {
 			return nil, err
 		}
@@ -307,8 +307,8 @@ func atan() *runtime.GDSymbol {
 }
 
 func atan2() *runtime.GDSymbol {
-	yParam := runtime.NewStrRefType("y")
-	xParam := runtime.NewStrRefType("x")
+	yParam := runtime.NewGDStrRefType("y")
+	xParam := runtime.NewGDStrRefType("x")
 
 	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
@@ -421,7 +421,7 @@ func round() *runtime.GDSymbol {
 }
 
 func mathOp(opFunc func(num runtime.GDObject) (runtime.GDObject, error)) *runtime.GDSymbol {
-	num := runtime.NewStrRefType("num")
+	num := runtime.NewGDStrRefType("num")
 
 	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{

@@ -72,7 +72,7 @@ func QuickGDStructType(elements ...interface{}) GDStructType {
 		}
 
 		attrs = append(attrs, GDStructAttrType{
-			Ident: NewGDStringIdent(ident),
+			Ident: NewGDStrIdent(ident),
 			Type:  typable,
 		})
 	}

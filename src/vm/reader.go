@@ -76,7 +76,7 @@ func (p *GDVMReader) ReadType(stack *runtime.GDSymbolStack) (runtime.GDTypable, 
 		oIdent := runtime.NewGDObjRefType(ident)
 
 		return oIdent, nil
-	case runtime.GDTypeRefTypeCode:
+	case runtime.GDRefTypeCode:
 		ident, err := p.ReadIdent()
 		if err != nil {
 			return nil, err
@@ -198,7 +198,7 @@ func (p *GDVMReader) ReadIdent() (runtime.GDIdent, error) {
 			return nil, err
 		}
 
-		return runtime.NewGDStringIdent(str), nil
+		return runtime.NewGDStrIdent(str), nil
 	}
 
 	return nil, WrongTypeErr(runtime.Sprintf("an `ident` type was expected, but got an invalid mode: %@", byte(mode)))

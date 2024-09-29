@@ -37,7 +37,7 @@ type GDStringIdentGen struct{}
 
 func (s *GDStringIdentGen) NewIdent() runtime.GDIdent {
 	ident := randomAlphaString(genLength)
-	return runtime.NewGDStringIdent(ident)
+	return runtime.NewGDStrIdent(ident)
 }
 
 func randomAlphaString(length int) string {

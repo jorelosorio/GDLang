@@ -28,7 +28,7 @@ import (
 )
 
 func TestResolvePendingLabels(t *testing.T) {
-	labelIdent := runtime.NewGDStringIdent("test")
+	labelIdent := runtime.NewGDStrIdent("test")
 	ctx := ir.NewGDIRContext()
 
 	bytecode := &bytes.Buffer{}
@@ -60,7 +60,7 @@ func TestResolvePendingLabels(t *testing.T) {
 	}
 
 	// A label was added to the context
-	ctx.AddLabel(bytecode, 1, runtime.NewGDStringIdent("test"))
+	ctx.AddLabel(bytecode, 1, runtime.NewGDStrIdent("test"))
 
 	// At this point, the label should be resolved
 	codeBytes = bytecode.Bytes()

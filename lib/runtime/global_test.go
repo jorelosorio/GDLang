@@ -22,7 +22,7 @@ package runtime_test
 import "gdlang/lib/runtime"
 
 func NewGDStringIdentType(ident string) runtime.GDIdent {
-	return runtime.NewGDStringIdent(ident)
+	return runtime.NewGDStrIdent(ident)
 }
 
 var (

@@ -35,7 +35,7 @@ const (
 	GDUnionTypeCode
 	GDSpreadableTypeCode
 	GDUntypedTypeCode
-	GDTypeRefTypeCode
+	GDRefTypeCode
 	GDObjRefTypeCode
 
 	// Number types ordered
@@ -68,8 +68,8 @@ var GDTypeCodeMap = [...]string{
 	GDSpreadableTypeCode: "spreadable",
 	GDUntypedTypeCode:    "untyped",
 
-	GDTypeRefTypeCode: "type_ref",
-	GDObjRefTypeCode:  "obj_ref",
+	GDRefTypeCode:    "type_ref",
+	GDObjRefTypeCode: "obj_ref",
 
 	// Number types
 	GDInt8TypeCode:       "int8",

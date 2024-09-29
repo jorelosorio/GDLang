@@ -59,6 +59,6 @@ func (r GDStringIdent) GetMode() GDIdentMode { return GDStringIdentMode }
 func (r GDStringIdent) GetRawValue() any     { return string(r) }
 func (r GDStringIdent) ToString() string     { return string(r) }
 
-func NewGDStringIdent(value string) GDIdent {
+func NewGDStrIdent(value string) GDIdent {
 	return GDStringIdent(value)
 }
