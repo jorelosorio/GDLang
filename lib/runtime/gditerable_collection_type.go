@@ -20,6 +20,6 @@
 package runtime
 
 type GDIterableCollectionType interface {
-	GetTypes() (types []GDTypable, undeterminedLength bool)
+	GetTypeAt(index int) GDTypable
 	GetIterableType() GDTypable
 }

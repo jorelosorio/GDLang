@@ -361,18 +361,18 @@ ident_with_type:
 // Types
 
 unary_type:
-       LTINT                { $$ = runtime.GDIntType                  }
-       | LTFLOAT            { $$ = runtime.GDFloatType                }
-       | LTCOMPLEX          { $$ = runtime.GDComplexType              }
-       | LTBOOL             { $$ = runtime.GDBoolType                 }
-       | LTANY              { $$ = runtime.GDAnyType                  }
-       | LTSTRING           { $$ = runtime.GDStringType               }
-       | LTCHAR             { $$ = runtime.GDCharType                 }
-       | LIDENT             { $$ = runtime.NewStrRefType($1.Lit)      }
-       | tuple_type         { $$ = $1                                 }
-       | array_type         { $$ = $1                                 }
-       | struct_type        { $$ = $1                                 }
-       | LFUNC func_type    { $$ = $2                                 }
+       LTINT                { $$ = runtime.GDIntType                         }
+       | LTFLOAT            { $$ = runtime.GDFloatType                       }
+       | LTCOMPLEX          { $$ = runtime.GDComplexType                     }
+       | LTBOOL             { $$ = runtime.GDBoolType                        }
+       | LTANY              { $$ = runtime.GDAnyType                         }
+       | LTSTRING           { $$ = runtime.GDStringType                      }
+       | LTCHAR             { $$ = runtime.GDCharType                        }
+       | LIDENT             { $$ = runtime.NewGDStrTypeRefType($1.Lit)       }
+       | tuple_type         { $$ = $1                                        }
+       | array_type         { $$ = $1                                        }
+       | struct_type        { $$ = $1                                        }
+       | LFUNC func_type    { $$ = $2                                        }
 ;
 
 union_type:
@@ -423,9 +423,9 @@ array_type:
 
 struct_type:
        LLBRACE struct_attr_type_list optional_trailing_comma LRBRACE {
-              attrTypes := make([]runtime.GDStructAttrType, len($2))
+              attrTypes := make([]*runtime.GDStructAttrType, len($2))
               for i, attr := range $2 {
-                     attrTypes[i] = attr.(runtime.GDStructAttrType)
+                     attrTypes[i] = attr.(*runtime.GDStructAttrType)
               }
               $$ = runtime.NewGDStructType(attrTypes...)
        }
@@ -484,8 +484,12 @@ struct_attr_type_list:
 
 struct_attr_type:
        ident LCOLON type {
-              ident := runtime.NewGDStringIdent($1.(*NodeIdent).Lit)
-              $$ = runtime.GDStructAttrType{Ident: ident, Type: $3}
+              nodeIdent, ok := $1.(*NodeIdent)
+              if !ok {
+                     panic("struct_attr_type: Invalid `*NodeIdent` object")
+              }
+              ident := runtime.NewGDStrIdent(nodeIdent.Lit)
+              $$ = &runtime.GDStructAttrType{Ident: ident, Type: $3}
        }
 ;
 
@@ -660,7 +664,7 @@ selexpr:
        }
        // Array accessor expression
        | pexpr LLBRACK expr LRBRACK {
-              $$ = NewNodeIterIdxExpr(false, $1, $3)
+              $$ = NewNodeIndexableExpr(false, $1, $3)
        }
        // Pseudocall expression
        | pseudocall

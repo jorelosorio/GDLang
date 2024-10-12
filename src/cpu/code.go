@@ -34,6 +34,7 @@ const (
 	IGet                      // Get a value from an iterable
 	ILen                      // Get the length of an iterable
 	AGet                      // Get a value from a struct
+	ASet                      // Set a value to a struct
 	Lambda                    // Define a lambda
 	BBegin                    // Define a block
 	BEnd                      // End a block

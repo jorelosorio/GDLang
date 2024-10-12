@@ -43,7 +43,7 @@ func TestReturnTypes(t *testing.T) {
 		    return c
 		}
 		pub func main(){print(f());}
-		`, "", "expected `nil` but got `() => int`"},
+		`, "", "expected `nil` but got `func() => int`"},
 		{`
 		set a = 1
 		set b = a
@@ -61,7 +61,7 @@ func TestReturnTypes(t *testing.T) {
 				return c
 			}
 			print(b())
-		}`, "", "expected `nil` but got `() => int`"},
+		}`, "", "expected `nil` but got `func() => int`"},
 		{`func f()=>[int] {
 			return []
 		}

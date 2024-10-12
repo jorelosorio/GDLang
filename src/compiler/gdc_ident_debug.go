@@ -27,10 +27,19 @@ import (
 	"gdlang/src/gd/ast"
 )
 
-func (c *GDCompiler) DeriveIdent(node ast.Node) runtime.GDIdent {
-	return node.InferredIdent()
+func (c *GDCompiler) ResolveIdent(inference *ast.Inference) runtime.GDIdent {
+	if inference == nil {
+		panic("*ast.Inference is nil")
+	}
+
+	return inference.Ident
 }
 
-func (c *GDCompiler) DeriveType(node ast.Node) runtime.GDTypable {
-	return node.InferredType()
+func (c *GDCompiler) ResolveType(node ast.Node) runtime.GDTypable {
+	inference := node.GetInference()
+	if inference == nil {
+		panic("*ast.Inference is nil")
+	}
+
+	return inference.Type
 }

@@ -126,7 +126,7 @@ func ObjectNotFoundErr(key string) GDRuntimeErr {
 	return NewGDRuntimeErr(ObjectNotFoundErrCode, Sprintf("object `%@` was not found", key))
 }
 
-func DuplicatedObjectCreationErr(key any) GDRuntimeErr {
+func DuplicatedSymbolErr(key any) GDRuntimeErr {
 	return NewGDRuntimeErr(DuplicatedObjectCreationCode, Sprintf("object `%@` was already created", key))
 }
 

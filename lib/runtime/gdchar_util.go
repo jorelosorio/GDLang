@@ -24,7 +24,12 @@ func IsChar(value any) bool {
 	case rune:
 		return true
 	case GDObject:
-		return value.GetType() == GDCharType
+		return value.GetType() == GDCharTypeRef
+	case GDTypable:
+		switch value.GetCode() {
+		case GDCharTypeCode:
+			return true
+		}
 	}
 
 	return false
@@ -35,8 +40,8 @@ func ToChar(value any) (GDChar, error) {
 	case GDChar:
 		return value, nil
 	case GDObject:
-		return GDChar(0), InvalidCastingWrongTypeErr(GDCharType, value.GetType())
+		return GDChar(0), InvalidCastingWrongTypeErr(GDCharTypeRef, value.GetType())
 	default:
-		return GDChar(0), InvalidCastingExpectedTypeErr(GDCharType)
+		return GDChar(0), InvalidCastingExpectedTypeErr(GDCharTypeRef)
 	}
 }

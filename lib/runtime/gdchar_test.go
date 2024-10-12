@@ -51,7 +51,7 @@ func TestCreateCharFromInvalidString(t *testing.T) {
 
 func TestCharType(t *testing.T) {
 	char := runtime.GDChar('a')
-	if char.GetType() != runtime.GDCharType {
+	if char.GetType() != runtime.GDCharTypeRef {
 		t.Error("Expected CharType but got ", char.GetType())
 	}
 }

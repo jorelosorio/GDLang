@@ -28,14 +28,14 @@ import (
 )
 
 type GDIRAGet struct {
-	ident     runtime.GDIdent
 	isNilSafe bool
+	ident     runtime.GDIdent
 	expr      GDIRNode
 	GDIRBaseNode
 }
 
 func (i *GDIRAGet) BuildAssembly(padding string) string {
-	return padding + fmt.Sprintf("%s %s %s", cpu.GetCPUInstName(cpu.AGet), i.expr.BuildAssembly(""), i.ident.ToString())
+	return padding + fmt.Sprintf("%s%s %s %s", cpu.GetCPUInstName(cpu.AGet), tif(i.isNilSafe, " nilsafe", ""), i.expr.BuildAssembly(""), i.ident.ToString())
 }
 
 func (i *GDIRAGet) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
@@ -60,5 +60,5 @@ func (i *GDIRAGet) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error
 }
 
 func NewGDIRAIGet(ident runtime.GDIdent, isNilSafe bool, expr GDIRNode, node ast.Node) (*GDIRAGet, *GDIRObject) {
-	return &GDIRAGet{ident, isNilSafe, expr, GDIRBaseNode{node}}, NewGDIRRegObject(cpu.RPop, node)
+	return &GDIRAGet{isNilSafe, ident, expr, GDIRBaseNode{node}}, NewGDIRRegObject(cpu.RPop, node)
 }

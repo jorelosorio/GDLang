@@ -23,9 +23,9 @@ import "gdlang/lib/runtime"
 
 type VMJump uint
 
-func (gd VMJump) GetType() runtime.GDTypable    { return runtime.GDIntType }
+func (gd VMJump) GetType() runtime.GDTypable    { return runtime.GDIntTypeRef }
 func (gd VMJump) GetSubType() runtime.GDTypable { return nil }
 func (gd VMJump) ToString() string              { return "" }
-func (gd VMJump) CastToType(typ runtime.GDTypable, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (gd VMJump) CastToType(typ runtime.GDTypable) (runtime.GDObject, error) {
 	return nil, nil
 }

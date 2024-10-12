@@ -75,6 +75,8 @@ func WriteType(bytecode *bytes.Buffer, typ runtime.GDTypable) error {
 				return err
 			}
 		}
+	case *runtime.GDTypeAliasType:
+		return WriteIdent(bytecode, t.GDIdent)
 	case runtime.GDIdent:
 		// Write the ident mode and raw value
 		return WriteIdent(bytecode, t)
@@ -178,7 +180,7 @@ func writeObject(bytecode *bytes.Buffer, obj runtime.GDObject) error {
 				return err
 			}
 
-			err = writeObjectWithType(bytecode, symbol.Object)
+			err = writeObjectWithType(bytecode, symbol.Value.(runtime.GDObject))
 			if err != nil {
 				return err
 			}
@@ -186,12 +188,12 @@ func writeObject(bytecode *bytes.Buffer, obj runtime.GDObject) error {
 	case *runtime.GDSpreadable:
 		err = writeObjectWithType(bytecode, obj.Iterable)
 	case *runtime.GDArray:
-		err = WriteByte(bytecode, byte(len(obj.Objects)))
+		err = WriteByte(bytecode, byte(len(obj.GetObjects())))
 		if err != nil {
 			return err
 		}
 
-		for _, item := range obj.Objects {
+		for _, item := range obj.GetObjects() {
 			err := writeObjectWithType(bytecode, item)
 			if err != nil {
 				return err

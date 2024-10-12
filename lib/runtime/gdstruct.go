@@ -21,33 +21,30 @@ package runtime
 
 type GDStruct struct {
 	Type  GDStructType
-	stack *GDSymbolStack
+	stack *GDStack
 }
 
 func (gd *GDStruct) GetType() GDTypable    { return gd.Type }
 func (gd *GDStruct) GetSubType() GDTypable { return nil }
 func (gd *GDStruct) ToString() string {
-	return "{" + JoinSlice(gd.Type, func(attrType GDStructAttrType, _ int) string {
+	return "{" + JoinSlice(gd.Type, func(attrType *GDStructAttrType, _ int) string {
 		symbol, err := gd.GetAttr(attrType.Ident)
 		if err != nil {
 			// NOTE: If attribute is not found, then panic!
 			panic(err)
 		}
 
-		if symbol.Object != nil {
-			return attrType.Ident.ToString() + ": " + ObjectToStringForInternalData(symbol.Object)
+		if symbol.Value != nil {
+			return attrType.Ident.ToString() + ": " + ConvertObjectToString(symbol.Value)
 		} else {
 			return attrType.ToString()
 		}
 	}, ", ") + "}"
 }
-func (gd *GDStruct) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
+func (gd *GDStruct) CastToType(typ GDTypable) (GDObject, error) {
 	switch typ := typ.(type) {
-	case GDType:
-		switch typ {
-		case GDStringType:
-			return GDString(gd.ToString()), nil
-		}
+	case GDStringType:
+		return GDString(gd.ToString()), nil
 	case GDStructType:
 		for _, attr := range gd.Type {
 			typAttr, err := typ.GetAttrType(attr.Ident)
@@ -55,19 +52,22 @@ func (gd *GDStruct) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, e
 				return nil, TypeCastingWrongTypeWithHierarchyError(typ, gd.GetType(), err)
 			}
 
-			symbol, err := gd.GetAttr(attr.Ident)
+			attrSymbol, err := gd.GetAttr(attr.Ident)
 			if err != nil {
 				return nil, err
 			}
 
-			obj, err := symbol.Object.CastToType(typAttr, stack)
+			attrObj := attrSymbol.Value.(GDObject)
+
+			obj, err := attrObj.CastToType(typAttr)
 			if err != nil {
 				return nil, err
 			}
 
-			symbol.Type = typAttr
-			symbol.Object = obj
+			attrSymbol.Type = typAttr
+			attrSymbol.Value = obj
 		}
+
 		gd.Type = typ
 
 		return gd, nil
@@ -76,24 +76,24 @@ func (gd *GDStruct) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, e
 	return nil, InvalidCastingWrongTypeErr(typ, gd.GetType())
 }
 
-func (gd *GDStruct) GetStack() *GDSymbolStack { return gd.stack }
+func (gd *GDStruct) GetStack() *GDStack { return gd.stack }
 
 func (gd *GDStruct) GetAttr(ident GDIdent) (*GDSymbol, error) {
-	symbol, err := gd.stack.GetLocalSymbol(ident)
-	if err != nil {
+	symbol, ok := gd.stack.Symbols[ident.GetRawValue()]
+	if !ok {
 		return nil, AttributeNotFoundErr(ident.ToString())
 	}
 
 	return symbol, nil
 }
 
-func (gd *GDStruct) SetAttr(ident GDIdent, object GDObject) (*GDSymbol, error) {
+func (gd *GDStruct) SetAttr(ident GDIdent, typ GDTypable, object GDObject) (*GDSymbol, error) {
 	symbol, err := gd.GetAttr(ident)
 	if err != nil {
 		return nil, err
 	}
 
-	err = symbol.SetObject(object, gd.stack)
+	err = symbol.SetObject(typ, object, gd.stack)
 	if err != nil {
 		return nil, err
 	}
@@ -101,12 +101,12 @@ func (gd *GDStruct) SetAttr(ident GDIdent, object GDObject) (*GDSymbol, error) {
 	return symbol, nil
 }
 
-func NewGDStruct(typ GDStructType, stack *GDSymbolStack) (*GDStruct, error) {
-	structStack := stack.NewSymbolStack(StructCtx)
+func NewGDStruct(typ GDStructType, stack *GDStack) (*GDStruct, error) {
+	structStack := stack.NewStack(StructCtx)
 
 	for _, attr := range typ {
 		// Struct attributes are not constants
-		_, err := structStack.AddSymbol(attr.Ident, true, false, attr.Type, GDZNil)
+		_, err := structStack.AddNewSymbol(attr.Ident, true, false, attr.Type, GDNilTypeRef, GDZNil)
 		if err != nil {
 			return nil, err
 		}
@@ -115,8 +115,8 @@ func NewGDStruct(typ GDStructType, stack *GDSymbolStack) (*GDStruct, error) {
 	return &GDStruct{typ, structStack}, nil
 }
 
-func QuickGDStruct(stack *GDSymbolStack, typ GDStructType, attrs ...GDObject) (*GDStruct, error) {
-	structStack := stack.NewSymbolStack(StructCtx)
+func QuickGDStruct(stack *GDStack, typ GDStructType, attrs ...GDObject) (*GDStruct, error) {
+	structStack := stack.NewStack(StructCtx)
 
 	if len(attrs) != len(typ) {
 		panic("attributes count must be equal to structType count")
@@ -124,7 +124,7 @@ func QuickGDStruct(stack *GDSymbolStack, typ GDStructType, attrs ...GDObject) (*
 
 	for i, attr := range typ {
 		// Struct attributes are not constants
-		_, err := structStack.AddSymbol(attr.Ident, true, false, attr.Type, attrs[i])
+		_, err := structStack.AddNewSymbol(attr.Ident, true, false, attr.Type, attrs[i].GetType(), attrs[i])
 		if err != nil {
 			return nil, err
 		}

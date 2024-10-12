@@ -1042,7 +1042,7 @@ yydefault:
 	case 53:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
-			yyVAL.gd_type = runtime.GDUntypedType
+			yyVAL.gd_type = runtime.GDUntypedTypeRef
 		}
 	case 54:
 		yyDollar = yyS[yypt-3 : yypt+1]
@@ -1052,42 +1052,42 @@ yydefault:
 	case 55:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.gd_type = runtime.GDIntType
+			yyVAL.gd_type = runtime.GDIntTypeRef
 		}
 	case 56:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.gd_type = runtime.GDFloatType
+			yyVAL.gd_type = runtime.GDFloatTypeRef
 		}
 	case 57:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.gd_type = runtime.GDComplexType
+			yyVAL.gd_type = runtime.GDComplexTypeRef
 		}
 	case 58:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.gd_type = runtime.GDBoolType
+			yyVAL.gd_type = runtime.GDBoolTypeRef
 		}
 	case 59:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.gd_type = runtime.GDAnyType
+			yyVAL.gd_type = runtime.GDAnyTypeRef
 		}
 	case 60:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.gd_type = runtime.GDStringType
+			yyVAL.gd_type = runtime.GDStringTypeRef
 		}
 	case 61:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.gd_type = runtime.GDCharType
+			yyVAL.gd_type = runtime.GDCharTypeRef
 		}
 	case 62:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.gd_type = runtime.NewGDStrRefType(yyDollar[1].token.Lit)
+			yyVAL.gd_type = runtime.NewGDStrTypeRefType(yyDollar[1].token.Lit)
 		}
 	case 63:
 		yyDollar = yyS[yypt-1 : yypt+1]
@@ -1153,9 +1153,9 @@ yydefault:
 	case 75:
 		yyDollar = yyS[yypt-4 : yypt+1]
 		{
-			attrTypes := make([]runtime.GDStructAttrType, len(yyDollar[2].gd_type_list))
+			attrTypes := make([]*runtime.GDStructAttrType, len(yyDollar[2].gd_type_list))
 			for i, attr := range yyDollar[2].gd_type_list {
-				attrTypes[i] = attr.(runtime.GDStructAttrType)
+				attrTypes[i] = attr.(*runtime.GDStructAttrType)
 			}
 			yyVAL.gd_type = runtime.NewGDStructType(attrTypes...)
 		}
@@ -1184,7 +1184,7 @@ yydefault:
 	case 81:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
-			yyVAL.gd_type = runtime.GDNilType
+			yyVAL.gd_type = runtime.GDNilTypeRef
 		}
 	case 82:
 		yyDollar = yyS[yypt-4 : yypt+1]
@@ -1211,8 +1211,12 @@ yydefault:
 	case 86:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
-			ident := runtime.NewGDStrIdent(yyDollar[1].node.(*NodeIdent).Lit)
-			yyVAL.gd_type = runtime.GDStructAttrType{Ident: ident, Type: yyDollar[3].gd_type}
+			nodeIdent, ok := yyDollar[1].node.(*NodeIdent)
+			if !ok {
+				panic("struct_attr_type: Invalid `*NodeIdent` object")
+			}
+			ident := runtime.NewGDStrIdent(nodeIdent.Lit)
+			yyVAL.gd_type = &runtime.GDStructAttrType{Ident: ident, Type: yyDollar[3].gd_type}
 		}
 	case 87:
 		yyDollar = yyS[yypt-3 : yypt+1]
@@ -1391,7 +1395,7 @@ yydefault:
 	case 137:
 		yyDollar = yyS[yypt-4 : yypt+1]
 		{
-			yyVAL.node = NewNodeIterIdxExpr(false, yyDollar[1].node, yyDollar[3].node)
+			yyVAL.node = NewNodeIndexableExpr(false, yyDollar[1].node, yyDollar[3].node)
 		}
 	case 139:
 		yyDollar = yyS[yypt-4 : yypt+1]

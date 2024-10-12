@@ -37,7 +37,7 @@ type Evaluator[T interface{}, E interface{}] interface {
 	EvalStruct(s *ast.NodeStruct, stack E) (T, error)
 	EvalArray(a *ast.NodeArray, stack E) (T, error)
 	EvalReturn(r *ast.NodeReturn, stack E) (T, error)
-	EvalIterIdxExpr(a *ast.NodeIterIdxExpr, stack E) (T, error)
+	EvalIterIdxExpr(a *ast.NodeIndexableExpr, stack E) (T, error)
 	EvalCallExpr(c *ast.NodeCallExpr, stack E) (T, error)
 	EvalSafeDotExpr(s *ast.NodeSafeDotExpr, stack E) (T, error)
 	EvalSets(s *ast.NodeSets, stack E) (T, error)
@@ -98,7 +98,7 @@ func (e *ExpressionEvaluator[T, E]) EvalNode(node ast.Node, stack E) (T, error) 
 		return e.EvalSet(node, stack)
 	case *ast.NodeCallExpr:
 		return e.EvalCallExpr(node, stack)
-	case *ast.NodeIterIdxExpr:
+	case *ast.NodeIndexableExpr:
 		return e.EvalIterIdxExpr(node, stack)
 	case *ast.NodeTypeAlias:
 		return e.EvalTypeAlias(node, stack)

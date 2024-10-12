@@ -19,9 +19,9 @@
 
 package runtime
 
-func ComputeTypeFromObjects(objects []GDObject) GDTypable {
+func ComputeTypeFromObjects(objects []GDObject, stack *GDStack) GDTypable {
 	if len(objects) == 0 {
-		return GDUntypedType
+		return GDUntypedTypeRef
 	}
 
 	types := make([]GDTypable, 0)
@@ -34,7 +34,7 @@ func ComputeTypeFromObjects(objects []GDObject) GDTypable {
 
 func ComputeTypeFromTypes(types []GDTypable) GDTypable {
 	if len(types) == 0 {
-		return GDUntypedType
+		return GDUntypedTypeRef
 	}
 
 	var computedType GDTypable
@@ -65,20 +65,6 @@ func ComputeTypeFromTypes(types []GDTypable) GDTypable {
 	return computedType
 }
 
-func UnwrapIdentType(typ GDTypable, stack *GDSymbolStack) (GDTypable, error) {
-	switch typ := typ.(type) {
-	case GDIdent:
-		symbol, err := stack.GetSymbol(typ)
-		if err != nil {
-			return nil, err
-		}
-
-		return symbol.Type, nil
-	}
-
-	return typ, nil
-}
-
 func IsUntypedType(typ GDTypable) bool {
 	switch typ := typ.(type) {
 	case *GDArrayType:
@@ -93,10 +79,10 @@ func IsUntypedType(typ GDTypable) bool {
 		return false
 	}
 
-	return typ == GDUntypedType
+	return typ == GDUntypedTypeRef
 }
 
-func CanBeAssign(left, right GDTypable, stack *GDSymbolStack) error {
+func CanBeAssign(left, right GDTypable, stack *GDStack) error {
 	_, err := determineTypeCompatibility(left, right, true, stack)
 	if err != nil {
 		if err, isGDErr := err.(GDRuntimeErr); isGDErr {
@@ -112,7 +98,7 @@ func CanBeAssign(left, right GDTypable, stack *GDSymbolStack) error {
 	return nil
 }
 
-func EqualTypes(left, right GDTypable, stack *GDSymbolStack) error {
+func EqualTypes(left, right GDTypable, stack *GDStack) error {
 	_, err := determineTypeCompatibility(left, right, false, stack)
 	if err != nil {
 		return TypesAreNotEqualErr(left, right)
@@ -121,14 +107,9 @@ func EqualTypes(left, right GDTypable, stack *GDSymbolStack) error {
 	return nil
 }
 
-// Resolves the ident types using the stack
-func CheckType(gdType GDTypable, stack *GDSymbolStack) error {
-	return CanBeAssign(gdType, gdType, stack)
-}
-
 // Rules:
 // - Untyped is considered a weak unknown type, however, it can mutate to any other more strong type.
-func InferType(toType, fromType GDTypable, stack *GDSymbolStack) (GDTypable, error) {
+func InferType(toType, fromType GDTypable, stack *GDStack) (GDTypable, error) {
 	typ, err := determineTypeCompatibility(toType, fromType, true, stack)
 	if err != nil {
 		if err, isGDErr := err.(GDRuntimeErr); isGDErr {
@@ -144,21 +125,41 @@ func InferType(toType, fromType GDTypable, stack *GDSymbolStack) (GDTypable, err
 	return typ, nil
 }
 
-func determineTypeCompatibility(toType, fromType GDTypable, isAssignmentNeeded bool, stack *GDSymbolStack) (GDTypable, error) {
-	fromType, err := UnwrapIdentType(fromType, stack)
-	if err != nil {
-		return nil, err
-	}
-
-	switch toType := toType.(type) {
-	case GDRefType:
-		// TODO: It might be also possible to check for ident names are similar
-		symbol, err := stack.GetSymbol(toType)
+func determineTypeCompatibility(toType, fromType GDTypable, isAssignmentNeeded bool, stack *GDStack) (GDTypable, error) {
+	if toRefType, isRefType := toType.(GDTypeRefType); isRefType && stack != nil {
+		symbol, err := stack.GetSymbol(toRefType.GDIdent)
 		if err != nil {
 			return nil, err
 		}
 
-		_, err = determineTypeCompatibility(symbol.Type, fromType, isAssignmentNeeded, stack)
+		toType = symbol.Type
+	}
+
+	if fromRefType, isRefType := fromType.(GDTypeRefType); isRefType && stack != nil {
+		symbol, err := stack.GetSymbol(fromRefType.GDIdent)
+		if err != nil {
+			return nil, err
+		}
+
+		fromType = symbol.Type
+	}
+
+	switch toType := toType.(type) {
+	// It should fall into the GDTypeRefType case
+	//If the types are not exhaustively checked in the stack,
+	// they must be compared against the names.
+	case GDTypeRefType:
+		if typ, ok := fromType.(GDTypeRefType); ok {
+			if toType.GDIdent.GetRawValue() == typ.GDIdent.GetRawValue() {
+				return toType, nil
+			}
+		}
+	case *GDTypeAliasType:
+		if typ, ok := fromType.(*GDTypeAliasType); ok {
+			fromType = typ.GDTypable
+		}
+
+		_, err := determineTypeCompatibility(toType.GDTypable, fromType, isAssignmentNeeded, stack)
 		if err != nil {
 			return nil, err
 		}
@@ -180,8 +181,8 @@ func determineTypeCompatibility(toType, fromType GDTypable, isAssignmentNeeded b
 				return nil, WrongTypesErr(toType, fromType)
 			}
 
-			for _, cType := range fromTypeUnion {
-				if !toType.ContainsType(cType, stack) {
+			for _, typ := range fromTypeUnion {
+				if !toType.ContainsType(typ, stack) {
 					return nil, WrongTypesErr(toType, fromType)
 				}
 			}
@@ -196,8 +197,8 @@ func determineTypeCompatibility(toType, fromType GDTypable, isAssignmentNeeded b
 				return nil, WrongTypesErr(toType, fromType)
 			}
 
-			for i, tType := range toType {
-				typ, err := determineTypeCompatibility(tType, fromTypeTuple[i], isAssignmentNeeded, stack)
+			for i, typ := range toType {
+				typ, err := determineTypeCompatibility(typ, fromTypeTuple[i], isAssignmentNeeded, stack)
 				if err != nil {
 					return nil, err
 				}
@@ -217,7 +218,7 @@ func determineTypeCompatibility(toType, fromType GDTypable, isAssignmentNeeded b
 				return nil, WrongTypesErr(toType, fromType)
 			}
 
-			structAttrTypes := make([]GDStructAttrType, len(toType))
+			structAttrTypes := make([]*GDStructAttrType, len(toType))
 			for i, fromAttr := range fromType {
 				attrType, err := toType.GetAttrType(fromAttr.Ident)
 				if err != nil {
@@ -229,7 +230,7 @@ func determineTypeCompatibility(toType, fromType GDTypable, isAssignmentNeeded b
 					return nil, err
 				}
 
-				structAttrTypes[i] = GDStructAttrType{Ident: fromAttr.Ident, Type: typ}
+				structAttrTypes[i] = &GDStructAttrType{Ident: fromAttr.Ident, Type: typ}
 			}
 
 			return NewGDStructType(structAttrTypes...), nil
@@ -246,12 +247,12 @@ func determineTypeCompatibility(toType, fromType GDTypable, isAssignmentNeeded b
 				return nil, WrongTypesErr(toType, fromType)
 			}
 
-			if err := EqualTypes(toType.ReturnType, fromType.ReturnType, stack); err != nil {
+			if _, err := determineTypeCompatibility(toType.ReturnType, fromType.ReturnType, false, stack); err != nil {
 				return nil, WrongTypesErr(toType, fromType)
 			}
 
 			for i, argType := range toType.ArgTypes {
-				if err := EqualTypes(argType.Value, fromType.ArgTypes[i].Value, stack); err != nil {
+				if _, err := determineTypeCompatibility(argType.Value, fromType.ArgTypes[i].Value, false, stack); err != nil {
 					return nil, WrongTypesErr(toType, fromType)
 				}
 			}
@@ -278,20 +279,20 @@ func determineTypeCompatibility(toType, fromType GDTypable, isAssignmentNeeded b
 	if isAssignmentNeeded {
 		// Untyped behaves as the type `any`, but with weak inference,
 		// that means it mutates to the other type, even if the other type is untyped.
-		if toType == GDUntypedType {
-			if fromType != GDNilType {
+		if toType == GDUntypedTypeRef {
+			if fromType != GDNilTypeRef {
 				return fromType, nil // Mutate to the fromType
 			} else {
 				return toType, nil
 			}
 		}
 
-		if fromType == GDUntypedType {
+		if fromType == GDUntypedTypeRef {
 			return toType, nil // Mutate to the toType
 		}
 
 		// Any and nil cases
-		if toType == GDAnyType || fromType == GDNilType {
+		if toType == GDAnyTypeRef || fromType == GDNilTypeRef {
 			return toType, nil
 		}
 	}

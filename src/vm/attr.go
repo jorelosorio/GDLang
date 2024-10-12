@@ -21,12 +21,36 @@ package vm
 
 import "gdlang/lib/runtime"
 
-type GDVMIdentSymbol struct {
-	Ident  runtime.GDIdent
-	Symbol *runtime.GDSymbol
+func (p *GDVMProc) evalASet(stack *runtime.GDStack) (runtime.GDObject, error) {
+	isNilSafe, err := p.ReadBool()
+	if err != nil {
+		return nil, err
+	}
+
+	ident, err := p.ReadIdent()
+	if err != nil {
+		return nil, err
+	}
+
+	// Reads the expression and the attribute
+	expr, err := p.ReadAttributable(stack)
+	if err != nil {
+		return nil, err
+	}
+
+	obj, err := p.ReadObject(stack)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := expr.SetAttr(ident, obj.GetType(), obj); err != nil && !isNilSafe {
+		return nil, err
+	}
+
+	return nil, nil
 }
 
-func (p *GDVMProc) evalAGet(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalAGet(stack *runtime.GDStack) (runtime.GDObject, error) {
 	isNilSafe, err := p.ReadBool()
 	if err != nil {
 		return nil, err
@@ -41,6 +65,7 @@ func (p *GDVMProc) evalAGet(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 		return nil, err
 	}
 
+	// First check if the attributable object is nil
 	if attrErr != nil && !isNilSafe {
 		return nil, err
 	} else if attrErr != nil && isNilSafe {
@@ -48,6 +73,7 @@ func (p *GDVMProc) evalAGet(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 		return nil, nil
 	}
 
+	// Get the attribute from the expression
 	symbol, err := expr.GetAttr(ident)
 	if err != nil && !isNilSafe {
 		return nil, err
@@ -56,8 +82,8 @@ func (p *GDVMProc) evalAGet(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 		return nil, nil
 	}
 
-	attrObj := runtime.NewGDAttrIdObject(ident, symbol.Object, expr)
-	stack.PushBuffer(attrObj)
+	//attrObj := runtime.NewGDAttrIdObject(ident, symbol.Value, expr)
+	stack.PushBuffer(symbol.Value.(runtime.GDObject))
 
 	return nil, nil
 }

@@ -45,8 +45,12 @@ var (
 	}
 	RuntimeErr = func(err error, inst cpu.GDInst, instOff uint) VmErr {
 		errMsg := formatRuntimeError(err.Error(), cpu.GetCPUInstName(inst), uint(inst), instOff)
-		mdMsg := comn.NewMarkdown(errMsg)
-		return VmErr{mdMsg.Stylize()}
+		if comn.PrettyPrintErrors {
+			mdMsg := comn.NewMarkdown(errMsg)
+			return VmErr{mdMsg.Stylize()}
+		}
+
+		return VmErr{errMsg}
 	}
 )
 

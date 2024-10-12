@@ -19,83 +19,88 @@
 
 package builtin
 
-import "gdlang/lib/runtime"
+import (
+	"gdlang/lib/runtime"
+	"sync"
+)
 
-type BuiltinMap = map[string]func(stack *runtime.GDSymbolStack) (runtime.GDObject, error)
+// Declare the variables
+var (
+	coreBuiltins     map[string]func() (*runtime.GDSymbol, error)
+	coreBuiltinsOnce sync.Once
+)
 
-var coreBuiltins = BuiltinMap{
-	"print":   print,
-	"println": println,
-	"typeof":  typeof,
-}
-
-func ImportCoreBuiltins(stack *runtime.GDSymbolStack) error {
-	for ident, fn := range coreBuiltins {
-		obj, err := fn(stack)
-		if err != nil {
-			return err
+// Lazy initializer function
+func GetCoreBuiltins() map[string]func() (*runtime.GDSymbol, error) {
+	coreBuiltinsOnce.Do(func() {
+		coreBuiltins = map[string]func() (*runtime.GDSymbol, error){
+			"print":   print,
+			"println": println,
+			"typeof":  typeof,
 		}
+	})
 
-		ident := runtime.NewGDStrIdent(ident)
-		_, err = stack.AddSymbol(ident, true, true, obj.GetType(), obj)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return coreBuiltins
 }
 
 // Type functions
 
-func typeof(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	objParam := runtime.NewGDStrRefType("obj")
-	funcType := runtime.NewGDLambdaType(
+func typeof() (*runtime.GDSymbol, error) {
+	objIdent := runtime.NewGDStrIdent("obj")
+	fnType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{Key: objParam, Value: runtime.GDAnyType},
+			{Key: objIdent, Value: runtime.GDAnyTypeRef},
 		},
-		runtime.GDStringType,
+		runtime.GDStringTypeRef,
 		false,
 	)
-	typeOfFunc := runtime.NewGDLambdaWithType(
-		funcType,
-		stack,
-		func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
-			typeName := args.Get(objParam).GetType().ToString()
-			return runtime.GDString(typeName), nil
+
+	fn := runtime.NewGDLambdaWithType(
+		fnType,
+		nil,
+		func(args runtime.GDLambdaArgs, stack *runtime.GDStack) (runtime.GDObject, error) {
+			objType, err := args.Get(objIdent)
+			if err != nil {
+				return nil, err
+			}
+
+			return runtime.GDString(objType.GetType().ToString()), nil
 		},
 	)
 
-	return typeOfFunc, nil
+	return runtime.NewGDSymbol(true, true, fnType, fn), nil
 }
 
 // Print functions
 
-func print(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	printFunc := printFunc(stack, false)
-	return printFunc, nil
-}
+func print() (*runtime.GDSymbol, error)   { return printFunc(false), nil }
+func println() (*runtime.GDSymbol, error) { return printFunc(true), nil }
 
-func println(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	printFunc := printFunc(stack, true)
-	return printFunc, nil
-}
-
-func printFunc(stack *runtime.GDSymbolStack, newLine bool) runtime.GDObject {
-	argIdent := runtime.NewGDStrRefType("args")
-	argType := runtime.NewGDLambdaType(
+func printFunc(newLine bool) *runtime.GDSymbol {
+	argsIdent := runtime.NewGDStrIdent("args")
+	fnType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{Key: argIdent, Value: runtime.GDAnyType},
+			{Key: argsIdent, Value: runtime.GDAnyTypeRef},
 		},
-		runtime.GDNilType,
+		runtime.GDNilTypeRef,
 		true,
 	)
-	printFunc := runtime.NewGDLambdaWithType(
-		argType,
-		stack,
-		func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
-			t := args.Get(argIdent).(*runtime.GDArray).Objects
-			for _, arg := range t {
+
+	fn := runtime.NewGDLambdaWithType(
+		fnType,
+		nil,
+		func(args runtime.GDLambdaArgs, stack *runtime.GDStack) (runtime.GDObject, error) {
+			argsArg, err := args.Get(argsIdent)
+			if err != nil {
+				return nil, err
+			}
+
+			argsArray, isArray := argsArg.(*runtime.GDArray)
+			if !isArray {
+				return nil, runtime.InvalidCastingWrongTypeErr(runtime.NewGDArrayType(runtime.GDAnyTypeRef), argsArg.GetType())
+			}
+
+			for _, arg := range argsArray.GetObjects() {
 				argVal := runtime.GDString(arg.ToString())
 				runtime.Print(argVal.Escape())
 			}
@@ -108,5 +113,5 @@ func printFunc(stack *runtime.GDSymbolStack, newLine bool) runtime.GDObject {
 		},
 	)
 
-	return printFunc
+	return runtime.NewGDSymbol(true, true, fnType, fn)
 }

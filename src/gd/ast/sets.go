@@ -24,28 +24,28 @@ import "gdlang/src/gd/scanner"
 // Shared expressions
 
 type NodeSharedExpr struct {
-	Expr             Node
-	HasBeenProcessed bool
-	BaseNode
+	Expr          Node
+	ProcessedFlag bool
+	*BaseNode
 }
 
 func (e *NodeSharedExpr) GetPosition() scanner.Position { return e.Expr.GetPosition() }
 
 func NewNodeSharedExpr(expr Node) *NodeSharedExpr {
-	return &NodeSharedExpr{expr, false, BaseNode{}}
+	return &NodeSharedExpr{expr, false, &BaseNode{}}
 }
 
 // Set object
 
 type NodeSets struct {
 	Nodes []Node
-	BaseNode
+	*BaseNode
 }
 
 func (d *NodeSets) GetPosition() scanner.Position { return GetStartEndPosition(d.Nodes) }
 
 func NewNodeSets(nodes []Node) *NodeSets {
-	return &NodeSets{nodes, BaseNode{}}
+	return &NodeSets{nodes, &BaseNode{}}
 }
 
 type NodeSet struct {
@@ -54,7 +54,7 @@ type NodeSet struct {
 	IdentWithType *NodeIdentWithType
 	Expr          Node
 	Index         byte
-	BaseNode
+	*BaseNode
 }
 
 func (s *NodeSet) GetPosition() scanner.Position {
@@ -62,21 +62,21 @@ func (s *NodeSet) GetPosition() scanner.Position {
 }
 
 func NewNodeSet(isPub bool, isConst bool, identWithType *NodeIdentWithType, expr Node) *NodeSet {
-	return &NodeSet{false, isConst, identWithType, expr, 0, BaseNode{}}
+	return &NodeSet{false, isConst, identWithType, expr, 0, &BaseNode{}}
 }
 
 // Update object
 
 type NodeUpdateSet struct {
-	IdentExpr Node
-	Expr      Node
-	BaseNode
+	LhsExpr Node
+	RhsExpr Node
+	*BaseNode
 }
 
 func (u *NodeUpdateSet) GetPosition() scanner.Position {
-	return GetStartEndPosition([]Node{u.IdentExpr, u.Expr})
+	return GetStartEndPosition([]Node{u.LhsExpr, u.RhsExpr})
 }
 
 func NewNodeUpdateSet(identExpr Node, expr Node) *NodeUpdateSet {
-	return &NodeUpdateSet{identExpr, expr, BaseNode{}}
+	return &NodeUpdateSet{identExpr, expr, &BaseNode{}}
 }

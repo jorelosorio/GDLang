@@ -19,9 +19,7 @@
 
 package runtime
 
-type GDArrayType struct {
-	SubType GDTypable // Internal array subtype
-}
+type GDArrayType struct{ SubType GDTypable }
 
 func (t *GDArrayType) GetCode() GDTypableCode { return GDArrayTypeCode }
 
@@ -33,14 +31,14 @@ func (t *GDArrayType) ToString() string {
 	return GDTypeCodeMap[GDArrayTypeCode]
 }
 
-func (t *GDArrayType) GetTypes() ([]GDTypable, bool) {
-	return []GDTypable{t.SubType}, true
-}
-
-func (t *GDArrayType) GetIterableType() GDTypable {
-	return t.SubType
+func (t *GDArrayType) GetTypeAt(index int) GDTypable { return t.SubType }
+func (t *GDArrayType) GetIterableType() GDTypable    { return t.SubType }
+func (t *GDArrayType) SetTypeAt(index int, typ GDTypable, stack *GDStack) error {
+	return CanBeAssign(t.SubType, typ, stack)
 }
 
 func NewGDArrayType(subType GDTypable) *GDArrayType { return &GDArrayType{SubType: subType} }
-
-func NewGDEmptyArrayType() *GDArrayType { return &GDArrayType{SubType: GDUntypedType} }
+func NewGDEmptyArrayType() *GDArrayType             { return &GDArrayType{SubType: GDUntypedTypeRef} }
+func NewGDArrayTypeWithTypes(types []GDTypable, stack *GDStack) *GDArrayType {
+	return &GDArrayType{SubType: ComputeTypeFromTypes(types)}
+}

@@ -28,13 +28,14 @@ import (
 
 type NodeLiteral struct {
 	*NodeTokenInfo
-	BaseNode
+	InferredObject runtime.GDObject
+	*BaseNode
 }
 
 func (a *NodeLiteral) GetPosition() scanner.Position { return a.Position }
 
 func NewNodeLiteral(token *NodeTokenInfo) *NodeLiteral {
-	return &NodeLiteral{token, BaseNode{}}
+	return &NodeLiteral{token, nil, &BaseNode{}}
 }
 
 func NewNodeIntLiteral(val int, pos scanner.Position) *NodeLiteral {
@@ -44,7 +45,7 @@ func NewNodeIntLiteral(val int, pos scanner.Position) *NodeLiteral {
 		Lit:      runtime.GDInt(val).ToString(),
 	})
 
-	lit.inferredObj = runtime.GDInt(val)
+	lit.InferredObject = runtime.GDInt(val)
 
 	return lit
 }
@@ -56,6 +57,7 @@ func NewNodeNilLiteral(pos scanner.Position) *NodeLiteral {
 		Lit:      "nil",
 	})
 
-	lit.inferredObj = runtime.GDZNil
+	lit.InferredObject = runtime.GDZNil
+
 	return lit
 }

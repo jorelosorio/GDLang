@@ -25,7 +25,7 @@ func (t GDUnionType) GetCode() GDTypableCode {
 	return GDUnionTypeCode
 }
 
-func (t GDUnionType) ContainsType(typ GDTypable, stack *GDSymbolStack) bool {
+func (t GDUnionType) ContainsType(typ GDTypable, stack *GDStack) bool {
 	for _, existingTyp := range t {
 		if err := EqualTypes(existingTyp, typ, stack); err == nil {
 			return true
@@ -34,7 +34,7 @@ func (t GDUnionType) ContainsType(typ GDTypable, stack *GDSymbolStack) bool {
 	return false
 }
 
-func (t GDUnionType) AppendType(typ GDTypable, stack *GDSymbolStack) GDUnionType {
+func (t GDUnionType) AppendType(typ GDTypable, stack *GDStack) GDUnionType {
 	switch typ := typ.(type) {
 	case GDUnionType:
 		for _, typ := range typ {

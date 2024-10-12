@@ -25,7 +25,7 @@ import (
 )
 
 func TestSimpleArrayType(t *testing.T) {
-	arrayType := runtime.NewGDArrayType(runtime.GDStringType)
+	arrayType := runtime.NewGDArrayType(runtime.GDStringTypeRef)
 
 	strRepresentation := "[string]"
 	if arrayType.ToString() != strRepresentation {
@@ -34,7 +34,7 @@ func TestSimpleArrayType(t *testing.T) {
 }
 
 func TestSubArrayType(t *testing.T) {
-	subArray := runtime.NewGDArrayType(runtime.GDStringType)
+	subArray := runtime.NewGDArrayType(runtime.GDStringTypeRef)
 	arrayType := runtime.NewGDArrayType(subArray)
 
 	strRepresentation := "[[string]]"
@@ -44,7 +44,7 @@ func TestSubArrayType(t *testing.T) {
 }
 
 func TestComplexArrayType(t *testing.T) {
-	arrayType := runtime.NewGDArrayType(runtime.NewGDArrayType(runtime.NewGDArrayType(runtime.NewGDArrayType(runtime.GDStringType))))
+	arrayType := runtime.NewGDArrayType(runtime.NewGDArrayType(runtime.NewGDArrayType(runtime.NewGDArrayType(runtime.GDStringTypeRef))))
 
 	strRepresentation := "[[[[string]]]]"
 	if arrayType.ToString() != strRepresentation {

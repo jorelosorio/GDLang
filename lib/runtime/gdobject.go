@@ -24,19 +24,14 @@ type GDObject interface {
 	// The underlying type of the object.
 	// If the object is a number int then is a subtype of int8, int16.
 	GetSubType() GDTypable
-	GDPrintable
+	GDRawValue
 	GDCastable
 }
 
-type GDObjIdentifiable interface {
-	GetIdent() GDIdent
-	SetIdent(ident GDIdent)
-}
-
-type GDPrintable interface {
+type GDRawValue interface {
 	ToString() string
 }
 
 type GDCastable interface {
-	CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error)
+	CastToType(typ GDTypable) (GDObject, error)
 }

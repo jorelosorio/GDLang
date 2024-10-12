@@ -26,33 +26,48 @@ func IsNumber(value any) bool {
 }
 
 func IsInt(value any) bool {
-	switch value.(type) {
+	switch value := value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return true
 	case GDInt, GDInt8, GDInt16:
 		return true
+	case GDType:
+		switch value.GetCode() {
+		case GDIntTypeCode, GDInt8TypeCode, GDInt16TypeCode:
+			return true
+		}
 	}
 
 	return false
 }
 
 func IsFloat(value any) bool {
-	switch value.(type) {
+	switch value := value.(type) {
 	case float32, float64:
 		return true
 	case GDFloat32, GDFloat64:
 		return true
+	case GDType:
+		switch value.GetCode() {
+		case GDFloatTypeCode, GDFloat32TypeCode, GDFloat64TypeCode:
+			return true
+		}
 	}
 
 	return false
 }
 
 func IsComplex(value any) bool {
-	switch value.(type) {
+	switch value := value.(type) {
 	case complex64, complex128:
 		return true
 	case GDComplex64, GDComplex128:
 		return true
+	case GDType:
+		switch value.GetCode() {
+		case GDComplexTypeCode, GDComplex64TypeCode, GDComplex128TypeCode:
+			return true
+		}
 	}
 
 	return false
@@ -75,9 +90,9 @@ func ToInt(value any) (GDInt, error) {
 	case GDComplex128:
 		return GDInt(real(value)), nil
 	case GDObject:
-		return GDInt(0), InvalidCastingWrongTypeErr(GDIntType, value.GetType())
+		return GDInt(0), InvalidCastingWrongTypeErr(GDIntTypeRef, value.GetType())
 	default:
-		return GDInt(0), InvalidCastingExpectedTypeErr(GDIntType)
+		return GDInt(0), InvalidCastingExpectedTypeErr(GDIntTypeRef)
 	}
 }
 
@@ -98,9 +113,9 @@ func ToFloat(value any) (GDFloat64, error) {
 	case GDComplex128:
 		return GDFloat64(real(value)), nil
 	case GDObject:
-		return GDFloat64(0), InvalidCastingWrongTypeErr(GDFloatType, value.GetType())
+		return GDFloat64(0), InvalidCastingWrongTypeErr(GDFloatTypeRef, value.GetType())
 	default:
-		return GDFloat64(0), InvalidCastingExpectedTypeErr(GDFloatType)
+		return GDFloat64(0), InvalidCastingExpectedTypeErr(GDFloatTypeRef)
 	}
 }
 
@@ -121,8 +136,8 @@ func ToComplex(value any) (GDComplex128, error) {
 	case GDComplex128:
 		return value, nil
 	case GDObject:
-		return GDComplex128(0), InvalidCastingWrongTypeErr(GDComplexType, value.GetType())
+		return GDComplex128(0), InvalidCastingWrongTypeErr(GDComplexTypeRef, value.GetType())
 	default:
-		return GDComplex128(0), InvalidCastingExpectedTypeErr(GDComplexType)
+		return GDComplex128(0), InvalidCastingExpectedTypeErr(GDComplexTypeRef)
 	}
 }

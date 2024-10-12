@@ -67,82 +67,82 @@ func IsUnaryOperation(op ExprOperationType) bool {
 	return op == ExprOperationUnaryPlus || op == ExprOperationUnaryMinus || op == ExprOperationNot
 }
 
-func TypeCheckExprOperation(op ExprOperationType, a, b GDObject) (GDTypable, error) {
+func TypeCheckExprOperation(op ExprOperationType, a, b GDTypable) (GDTypable, error) {
 	isUnaryOp := IsUnaryOperation(op)
-	if a == GDZNil {
-		return GDNilType, nil
-	} else if b == GDZNil && !isUnaryOp {
-		return GDNilType, nil
+	if a == GDNilTypeRef {
+		return GDNilTypeRef, nil
+	} else if b == GDNilTypeRef && !isUnaryOp {
+		return GDNilTypeRef, nil
 	}
 
 	switch {
 	case IsString(a) || IsString(b):
 		switch op {
 		case ExprOperationAdd:
-			return GDStringType, nil
+			return GDStringTypeRef, nil
 		case ExprOperationGreater, ExprOperationGreaterEqual, ExprOperationLess, ExprOperationLessEqual, ExprOperationEqual, ExprOperationNotEqual:
-			return GDBoolType, nil
+			return GDBoolTypeRef, nil
 		default:
-			return nil, UnsupportedOperationBetweenTypesError(ExprOperationMap[op], a.GetType().ToString(), b.GetType().ToString())
+			return nil, UnsupportedOperationBetweenTypesError(ExprOperationMap[op], a.ToString(), b.ToString())
 		}
 	case IsComplex(a) || IsComplex(b):
 		if isUnaryOp {
-			return GDComplexType, nil
+			return GDComplexTypeRef, nil
 		}
 
 		switch op {
 		case ExprOperationAdd, ExprOperationSubtract, ExprOperationMultiply, ExprOperationQuo:
-			return GDComplexType, nil
+			return GDComplexTypeRef, nil
 		case ExprOperationGreater, ExprOperationGreaterEqual, ExprOperationLess, ExprOperationLessEqual, ExprOperationEqual, ExprOperationNotEqual:
-			return GDBoolType, nil
+			return GDBoolTypeRef, nil
 		default:
-			return nil, UnsupportedOperationBetweenTypesError(ExprOperationMap[op], a.GetType().ToString(), b.GetType().ToString())
+			return nil, UnsupportedOperationBetweenTypesError(ExprOperationMap[op], a.ToString(), b.ToString())
 		}
 	case IsFloat(a) || IsFloat(b):
 		if isUnaryOp {
-			return GDFloatType, nil
+			return GDFloatTypeRef, nil
 		}
 
 		switch op {
 		case ExprOperationAdd, ExprOperationSubtract, ExprOperationMultiply, ExprOperationQuo, ExprOperationRem:
-			return GDFloatType, nil
+			return GDFloatTypeRef, nil
 		case ExprOperationGreater, ExprOperationGreaterEqual, ExprOperationLess, ExprOperationLessEqual, ExprOperationEqual, ExprOperationNotEqual:
-			return GDBoolType, nil
+			return GDBoolTypeRef, nil
 		}
 
-		return nil, UnsupportedOperationBetweenTypesError(ExprOperationMap[op], a.GetType().ToString(), b.GetType().ToString())
+		return nil, UnsupportedOperationBetweenTypesError(ExprOperationMap[op], a.ToString(), b.ToString())
 	case IsInt(a) || IsInt(b):
 		if isUnaryOp {
-			return GDIntType, nil
+			return GDIntTypeRef, nil
 		}
 
 		switch op {
 		case ExprOperationAdd, ExprOperationSubtract, ExprOperationMultiply, ExprOperationQuo, ExprOperationRem:
-			return GDIntType, nil
+			return GDIntTypeRef, nil
 		case ExprOperationGreater, ExprOperationGreaterEqual, ExprOperationLess, ExprOperationLessEqual, ExprOperationEqual, ExprOperationNotEqual:
-			return GDBoolType, nil
+			return GDBoolTypeRef, nil
 		}
 	case IsChar(a) || IsChar(b):
 		switch op {
 		case ExprOperationAdd:
-			return GDStringType, nil
+			return GDStringTypeRef, nil
 		case ExprOperationGreater, ExprOperationGreaterEqual, ExprOperationLess, ExprOperationLessEqual, ExprOperationEqual, ExprOperationNotEqual:
-			return GDBoolType, nil
+			return GDBoolTypeRef, nil
 		default:
-			return nil, UnsupportedOperationBetweenTypesError(ExprOperationMap[op], a.GetType().ToString(), b.GetType().ToString())
+			return nil, UnsupportedOperationBetweenTypesError(ExprOperationMap[op], a.ToString(), b.ToString())
 		}
 	case IsBool(a) || IsBool(b):
 		if isUnaryOp {
-			return GDBoolType, nil
+			return GDBoolTypeRef, nil
 		}
 
 		switch op {
 		case ExprOperationAnd, ExprOperationOr, ExprOperationEqual, ExprOperationNotEqual:
-			return GDBoolType, nil
+			return GDBoolTypeRef, nil
 		}
 	}
 
-	return nil, UnsupportedOperationBetweenTypesError(ExprOperationMap[op], a.GetType().ToString(), b.GetType().ToString())
+	return nil, UnsupportedOperationBetweenTypesError(ExprOperationMap[op], a.ToString(), b.ToString())
 }
 
 func PerformExprOperation(op ExprOperationType, a, b GDObject) (GDObject, error) {

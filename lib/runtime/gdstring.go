@@ -40,25 +40,25 @@ func (gd GDString) Escape() string { return charScapeMap.Replace(string(gd)) }
 
 // Object interface
 
-func (gd GDString) GetType() GDTypable    { return GDStringType }
+func (gd GDString) GetType() GDTypable    { return GDStringTypeRef }
 func (gd GDString) GetSubType() GDTypable { return nil }
 func (gd GDString) ToString() string      { return string(gd) }
-func (gd GDString) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
+func (gd GDString) CastToType(typ GDTypable) (GDObject, error) {
 	switch typ {
-	case GDStringType:
+	case GDStringTypeRef:
 		return gd, nil
-	case GDBoolType:
+	case GDBoolTypeRef:
 		return NewGDBoolFromString(string(gd))
-	case GDIntType, GDInt8Type, GDInt16Type:
+	case GDIntTypeRef, GDInt8TypeRef, GDInt16TypeRef:
 		return NewGDIntNumberFromString(string(gd))
-	case GDCharType:
+	case GDCharTypeRef:
 		if len(gd) != 1 {
-			return nil, InvalidCastingLitErr(gd.ToString(), GDCharType)
+			return nil, InvalidCastingLitErr(gd.ToString(), GDCharTypeRef)
 		}
 		return GDChar(gd[0]), nil
-	case GDFloatType, GDFloat32Type, GDFloat64Type:
+	case GDFloatTypeRef, GDFloat32TypeRef, GDFloat64TypeRef:
 		return NewGDFloatNumberFromString(string(gd))
-	case GDComplexType, GDComplex64Type, GDComplex128Type:
+	case GDComplexTypeRef, GDComplex64TypeRef, GDComplex128TypeRef:
 		return NewGDComplexNumberFromString(string(gd))
 	}
 
@@ -69,7 +69,7 @@ func (gd GDString) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, er
 
 func (gd GDString) Length() int   { return len(gd) }
 func (gd GDString) IsEmpty() bool { return len(gd) == 0 }
-func (gd GDString) Get(index int) (GDObject, error) {
+func (gd GDString) GetObjectAt(index int) (GDObject, error) {
 	if err := gd.checkIndex(index); err != nil {
 		return nil, err
 	}
@@ -83,8 +83,11 @@ func (gd GDString) GetObjects() []GDObject {
 	}
 	return objects
 }
-func (gd GDString) GetTypes() ([]GDTypable, bool) { return []GDTypable{GDCharType}, true }
-func (gd GDString) GetIterableType() GDTypable    { return GDCharType }
+
+// Iterable mutable interface
+
+func (gd GDString) GetTypeAt(index int) GDTypable { return GDCharTypeRef }
+func (gd GDString) GetIterableType() GDTypable    { return GDCharTypeRef }
 
 func (gd GDString) checkIndex(index int) error {
 	if index < 0 || index >= len(gd) {

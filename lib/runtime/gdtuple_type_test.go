@@ -25,7 +25,7 @@ import (
 )
 
 func TestSimpleTupleType(t *testing.T) {
-	tupleType := runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType)
+	tupleType := runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef)
 
 	if len(tupleType) != 2 {
 		t.Errorf("Expected 2 elements, got %v", len(tupleType))
@@ -46,7 +46,7 @@ func TestSimpleTupleType(t *testing.T) {
 }
 
 func TestNestedTupleType(t *testing.T) {
-	tupleType := runtime.NewGDTupleType(runtime.GDIntType, runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType))
+	tupleType := runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef))
 
 	if len(tupleType) != 2 {
 		t.Errorf("Expected 2 elements, got %v", len(tupleType))

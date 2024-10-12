@@ -47,7 +47,7 @@ type NodeBlock struct {
 	Type       NodeBlockType
 	Nodes      []Node
 	ReturnType runtime.GDTypable
-	BaseNode
+	*BaseNode
 }
 
 func (n *NodeBlock) GetPosition() scanner.Position { return GetStartEndPosition(n.Nodes) }
@@ -63,7 +63,7 @@ func (n *NodeBlock) SetAsFuncBlock(retType runtime.GDTypable) {
 }
 
 func NewNodeBlock(nodes []Node) *NodeBlock {
-	nodeBlock := &NodeBlock{Nodes: nodes, BaseNode: BaseNode{nodeType: NodeTypeBlock}}
+	nodeBlock := &NodeBlock{Nodes: nodes, BaseNode: &BaseNode{nodeType: NodeTypeBlock}}
 	for _, node := range nodes {
 		node.SetParentNode(nodeBlock)
 	}

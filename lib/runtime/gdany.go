@@ -21,9 +21,9 @@ package runtime
 
 type GDAny byte
 
-func (gd GDAny) GetType() GDTypable    { return GDAnyType }
+func (gd GDAny) GetType() GDTypable    { return GDAnyTypeRef }
 func (gd GDAny) GetSubType() GDTypable { return nil }
-func (gd GDAny) ToString() string      { return GDAnyType.ToString() }
-func (gd GDAny) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
+func (gd GDAny) ToString() string      { return GDAnyTypeRef.ToString() }
+func (gd GDAny) CastToType(typ GDTypable) (GDObject, error) {
 	return nil, InvalidCastingWrongTypeErr(typ, gd.GetType())
 }

@@ -39,39 +39,35 @@ func (gd *GDTuple) ToString() string {
 
 	return "(" + JoinSlice(gd.Objects, func(object GDObject, _ int) string {
 		switch object.GetType() {
-		case GDStringType:
+		case GDStringTypeRef:
 			return "\"" + object.ToString() + "\""
-		case GDCharType:
+		case GDCharTypeRef:
 			return "'" + object.ToString() + "'"
 		}
 
 		return object.ToString()
 	}, ", ") + ")"
 }
-func (gd *GDTuple) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
+func (gd *GDTuple) CastToType(typ GDTypable) (GDObject, error) {
 	switch typ := typ.(type) {
-	case GDType:
-		switch typ {
-		case GDStringType:
-			return GDString(gd.ToString()), nil
-		}
+	case GDStringType:
+		return GDString(gd.ToString()), nil
 	case GDTupleType:
 		if len(gd.Objects) != len(typ) {
 			return nil, InvalidCastingWrongTypeErr(typ, gd.GetType())
 		}
 
+		objects := make([]GDObject, len(gd.Objects))
 		for i, obj := range gd.Objects {
-			castObj, err := obj.CastToType(typ[i], stack)
+			castObj, err := obj.CastToType(typ[i])
 			if err != nil {
 				return nil, TypeCastingWrongTypeWithHierarchyError(typ, obj.GetType(), err)
 			}
 
-			gd.Objects[i] = castObj
+			objects[i] = castObj
 		}
 
-		gd.GDTupleType = typ
-
-		return gd, nil
+		return NewGDTupleWithType(typ, objects...), nil
 	}
 
 	return nil, InvalidCastingWrongTypeErr(typ, gd.GetType())
@@ -81,7 +77,7 @@ func (gd *GDTuple) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, er
 
 func (gd *GDTuple) Length() int   { return len(gd.Objects) }
 func (gd *GDTuple) IsEmpty() bool { return len(gd.Objects) == 0 }
-func (gd *GDTuple) Get(index int) (GDObject, error) {
+func (gd *GDTuple) GetObjectAt(index int) (GDObject, error) {
 	if err := gd.checkIndex(index); err != nil {
 		return nil, err
 	}
@@ -102,4 +98,8 @@ func NewGDTuple(elements ...GDObject) *GDTuple {
 		return gdObject.GetType()
 	})
 	return &GDTuple{NewGDTupleType(tupleTypes...), elements}
+}
+
+func NewGDTupleWithType(typ GDTupleType, elements ...GDObject) *GDTuple {
+	return &GDTuple{typ, elements}
 }

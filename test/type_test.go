@@ -27,8 +27,8 @@ import (
 func TestTypes(t *testing.T) {
 	tmpl := `set a:$SRC; pub func main(){print(typeof(a));}`
 	RunTestsWithTemplate(t, tmpl, []Test{
-		{`int=0`, runtime.GDIntType.ToString(), ""},
-		{`int=1`, runtime.GDIntType.ToString(), ""},
-		{`[int]=[0]`, runtime.NewGDArrayType(runtime.GDIntType).ToString(), ""},
+		{`int=0`, runtime.GDIntTypeRef.ToString(), ""},
+		{`int=1`, runtime.GDIntTypeRef.ToString(), ""},
+		{`[int]=[0]`, runtime.NewGDArrayType(runtime.GDIntTypeRef).ToString(), ""},
 	})
 }

@@ -31,13 +31,13 @@ type NodeTokenInfo struct {
 	scanner.Position
 	Token scanner.Token
 	Lit   string
-	BaseNode
+	*BaseNode
 }
 
 func (n *NodeTokenInfo) GetPosition() scanner.Position { return n.Position }
 
 func NewNodeTokenInfo(token scanner.Token, pos scanner.Position, lit string) *NodeTokenInfo {
-	return &NodeTokenInfo{pos, token, lit, BaseNode{}}
+	return &NodeTokenInfo{pos, token, lit, &BaseNode{}}
 }
 
 // File
@@ -47,13 +47,13 @@ type NodeFile struct {
 	Packages []Node
 	// Contains all the nodes statements
 	Nodes []Node
-	BaseNode
+	*BaseNode
 }
 
 func (f *NodeFile) GetPosition() scanner.Position { return GetStartEndPosition(f.Nodes) }
 
 func NewNodeFile(packages []Node, nodes []Node) *NodeFile {
-	return &NodeFile{packages, nodes, BaseNode{}}
+	return &NodeFile{packages, nodes, &BaseNode{}}
 }
 
 // Package
@@ -69,7 +69,7 @@ type NodePackage struct {
 	InferredMode         runtime.GDPackageMode
 	InferredPath         string
 	InferredAbsolutePath string
-	BaseNode
+	*BaseNode
 }
 
 func (p *NodePackage) GetPosition() scanner.Position { return GetStartEndPosition(p.PackagePath) }
@@ -84,7 +84,7 @@ func (p *NodePackage) GetPath() string {
 }
 
 func NewNodePackage(packagePath []Node, imports []Node) *NodePackage {
-	return &NodePackage{packagePath, imports, runtime.PackageModeSource, "", "", BaseNode{}}
+	return &NodePackage{packagePath, imports, runtime.PackageModeSource, "", "", &BaseNode{}}
 }
 
 // Node for type definitions
@@ -93,13 +93,13 @@ type NodeTypeAlias struct {
 	IsPub bool
 	Ident *NodeIdent
 	Type  runtime.GDTypable
-	BaseNode
+	*BaseNode
 }
 
 func (t *NodeTypeAlias) GetPosition() scanner.Position { return t.Ident.Position }
 
 func NewNodeTypeAlias(isPub bool, ident *NodeIdent, identType runtime.GDTypable) *NodeTypeAlias {
-	return &NodeTypeAlias{isPub, ident, identType, BaseNode{}}
+	return &NodeTypeAlias{isPub, ident, identType, &BaseNode{}}
 }
 
 // Ident with type
@@ -107,41 +107,26 @@ func NewNodeTypeAlias(isPub bool, ident *NodeIdent, identType runtime.GDTypable)
 type NodeIdentWithType struct {
 	Ident *NodeIdent
 	Type  runtime.GDTypable
-	BaseNode
+	*BaseNode
 }
 
 func (t *NodeIdentWithType) GetPosition() scanner.Position { return t.Ident.Position }
 
 func NewNodeIdentWithType(ident *NodeIdent, identType runtime.GDTypable) *NodeIdentWithType {
-	return &NodeIdentWithType{ident, identType, BaseNode{}}
+	return &NodeIdentWithType{ident, identType, &BaseNode{}}
 }
 
 // Ident
 
 type NodeIdent struct {
 	*NodeTokenInfo
-	BaseNode
+	*BaseNode
 }
 
 func (i *NodeIdent) GetPosition() scanner.Position { return i.Position }
 
 func NewNodeIdent(node *NodeTokenInfo) *NodeIdent {
-	return &NodeIdent{node, BaseNode{}}
-}
-
-// Type
-
-type NodeType struct {
-	TypeTokenInfo *NodeTokenInfo
-	BaseNode
-}
-
-func (t *NodeType) GetPosition() scanner.Position {
-	return t.TypeTokenInfo.GetPosition()
-}
-
-func NewNodeType(typeTokenInfo *NodeTokenInfo) *NodeType {
-	return &NodeType{typeTokenInfo, BaseNode{}}
+	return &NodeIdent{node, &BaseNode{}}
 }
 
 // Nod cast expression
@@ -150,13 +135,13 @@ func NewNodeType(typeTokenInfo *NodeTokenInfo) *NodeType {
 type NodeCastExpr struct {
 	Expr Node
 	Type runtime.GDTypable
-	BaseNode
+	*BaseNode
 }
 
 func (c *NodeCastExpr) GetPosition() scanner.Position { return c.Expr.GetPosition() }
 
 func NewNodeCastExpr(expr Node, typ runtime.GDTypable) *NodeCastExpr {
-	return &NodeCastExpr{expr, typ, BaseNode{}}
+	return &NodeCastExpr{expr, typ, &BaseNode{}}
 }
 
 // Operator
@@ -164,7 +149,7 @@ func NewNodeCastExpr(expr Node, typ runtime.GDTypable) *NodeCastExpr {
 type NodeExprOperation struct {
 	Op   runtime.ExprOperationType
 	L, R Node
-	BaseNode
+	*BaseNode
 }
 
 func (e *NodeExprOperation) GetPosition() scanner.Position {
@@ -172,46 +157,46 @@ func (e *NodeExprOperation) GetPosition() scanner.Position {
 }
 
 func NewNodeExprOperation(op runtime.ExprOperationType, l, r Node) *NodeExprOperation {
-	return &NodeExprOperation{op, l, r, BaseNode{}}
+	return &NodeExprOperation{op, l, r, &BaseNode{}}
 }
 
 // Ellipsis ...
 
 type NodeEllipsisExpr struct {
 	Expr Node
-	BaseNode
+	*BaseNode
 }
 
 func (e *NodeEllipsisExpr) GetPosition() scanner.Position { return e.Expr.GetPosition() }
 
 func NewNodeEllipsisExpr(exp Node) Node {
-	return &NodeEllipsisExpr{exp, BaseNode{}}
+	return &NodeEllipsisExpr{exp, &BaseNode{}}
 }
 
 // Struct
 
 type NodeStruct struct {
 	Nodes []Node
-	BaseNode
+	*BaseNode
 }
 
 func (s *NodeStruct) GetPosition() scanner.Position { return GetStartEndPosition(s.Nodes) }
 
 func NewNodeStruct(nodes ...Node) *NodeStruct {
-	return &NodeStruct{nodes, BaseNode{}}
+	return &NodeStruct{nodes, &BaseNode{}}
 }
 
 // Tuple
 
 type NodeTuple struct {
 	Nodes []Node
-	BaseNode
+	*BaseNode
 }
 
 func (t *NodeTuple) GetPosition() scanner.Position { return GetStartEndPosition(t.Nodes) }
 
 func NewNodeTuple(exprs ...Node) *NodeTuple {
-	return &NodeTuple{exprs, BaseNode{}}
+	return &NodeTuple{exprs, &BaseNode{}}
 }
 
 // Collectable
@@ -228,7 +213,7 @@ type NodeMutCollectionOp struct {
 	Op MutableCollectionOp
 	L  Node
 	R  Node
-	BaseNode
+	*BaseNode
 }
 
 func (c *NodeMutCollectionOp) GetPosition() scanner.Position {
@@ -236,7 +221,7 @@ func (c *NodeMutCollectionOp) GetPosition() scanner.Position {
 }
 
 func NewNodeMutCollectionOp(op MutableCollectionOp, l, r Node) *NodeMutCollectionOp {
-	return &NodeMutCollectionOp{op, l, r, BaseNode{}}
+	return &NodeMutCollectionOp{op, l, r, &BaseNode{}}
 }
 
 // Array
@@ -246,7 +231,7 @@ type NodeArray struct {
 	// when the array is empty.
 	exprStart, exprEnd Node
 	Nodes              []Node
-	BaseNode
+	*BaseNode
 }
 
 func (a *NodeArray) GetPosition() scanner.Position {
@@ -258,20 +243,20 @@ func (a *NodeArray) GetPosition() scanner.Position {
 }
 
 func NewNodeArray(exprStart, exprEnd Node, nodes []Node) *NodeArray {
-	return &NodeArray{exprStart, exprEnd, nodes, BaseNode{}}
+	return &NodeArray{exprStart, exprEnd, nodes, &BaseNode{}}
 }
 
 // Label
 
 type NodeLabel struct {
 	Ident NodeIdent
-	BaseNode
+	*BaseNode
 }
 
 func (l *NodeLabel) GetPosition() scanner.Position { return l.Ident.Position }
 
 func NewNodeLabel(ident NodeIdent) *NodeLabel {
-	return &NodeLabel{ident, BaseNode{}}
+	return &NodeLabel{ident, &BaseNode{}}
 }
 
 // Primary expressions
@@ -280,29 +265,29 @@ func NewNodeLabel(ident NodeIdent) *NodeLabel {
 type NodeCallExpr struct {
 	Expr Node
 	Args []Node
-	BaseNode
+	*BaseNode
 }
 
 func (s *NodeCallExpr) GetPosition() scanner.Position { return s.Expr.GetPosition() }
 
 func NewNodeCallExpr(expr Node, args []Node) *NodeCallExpr {
-	return &NodeCallExpr{expr, args, BaseNode{}}
+	return &NodeCallExpr{expr, args, &BaseNode{}}
 }
 
 // expr.?[IdxExpr]
-type NodeIterIdxExpr struct {
+type NodeIndexableExpr struct {
 	IsNilSafe bool
 	Expr      Node
 	IdxExpr   Node
-	BaseNode
+	*BaseNode
 }
 
-func (s *NodeIterIdxExpr) GetPosition() scanner.Position {
+func (s *NodeIndexableExpr) GetPosition() scanner.Position {
 	return GetStartEndPosition([]Node{s.Expr, s.IdxExpr})
 }
 
-func NewNodeIterIdxExpr(isNilSafe bool, expr, idxExpr Node) *NodeIterIdxExpr {
-	return &NodeIterIdxExpr{isNilSafe, expr, idxExpr, BaseNode{}}
+func NewNodeIndexableExpr(isNilSafe bool, expr, idxExpr Node) *NodeIndexableExpr {
+	return &NodeIndexableExpr{isNilSafe, expr, idxExpr, &BaseNode{}}
 }
 
 // expr.?ident
@@ -310,11 +295,11 @@ type NodeSafeDotExpr struct {
 	Expr      Node
 	Ident     Node
 	IsNilSafe bool
-	BaseNode
+	*BaseNode
 }
 
 func (s *NodeSafeDotExpr) GetPosition() scanner.Position { return s.Expr.GetPosition() }
 
 func NewNodeSafeDotExpr(node Node, isNilSafe bool, ident Node) *NodeSafeDotExpr {
-	return &NodeSafeDotExpr{node, ident, isNilSafe, BaseNode{}}
+	return &NodeSafeDotExpr{node, ident, isNilSafe, &BaseNode{}}
 }

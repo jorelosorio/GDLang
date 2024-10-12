@@ -39,12 +39,14 @@ func (gd GDTupleType) ToString() string {
 
 // Iterable collection interface
 
-func (gd GDTupleType) GetTypes() ([]GDTypable, bool) { return gd, false }
-func (gd GDTupleType) GetIterableType() GDTypable    { return ComputeTypeFromTypes(gd) }
+func (gd GDTupleType) GetTypeAt(index int) GDTypable { return gd[index] }
+func (gd GDTupleType) GetIterableType() GDTypable {
+	return ComputeTypeFromTypes(gd)
+}
 
 func NewGDTupleType(gdTypes ...GDTypable) GDTupleType {
 	if len(gdTypes) == 0 {
-		return GDTupleType{GDUntypedType}
+		return GDTupleType{GDUntypedTypeRef}
 	}
 
 	return gdTypes

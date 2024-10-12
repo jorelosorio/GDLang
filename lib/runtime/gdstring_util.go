@@ -24,7 +24,12 @@ func IsString(value any) bool {
 	case string:
 		return true
 	case GDObject:
-		return value.GetType() == GDStringType
+		return value.GetType() == GDStringTypeRef
+	case GDTypable:
+		switch value.GetCode() {
+		case GDStringTypeCode:
+			return true
+		}
 	}
 
 	return false
@@ -35,6 +40,6 @@ func ToString(value any) (GDString, error) {
 	case GDObject:
 		return GDString(value.ToString()), nil
 	default:
-		return "", InvalidCastingExpectedTypeErr(GDStringType)
+		return "", InvalidCastingExpectedTypeErr(GDStringTypeRef)
 	}
 }

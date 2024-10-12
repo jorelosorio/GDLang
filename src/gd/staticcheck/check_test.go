@@ -20,7 +20,6 @@
 package staticcheck_test
 
 import (
-	"gdlang/lib/builtin"
 	"gdlang/lib/runtime"
 	"gdlang/src/comn"
 	"gdlang/src/gd/analysis"
@@ -35,8 +34,10 @@ func init() {
 }
 
 func TestCases(t *testing.T) {
-	stack := runtime.NewGDSymbolStack()
-	err := builtin.ImportCoreBuiltins(stack)
+	stack := runtime.NewGDStack()
+	defer stack.Dispose()
+
+	err := staticcheck.ImportBuiltins(stack)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +53,7 @@ func TestCases(t *testing.T) {
 	evalTests := func(tests []Test) error {
 		for _, test := range tests {
 			err := test_helper.BuildPackageTree(test.SrcNode, func(tmpDir string) error {
-				mainStack := stack.NewSymbolStack(runtime.GlobalCtx)
+				mainStack := stack.NewStack(runtime.GlobalCtx)
 				defer (func() {
 					mainStack.Dispose()
 					dependencyAnalyzer.Dispose()
@@ -90,10 +91,15 @@ func TestCases(t *testing.T) {
 	t.Run("Test typealiases", func(t *testing.T) {
 		// Test typealiases
 		typealiasCases := []Test{
-			{test_helper.NMFile(`typealias MyInt = int
-		pub func main() {
-			set a: MyInt = 1
-		}`), ""},
+			{
+				test_helper.NMFile(
+					`typealias MyInt = int
+					pub func main() {
+						set a: MyInt = 1
+					}`,
+				),
+				"",
+			},
 		}
 
 		err := evalTests(typealiasCases)
@@ -219,39 +225,141 @@ func TestCases(t *testing.T) {
 	t.Run("Test sets", func(t *testing.T) {
 		// Test sets
 		SetCases := []Test{
+			{
+				test_helper.NMFile(`pub func main() {
+				set a = 1, b = 2
+			}`), ""},
 			{test_helper.NMFile(`pub func main() {
-			set a = 1, b = 2
-		}`), ""},
+					set (a, b) = (1, 2)
+					a = 2
+					b = 1
+				}`), ""},
 			{test_helper.NMFile(`pub func main() {
-				set (a, b) = (1, 2)
+				set a, b = (1, 2)
+				a = 2
+				b = 1
+			}`), "expected `(int, int)` but got `int`"},
+			// Try to destructure an array
+			{test_helper.NMFile(`pub func main() {
+				set (a, b) = [1, 2]
 				a = 2
 				b = 1
 			}`), ""},
 			{test_helper.NMFile(`pub func main() {
-			set a, b = (1, 2)
-			a = 2
-			b = 1
-		}`), "main.gd 4:8-8 fatal error: expected `(int, int)` but got `int`"},
-			// Try to destructure an array
+				set (a, b) = [1, 2]
+				a = 2
+				b = 1
+			}`), ""},
 			{test_helper.NMFile(`pub func main() {
-			set (a, b) = [1, 2]
-			a = 2
-			b = 1
-		}`), ""},
-			{test_helper.NMFile(`pub func main() {
-			set (a, b) = [1, 2]
-			a = 2
-			b = 1
-		}`), ""},
-			{test_helper.NMFile(`pub func main() {
-			set (a, b) = [1, 2, 3], c = 1
-			a = 1
-			b = 2
-			c = 3
-		}`), ""},
+				set (a, b) = [1, 2, 3], c = 1
+				a = 1
+				b = 2
+				c = 3
+			}`), ""},
 		}
 
 		err := evalTests(SetCases)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("Test arrays", func(t *testing.T) {
+		// Test arrays
+		arrayCases := []Test{
+			{
+				test_helper.NMFile(`pub func main() {
+					set a = [1, 2, 3]
+					a[0] = 2
+					a[1] = 1
+				}`), "",
+			},
+			{
+				test_helper.NMFile(`pub func main() {
+					set a = [1, 2, 3]
+					//a[0] = 2
+					a[1] = "string"
+				}`), "expected `int` but got `string`",
+			},
+		}
+
+		err := evalTests(arrayCases)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("Test structs", func(t *testing.T) {
+		// Test structs
+		structCases := []Test{
+			{
+				test_helper.NMFile(`pub func main() {
+					set a = {a: 1, b: 2}
+					a.a = 2
+					a.b = 1
+				}`), "",
+			},
+			{
+				test_helper.NMFile(`pub func main() {
+					set a = {a: 1, b: 2}
+					a.a = 2
+					a.b = "string"
+				}`), "expected `int` but got `string`",
+			},
+		}
+
+		err := evalTests(structCases)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("set assignments", func(t *testing.T) {
+		// Test functions
+		functionCases := []Test{
+			{
+				test_helper.NMFile(`
+				pub func main() {
+					set a = 1
+					a = "string"
+				}
+				`), "expected `int` but got `string`",
+			},
+		}
+
+		err := evalTests(functionCases)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("Test built-in functions", func(t *testing.T) {
+		// Test functions
+		functionCases := []Test{
+			{
+				test_helper.NMFile(`
+				pub func main() {
+					println("Hello, World!")
+				}
+				`), "",
+			},
+			{
+				test_helper.NMFile(`
+				pub func main() {
+					print("Hello, World!")
+				}
+				`), "",
+			},
+			{
+				test_helper.NMFile(`
+				pub func main() {
+					typeof(1)
+				}
+				`), "",
+			},
+		}
+
+		err := evalTests(functionCases)
 		if err != nil {
 			t.Fatal(err)
 		}

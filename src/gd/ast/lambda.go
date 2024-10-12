@@ -29,7 +29,10 @@ import (
 type NodeLambda struct {
 	Type  *runtime.GDLambdaType
 	Block *NodeBlock
-	BaseNode
+	// A special inference used for lambda where attributes of the lambda
+	// are changed to the runtime identifiers
+	RuntimeInference *Inference
+	*BaseNode
 }
 
 func (l *NodeLambda) GetPosition() scanner.Position { return l.Block.GetPosition() }
@@ -37,7 +40,7 @@ func (l *NodeLambda) GetPosition() scanner.Position { return l.Block.GetPosition
 func NewNodeLambda(funcType *runtime.GDLambdaType, block *NodeBlock) *NodeLambda {
 	block.SetAsFuncBlock(funcType.ReturnType)
 
-	nodeLambda := &NodeLambda{funcType, block, BaseNode{nodeType: NodeTypeLambda}}
+	nodeLambda := &NodeLambda{funcType, block, nil, &BaseNode{nodeType: NodeTypeLambda}}
 	block.SetParentNode(nodeLambda)
 
 	return nodeLambda
@@ -49,7 +52,7 @@ type NodeFunc struct {
 	IsPub bool
 	Ident *NodeIdent
 	*NodeLambda
-	BaseNode
+	*BaseNode
 }
 
 func (f *NodeFunc) GetPosition() scanner.Position {
@@ -57,7 +60,7 @@ func (f *NodeFunc) GetPosition() scanner.Position {
 }
 
 func NewNodeFunc(isPublic bool, ident *NodeIdent, funcType *runtime.GDLambdaType, block *NodeBlock) *NodeFunc {
-	nodeFunc := &NodeFunc{isPublic, ident, NewNodeLambda(funcType, block), BaseNode{nodeType: NodeTypeFunc}}
+	nodeFunc := &NodeFunc{isPublic, ident, NewNodeLambda(funcType, block), &BaseNode{nodeType: NodeTypeFunc}}
 	block.SetParentNode(nodeFunc)
 
 	return nodeFunc
@@ -66,7 +69,7 @@ func NewNodeFunc(isPublic bool, ident *NodeIdent, funcType *runtime.GDLambdaType
 type NodeStructAttr struct {
 	Ident *NodeIdent
 	Expr  Node
-	BaseNode
+	*BaseNode
 }
 
 func (s *NodeStructAttr) GetPosition() scanner.Position {
@@ -74,5 +77,5 @@ func (s *NodeStructAttr) GetPosition() scanner.Position {
 }
 
 func NewNodeStructAttr(ident *NodeIdent, expr Node) *NodeStructAttr {
-	return &NodeStructAttr{ident, expr, BaseNode{}}
+	return &NodeStructAttr{ident, expr, &BaseNode{}}
 }

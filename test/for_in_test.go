@@ -34,8 +34,8 @@ func TestForInCases(t *testing.T) {
 			}
 		}`, "1-2-3-", ""},
 		{`pub func main() {
-			for set a: char, b in "hola" {
-				print(b,a)
+			for set i, a: char in "hola" {
+				print(a,i)
 			}
 		}`, "h0o1l2a3", ""},
 		{`pub func main() {

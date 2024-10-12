@@ -34,6 +34,7 @@ var cpuOpMap = map[GDInst]string{
 	IGet:        "iget",
 	ILen:        "ilen",
 	AGet:        "aget",
+	ASet:        "aset",
 	CAdd:        "cadd",
 	Tif:         "tif",
 	CRemove:     "cremove",

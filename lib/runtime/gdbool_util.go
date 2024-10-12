@@ -24,7 +24,12 @@ func IsBool(value any) bool {
 	case bool:
 		return true
 	case GDObject:
-		return value.GetType() == GDBoolType
+		return value.GetType() == GDBoolTypeRef
+	case GDTypable:
+		switch value.GetCode() {
+		case GDBoolTypeCode:
+			return true
+		}
 	}
 
 	return false
@@ -35,8 +40,8 @@ func ToBool(value any) (GDBool, error) {
 	case GDBool:
 		return value, nil
 	case GDObject:
-		return false, InvalidCastingWrongTypeErr(GDBoolType, value.GetType())
+		return false, InvalidCastingWrongTypeErr(GDBoolTypeRef, value.GetType())
 	}
 
-	return false, InvalidCastingExpectedTypeErr(GDBoolType)
+	return false, InvalidCastingExpectedTypeErr(GDBoolTypeRef)
 }

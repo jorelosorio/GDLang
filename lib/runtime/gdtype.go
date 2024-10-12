@@ -35,8 +35,9 @@ const (
 	GDUnionTypeCode
 	GDSpreadableTypeCode
 	GDUntypedTypeCode
-	GDRefTypeCode
-	GDObjRefTypeCode
+	GDTypeAliasTypeCode
+	GDTypeRefTypeCode
+	GDObjectRefTypeCode
 
 	// Number types ordered
 	// from lowest to highest precision
@@ -68,8 +69,9 @@ var GDTypeCodeMap = [...]string{
 	GDSpreadableTypeCode: "spreadable",
 	GDUntypedTypeCode:    "untyped",
 
-	GDRefTypeCode:    "type_ref",
-	GDObjRefTypeCode: "obj_ref",
+	GDTypeAliasTypeCode: "typealias",
+	GDTypeRefTypeCode:   "typeref",
+	GDObjectRefTypeCode: "objref",
 
 	// Number types
 	GDInt8TypeCode:       "int8",
@@ -83,30 +85,38 @@ var GDTypeCodeMap = [...]string{
 	GDComplexTypeCode:    "complex",
 }
 
-type GDType GDTypableCode
-
 var (
 	// Primitive Types
-	GDNilType     = GDType(GDNilTypeCode)
-	GDAnyType     = GDType(GDAnyTypeCode)
-	GDBoolType    = GDType(GDBoolTypeCode)
-	GDCharType    = GDType(GDCharTypeCode)
-	GDIntType     = GDType(GDIntTypeCode)
-	GDFloatType   = GDType(GDFloatTypeCode)
-	GDComplexType = GDType(GDComplexTypeCode)
-	GDStringType  = GDType(GDStringTypeCode)
+	GDNilTypeRef     = GDType(GDNilTypeCode)
+	GDAnyTypeRef     = GDType(GDAnyTypeCode)
+	GDBoolTypeRef    = GDType(GDBoolTypeCode)
+	GDCharTypeRef    = GDType(GDCharTypeCode)
+	GDIntTypeRef     = GDType(GDIntTypeCode)
+	GDFloatTypeRef   = GDType(GDFloatTypeCode)
+	GDComplexTypeRef = GDType(GDComplexTypeCode)
+	GDStringTypeRef  = GDStringType(GDStringTypeCode)
 
 	// Internal Types
-	GDUntypedType = GDType(GDUntypedTypeCode)
+	GDUntypedTypeRef = GDType(GDUntypedTypeCode)
 
 	// Sub-Types
-	GDInt8Type       = GDType(GDInt8TypeCode)
-	GDInt16Type      = GDType(GDInt16TypeCode)
-	GDFloat32Type    = GDType(GDFloat32TypeCode)
-	GDFloat64Type    = GDType(GDFloat64TypeCode)
-	GDComplex64Type  = GDType(GDComplex64TypeCode)
-	GDComplex128Type = GDType(GDComplex128TypeCode)
+	GDInt8TypeRef       = GDType(GDInt8TypeCode)
+	GDInt16TypeRef      = GDType(GDInt16TypeCode)
+	GDFloat32TypeRef    = GDType(GDFloat32TypeCode)
+	GDFloat64TypeRef    = GDType(GDFloat64TypeCode)
+	GDComplex64TypeRef  = GDType(GDComplex64TypeCode)
+	GDComplex128TypeRef = GDType(GDComplex128TypeCode)
 )
+
+type GDType GDTypableCode
 
 func (t GDType) GetCode() GDTypableCode { return GDTypableCode(t) }
 func (t GDType) ToString() string       { return GDTypeCodeMap[t] }
+
+type GDStringType GDTypableCode
+
+func (t GDStringType) GetCode() GDTypableCode { return GDTypableCode(t) }
+func (t GDStringType) ToString() string       { return GDTypeCodeMap[t] }
+
+func (t GDStringType) GetTypeAt(index int) GDTypable { return GDCharTypeRef }
+func (t GDStringType) GetIterableType() GDTypable    { return GDCharTypeRef }

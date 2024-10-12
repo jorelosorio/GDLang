@@ -21,14 +21,10 @@ package runtime
 
 // Intended to be used as ... operator to spread all the elements
 // of a collection.
-type GDSpreadableType struct {
-	GDIterableCollectionType
-}
+type GDSpreadableType struct{ GDIterableCollectionType }
 
 func (t GDSpreadableType) GetCode() GDTypableCode { return GDSpreadableTypeCode }
-func (t GDSpreadableType) ToString() string {
-	return t.GetIterableType().ToString() + "..."
-}
+func (t GDSpreadableType) ToString() string       { return t.GetIterableType().ToString() + "..." }
 
 func NewGDSpreadableType(typ GDIterableCollectionType) GDSpreadableType {
 	return GDSpreadableType{GDIterableCollectionType: typ}

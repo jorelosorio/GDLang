@@ -25,38 +25,64 @@ import (
 	"net/http"
 )
 
-var HttpRequestType = runtime.QuickGDStructType(
-	"status", runtime.GDStringType,
-	"statusCode", runtime.GDIntType,
-	"body", runtime.GDStringType,
+var HttpRequestType = runtime.NewGDTypeAliasType(
+	runtime.NewGDStrIdent("request"),
+	runtime.QuickGDStructType(
+		"status", runtime.GDStringTypeRef,
+		"statusCode", runtime.GDIntTypeRef,
+		"body", runtime.GDStringTypeRef,
+	),
 )
 
-var HttpHeaderType = runtime.QuickGDStructType(
-	"key", runtime.GDStringType,
-	"value", runtime.GDStringType,
+var HttpHeaderType = runtime.NewGDTypeAliasType(
+	runtime.NewGDStrIdent("header"),
+	runtime.QuickGDStructType(
+		"key", runtime.GDStringTypeRef,
+		"value", runtime.GDStringTypeRef,
+	),
 )
 
-var HttpResponseType = runtime.QuickGDStructType(
-	"status", runtime.GDIntType,
-	"body", runtime.GDAnyType,
-	"headers", runtime.NewGDArrayType(HttpHeaderType),
+var HttpResponseType = runtime.NewGDTypeAliasType(
+	runtime.NewGDStrIdent("response"),
+	runtime.QuickGDStructType(
+		"status", runtime.GDIntTypeRef,
+		"body", runtime.GDAnyTypeRef,
+		"headers", runtime.NewGDArrayType(HttpHeaderType),
+	),
 )
 
-var HttpHandlerType = runtime.NewGDLambdaType(
-	runtime.GDLambdaArgTypes{},
-	HttpResponseType,
-	false,
+var HttpHandlerType = runtime.NewGDTypeAliasType(
+	runtime.NewGDStrIdent("handler"),
+	runtime.NewGDLambdaType(
+		runtime.GDLambdaArgTypes{},
+		HttpResponseType,
+		false,
+	),
 )
 
-var HttpRouteType = runtime.QuickGDStructType(
-	"method", runtime.GDStringType,
-	"path", runtime.GDStringType,
-	"handler", HttpHandlerType,
+var HttpRouteType = runtime.NewGDTypeAliasType(
+	runtime.NewGDStrIdent("route"),
+	runtime.QuickGDStructType(
+		"method", runtime.GDStringTypeRef,
+		"path", runtime.GDStringTypeRef,
+		"handler", HttpHandlerType,
+	),
 )
 
 func HttpPackage() (*runtime.GDPackage[*runtime.GDSymbol], error) {
-	pkg := runtime.NewGDPackage[*runtime.GDSymbol](runtime.NewGDStrIdent("http"), "http", runtime.PackageModeBuiltin)
+	pkg := runtime.NewGDPackage[*runtime.GDSymbol](
+		runtime.NewGDStrIdent("http"),
+		".",
+		runtime.PackageModeBuiltin,
+	)
+
 	symbols := map[string]*runtime.GDSymbol{
+		// Types
+		"request":  runtime.NewGDSymbol(true, true, HttpRequestType, nil),
+		"header":   runtime.NewGDSymbol(true, true, HttpHeaderType, nil),
+		"response": runtime.NewGDSymbol(true, true, HttpResponseType, nil),
+		"handler":  runtime.NewGDSymbol(true, true, HttpHandlerType, nil),
+		"route":    runtime.NewGDSymbol(true, true, HttpRouteType, nil),
 		// Restful
 		"fetch": fetch(),
 		// Routing
@@ -64,9 +90,6 @@ func HttpPackage() (*runtime.GDPackage[*runtime.GDSymbol], error) {
 		"ok":  ok(),
 		// Server
 		"host": host(),
-		// Types
-		"route":    runtime.NewGDSymbol(true, true, HttpRouteType, nil),
-		"response": runtime.NewGDSymbol(true, true, HttpResponseType, nil),
 	}
 
 	for ident, symbol := range symbols {
@@ -80,11 +103,11 @@ func HttpPackage() (*runtime.GDPackage[*runtime.GDSymbol], error) {
 }
 
 func fetch() *runtime.GDSymbol {
-	url := runtime.NewGDStrRefType("url")
+	url := runtime.NewGDStrIdent("url")
 
 	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{Key: url, Value: runtime.GDStringType},
+			{Key: url, Value: runtime.GDStringTypeRef},
 		},
 		HttpRequestType,
 		false,
@@ -93,9 +116,13 @@ func fetch() *runtime.GDSymbol {
 	lambda := runtime.NewGDLambdaWithType(
 		typ,
 		nil,
-		func(stack *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
-			url := args.Get(url).ToString()
-			response, err := http.Get(url)
+		func(args runtime.GDLambdaArgs, stack *runtime.GDStack) (runtime.GDObject, error) {
+			url, err := args.Get(url)
+			if err != nil {
+				return nil, err
+			}
+
+			response, err := http.Get(url.ToString())
 			if err != nil {
 				return nil, err
 			}
@@ -108,7 +135,7 @@ func fetch() *runtime.GDSymbol {
 
 			return runtime.QuickGDStruct(
 				stack,
-				HttpRequestType,
+				HttpRequestType.GDTypable.(runtime.GDStructType),
 				runtime.GDString(response.Status),
 				runtime.GDInt(response.StatusCode),
 				runtime.GDString(body),
@@ -120,12 +147,12 @@ func fetch() *runtime.GDSymbol {
 }
 
 func get() *runtime.GDSymbol {
-	path := runtime.NewGDStrRefType("path")
-	handler := runtime.NewGDStrRefType("handler")
+	path := runtime.NewGDStrIdent("path")
+	handler := runtime.NewGDStrIdent("handler")
 
 	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{Key: path, Value: runtime.GDStringType},
+			{Key: path, Value: runtime.GDStringTypeRef},
 			{Key: handler, Value: HttpHandlerType},
 		},
 		HttpRouteType,
@@ -135,15 +162,22 @@ func get() *runtime.GDSymbol {
 	lambda := runtime.NewGDLambdaWithType(
 		typ,
 		nil,
-		func(stack *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
-			path := args.Get(path).ToString()
-			handler := args.Get(handler)
+		func(args runtime.GDLambdaArgs, stack *runtime.GDStack) (runtime.GDObject, error) {
+			path, err := args.Get(path)
+			if err != nil {
+				return nil, err
+			}
+
+			handler, err := args.Get(handler)
+			if err != nil {
+				return nil, err
+			}
 
 			return runtime.QuickGDStruct(
 				stack,
-				HttpRouteType,
+				HttpRouteType.GDTypable.(runtime.GDStructType),
 				runtime.GDString("GET"),
-				runtime.GDString(path),
+				runtime.GDString(path.ToString()),
 				handler,
 			)
 		},
@@ -153,12 +187,12 @@ func get() *runtime.GDSymbol {
 }
 
 func ok() *runtime.GDSymbol {
-	body := runtime.NewGDStrRefType("body")
-	headers := runtime.NewGDStrRefType("headers")
+	body := runtime.NewGDStrIdent("body")
+	headers := runtime.NewGDStrIdent("headers")
 
 	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{Key: body, Value: runtime.GDAnyType},
+			{Key: body, Value: runtime.GDAnyTypeRef},
 			{Key: headers, Value: runtime.NewGDArrayType(HttpHeaderType)},
 		},
 		HttpResponseType,
@@ -168,13 +202,20 @@ func ok() *runtime.GDSymbol {
 	lambda := runtime.NewGDLambdaWithType(
 		typ,
 		nil,
-		func(stack *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
-			body := args.Get(body)
-			headers := args.Get(headers)
+		func(args runtime.GDLambdaArgs, stack *runtime.GDStack) (runtime.GDObject, error) {
+			body, err := args.Get(body)
+			if err != nil {
+				return nil, err
+			}
+
+			headers, err := args.Get(headers)
+			if err != nil {
+				return nil, err
+			}
 
 			return runtime.QuickGDStruct(
 				stack,
-				HttpResponseType,
+				HttpResponseType.GDTypable.(runtime.GDStructType),
 				runtime.GDInt(200),
 				body,
 				headers,
@@ -186,60 +227,70 @@ func ok() *runtime.GDSymbol {
 }
 
 func host() *runtime.GDSymbol {
-	path := runtime.NewGDStrRefType("path")
-	routes := runtime.NewGDStrRefType("routes")
+	path := runtime.NewGDStrIdent("path")
+	routes := runtime.NewGDStrIdent("routes")
 
 	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{Key: path, Value: runtime.GDStringType},
-			{Key: routes, Value: runtime.NewGDArrayType(HttpRouteType)},
+			{Key: path, Value: runtime.GDStringTypeRef},
+			{Key: routes, Value: runtime.NewGDArrayType(runtime.NewGDStrTypeRefType("route"))},
 		},
-		runtime.GDNilType,
+		runtime.GDNilTypeRef,
 		false,
 	)
 
 	lambda := runtime.NewGDLambdaWithType(
 		typ,
 		nil,
-		func(stack *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
-			path := args.Get(path).ToString()
-			routes, isArray := args.Get(routes).(*runtime.GDArray)
+		func(args runtime.GDLambdaArgs, stack *runtime.GDStack) (runtime.GDObject, error) {
+			path, err := args.Get(path)
+			if err != nil {
+				return nil, err
+			}
 
+			routesArg, err := args.Get(routes)
+			if err != nil {
+				return nil, err
+			}
+
+			routes, isArray := routesArg.(*runtime.GDArray)
 			if !isArray {
 				return nil, runtime.InvalidCastingWrongTypeErr(runtime.NewGDArrayType(HttpRouteType), routes.GetType())
 			}
 
 			mux := http.NewServeMux()
 
-			for _, route := range routes.Objects {
+			for _, route := range routes.GetObjects() {
 				route, isStruct := route.(*runtime.GDStruct)
 				if !isStruct {
 					return nil, runtime.InvalidCastingWrongTypeErr(HttpRouteType, route.GetType())
 				}
 
-				method, err := route.GetAttr(runtime.NewGDStrIdent("method"))
+				methodSymbol, err := route.GetAttr(runtime.NewGDStrIdent("method"))
 				if err != nil {
 					return nil, err
 				}
 
-				path, err := route.GetAttr(runtime.NewGDStrIdent("path"))
+				pathSymbol, err := route.GetAttr(runtime.NewGDStrIdent("path"))
 				if err != nil {
 					return nil, err
 				}
 
-				handler, err := route.GetAttr(runtime.NewGDStrIdent("handler"))
+				handlerSymbol, err := route.GetAttr(runtime.NewGDStrIdent("handler"))
 				if err != nil {
 					return nil, err
 				}
 
-				lambdaHandler, isLambda := handler.Object.(*runtime.GDLambda)
+				methodObj, pathObj, handlerObj := methodSymbol.Value.(runtime.GDObject), pathSymbol.Value.(runtime.GDObject), handlerSymbol.Value.(runtime.GDObject)
+
+				lambdaHandler, isLambda := handlerSymbol.Value.(*runtime.GDLambda)
 				if !isLambda {
-					return nil, runtime.InvalidCastingWrongTypeErr(HttpRouteType, handler.Object.GetType())
+					return nil, runtime.InvalidCastingWrongTypeErr(HttpRouteType, handlerObj.GetType())
 				}
 
-				routePath := method.Object.ToString() + " " + path.Object.ToString()
+				routePath := methodObj.ToString() + " " + pathObj.ToString()
 				mux.HandleFunc(routePath, func(w http.ResponseWriter, r *http.Request) {
-					obj, _ := lambdaHandler.Call(runtime.NewGDArray())
+					obj, _ := lambdaHandler.Call(runtime.NewGDArray(stack))
 					response, isStruct := obj.(*runtime.GDStruct)
 					if !isStruct {
 						return
@@ -250,7 +301,7 @@ func host() *runtime.GDSymbol {
 						return
 					}
 
-					statusCodeInt, err := runtime.ToInt(status.Object)
+					statusCodeInt, err := runtime.ToInt(status.Value)
 					if err == nil {
 						w.WriteHeader(int(statusCodeInt))
 					}
@@ -261,43 +312,47 @@ func host() *runtime.GDSymbol {
 						return
 					}
 
-					headersArray, isHeadersArray := headers.Object.(*runtime.GDArray)
+					headersArray, isHeadersArray := headers.Value.(*runtime.GDArray)
 					if !isHeadersArray {
 						return
 					}
 
-					for _, header := range headersArray.Objects {
+					for _, header := range headersArray.GetObjects() {
 						header, isHeader := header.(*runtime.GDStruct)
 						if !isHeader {
 							continue
 						}
 
-						key, err := header.GetAttr(runtime.NewGDStrIdent("key"))
+						keySymbol, err := header.GetAttr(runtime.NewGDStrIdent("key"))
 						if err != nil {
 							continue
 						}
 
-						value, err := header.GetAttr(runtime.NewGDStrIdent("value"))
+						valueSymbol, err := header.GetAttr(runtime.NewGDStrIdent("value"))
 						if err != nil {
 							continue
 						}
 
-						w.Header().Add(key.Object.ToString(), value.Object.ToString())
+						keyObj, valueObj := keySymbol.Value.(runtime.GDObject), valueSymbol.Value.(runtime.GDObject)
+
+						w.Header().Add(keyObj.ToString(), valueObj.ToString())
 					}
 
-					body, err := response.GetAttr(runtime.NewGDStrIdent("body"))
+					bodySymbol, err := response.GetAttr(runtime.NewGDStrIdent("body"))
 					if err != nil {
 						return
 					}
 
-					_, err = w.Write([]byte(body.Object.ToString()))
+					bodyObj := bodySymbol.Value.(runtime.GDObject)
+
+					_, err = w.Write([]byte(bodyObj.ToString()))
 					if err != nil {
 						return
 					}
 				})
 			}
 
-			err := http.ListenAndServe(path, mux)
+			err = http.ListenAndServe(path.ToString(), mux)
 			if err != nil {
 				return nil, err
 			}

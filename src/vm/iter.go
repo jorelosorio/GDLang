@@ -21,7 +21,7 @@ package vm
 
 import "gdlang/lib/runtime"
 
-func (p *GDVMProc) evalIGet(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalIGet(stack *runtime.GDStack) (runtime.GDObject, error) {
 	isNilSafe, err := p.ReadBool()
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (p *GDVMProc) evalIGet(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 		return nil, err
 	}
 
-	obj, err := iter.Get(int(intVal))
+	obj, err := iter.GetObjectAt(int(intVal))
 	if err != nil && !isNilSafe {
 		return nil, err
 	} else if err != nil && isNilSafe {
@@ -55,7 +55,7 @@ func (p *GDVMProc) evalIGet(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 	return nil, nil
 }
 
-func (p *GDVMProc) evalILen(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalILen(stack *runtime.GDStack) (runtime.GDObject, error) {
 	iter, err := p.ReadIterObj(stack)
 	if err != nil {
 		return nil, err

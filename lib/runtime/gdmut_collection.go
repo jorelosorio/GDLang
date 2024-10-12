@@ -20,10 +20,10 @@
 package runtime
 
 type GDMutableCollection interface {
-	Dispose()                                                   // Frees the memory
-	AddObject(object GDObject, stack *GDSymbolStack) error      // Adds an object
-	AddObjects(objects []GDObject, stack *GDSymbolStack) error  // Adds multiple objects
-	Remove(index int) (GDObject, error)                         // Removes an object at the given index
-	Set(index int, object GDObject, stack *GDSymbolStack) error // Replace an object at the given index
+	Dispose()                                             // Frees the memory
+	AddObject(object GDObject, stack *GDStack) error      // Adds an object
+	AddObjects(stack *GDStack, objects ...GDObject) error // Adds multiple objects
+	Remove(index int) (GDObject, error)                   // Removes an object at the given index
+	Set(index int, object GDObject, stack *GDStack) error // Replace an object at the given index
 	GDIterableCollection
 }

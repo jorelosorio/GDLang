@@ -72,15 +72,15 @@ func TestObjectEqualsWithArrays(t *testing.T) {
 		a, b runtime.GDObject
 		want bool
 	}{
-		{runtime.NewGDArray(runtime.GDString("hola")), runtime.NewGDArray(runtime.GDString("hola")), true},
-		{runtime.NewGDArray(runtime.GDZNil), runtime.NewGDArray(runtime.GDString("Hola")), false},
-		{runtime.NewGDArray(runtime.GDZNil), runtime.NewGDArray(runtime.GDZNil, runtime.GDZNil), false},
-		{runtime.NewGDArray(runtime.GDZNil), runtime.GDString("Hola"), false},
-		{runtime.NewGDArray(runtime.GDZNil, runtime.GDZNil), runtime.NewGDArray(runtime.GDZNil, runtime.GDZNil), true},
-		{runtime.NewGDArray(runtime.GDString("hola")), runtime.NewGDArray(runtime.GDString("hola")), true},
-		{runtime.NewGDArray(runtime.GDString("hola")), runtime.NewGDArray(runtime.GDString("adios")), false},
-		{runtime.NewGDArray(runtime.GDString("hola")), runtime.NewGDArray(runtime.GDString("hola"), runtime.GDString("adios")), false},
-		{runtime.NewGDArray(runtime.GDString("hola")), runtime.NewGDArray(runtime.NewGDIntNumber(1)), false},
+		{runtime.NewGDArray(nil, runtime.GDString("hola")), runtime.NewGDArray(nil, runtime.GDString("hola")), true},
+		{runtime.NewGDArray(nil, runtime.GDZNil), runtime.NewGDArray(nil, runtime.GDString("Hola")), false},
+		{runtime.NewGDArray(nil, runtime.GDZNil), runtime.NewGDArray(nil, runtime.GDZNil, runtime.GDZNil), false},
+		{runtime.NewGDArray(nil, runtime.GDZNil), runtime.GDString("Hola"), false},
+		{runtime.NewGDArray(nil, runtime.GDZNil, runtime.GDZNil), runtime.NewGDArray(nil, runtime.GDZNil, runtime.GDZNil), true},
+		{runtime.NewGDArray(nil, runtime.GDString("hola")), runtime.NewGDArray(nil, runtime.GDString("hola")), true},
+		{runtime.NewGDArray(nil, runtime.GDString("hola")), runtime.NewGDArray(nil, runtime.GDString("adios")), false},
+		{runtime.NewGDArray(nil, runtime.GDString("hola")), runtime.NewGDArray(nil, runtime.GDString("hola"), runtime.GDString("adios")), false},
+		{runtime.NewGDArray(nil, runtime.GDString("hola")), runtime.NewGDArray(nil, runtime.NewGDIntNumber(1)), false},
 	}
 
 	for _, tc := range testCases {
@@ -91,12 +91,12 @@ func TestObjectEqualsWithArrays(t *testing.T) {
 }
 
 func TestCastObject(t *testing.T) {
-	stack := runtime.NewRootGDSymbolStack()
+	stack := runtime.NewGDStack()
 	defer stack.Dispose()
 
 	userStruct, err := runtime.NewGDStruct(runtime.GDStructType{
-		{runtime.NewGDStrIdent("name"), runtime.GDStringType},
-		{runtime.NewGDStrIdent("age"), runtime.GDIntType},
+		{runtime.NewGDStrIdent("name"), runtime.GDStringTypeRef},
+		{runtime.NewGDStrIdent("age"), runtime.GDIntTypeRef},
 	}, stack)
 	if err != nil {
 		t.Fatalf("Error creating user struct: %v", err)
@@ -108,105 +108,104 @@ func TestCastObject(t *testing.T) {
 		errMsg string
 	}{
 		// String cases
-		{runtime.GDString("hi"), runtime.GDStringType, ""},
-		{runtime.GDString("1"), runtime.GDCharType, ""},
-		{runtime.GDString("true"), runtime.GDBoolType, ""},
-		{runtime.GDString("false"), runtime.GDBoolType, ""},
-		{runtime.GDString("1"), runtime.GDBoolType, ""},
-		{runtime.GDString("T"), runtime.GDIntType, "error trying to cast `T` into a `int`"},
-		{runtime.GDString("1.0"), runtime.GDFloat32Type, ""}, // Float32, Float64 are FloatType (Both are compatible)
-		{runtime.GDString(runtime.GDFloat64(math.MaxFloat64).ToString()), runtime.GDFloat64Type, ""},
-		{runtime.GDString("1.0"), runtime.GDComplex64Type, ""}, // Complex64, Complex128 are ComplexType (Both are compatible)
-		{runtime.GDString(runtime.GDComplex128(complex(math.MaxFloat64, math.MaxFloat64)).ToString()), runtime.GDComplex128Type, ""},
-		{runtime.GDString("1.0"), runtime.GDIntType, "error trying to cast `1.0` into a `int`"},
-		{runtime.GDString("1.0"), runtime.GDInt8Type, "error trying to cast `1.0` into a `int`"}, // Internally it is an int8
-		{runtime.NewGDArray(runtime.GDString("hola")), runtime.GDStringType, ""},
-		{runtime.NewGDArray(runtime.GDString("hola")), runtime.GDIntType, "error while casting `[string]` to `int`"},
+		{runtime.GDString("hi"), runtime.GDStringTypeRef, ""},
+		{runtime.GDString("1"), runtime.GDCharTypeRef, ""},
+		{runtime.GDString("true"), runtime.GDBoolTypeRef, ""},
+		{runtime.GDString("false"), runtime.GDBoolTypeRef, ""},
+		{runtime.GDString("1"), runtime.GDBoolTypeRef, ""},
+		{runtime.GDString("T"), runtime.GDIntTypeRef, "error trying to cast `T` into a `int`"},
+		{runtime.GDString("1.0"), runtime.GDFloat32TypeRef, ""}, // Float32, Float64 are FloatType (Both are compatible)
+		{runtime.GDString(runtime.GDFloat64(math.MaxFloat64).ToString()), runtime.GDFloat64TypeRef, ""},
+		{runtime.GDString("1.0"), runtime.GDComplex64TypeRef, ""}, // Complex64, Complex128 are ComplexType (Both are compatible)
+		{runtime.GDString(runtime.GDComplex128(complex(math.MaxFloat64, math.MaxFloat64)).ToString()), runtime.GDComplex128TypeRef, ""},
+		{runtime.GDString("1.0"), runtime.GDIntTypeRef, "error trying to cast `1.0` into a `int`"},
+		{runtime.GDString("1.0"), runtime.GDInt8TypeRef, "error trying to cast `1.0` into a `int`"}, // Internally it is an int8
+		{runtime.NewGDArray(nil, runtime.GDString("hola")), runtime.GDStringTypeRef, ""},
+		{runtime.NewGDArray(nil, runtime.GDString("hola")), runtime.GDIntTypeRef, "error while casting `[string]` to `int`"},
 		// Char cases
-		{runtime.GDChar('h'), runtime.GDCharType, ""},
-		{runtime.GDChar('o'), runtime.GDInt8Type, ""},
-		{runtime.GDChar('l'), runtime.GDInt16Type, ""},
-		{runtime.GDChar('a'), runtime.GDIntType, ""},
-		{runtime.GDChar('a'), runtime.GDStringType, ""},
-		{runtime.GDChar('a'), runtime.GDBoolType, ""},
-		{runtime.GDChar('a'), runtime.GDFloat32Type, "error while casting `char` to `float32`"},
-		{runtime.GDChar('a'), runtime.GDFloat64Type, "error while casting `char` to `float64`"},
-		{runtime.GDChar('a'), runtime.GDComplex64Type, "error while casting `char` to `complex64`"},
-		{runtime.GDChar('a'), runtime.GDComplex128Type, "error while casting `char` to `complex128`"},
-		{runtime.GDChar('l'), runtime.GDStringType, ""},
+		{runtime.GDChar('h'), runtime.GDCharTypeRef, ""},
+		{runtime.GDChar('o'), runtime.GDInt8TypeRef, ""},
+		{runtime.GDChar('l'), runtime.GDInt16TypeRef, ""},
+		{runtime.GDChar('a'), runtime.GDIntTypeRef, ""},
+		{runtime.GDChar('a'), runtime.GDStringTypeRef, ""},
+		{runtime.GDChar('a'), runtime.GDBoolTypeRef, ""},
+		{runtime.GDChar('a'), runtime.GDFloat32TypeRef, "error while casting `char` to `float32`"},
+		{runtime.GDChar('a'), runtime.GDFloat64TypeRef, "error while casting `char` to `float64`"},
+		{runtime.GDChar('a'), runtime.GDComplex64TypeRef, "error while casting `char` to `complex64`"},
+		{runtime.GDChar('a'), runtime.GDComplex128TypeRef, "error while casting `char` to `complex128`"},
+		{runtime.GDChar('l'), runtime.GDStringTypeRef, ""},
 		// Int cases
-		{runtime.GDInt(math.MaxInt32), runtime.GDIntType, ""},
-		{runtime.GDInt(1), runtime.GDInt8Type, ""},
-		{runtime.GDInt(1), runtime.GDInt16Type, ""},
-		{runtime.GDInt(1), runtime.GDFloat32Type, ""},
-		{runtime.GDInt(1), runtime.GDFloat64Type, ""},
-		{runtime.GDInt(1), runtime.GDBoolType, ""},
-		{runtime.GDInt(1), runtime.GDStringType, ""},
-		{runtime.GDInt(1), runtime.GDComplex64Type, ""},
-		{runtime.GDInt(math.MaxInt64), runtime.GDComplex64Type, ""}, // Real part is always 64 bits
+		{runtime.GDInt(math.MaxInt32), runtime.GDIntTypeRef, ""},
+		{runtime.GDInt(1), runtime.GDInt8TypeRef, ""},
+		{runtime.GDInt(1), runtime.GDInt16TypeRef, ""},
+		{runtime.GDInt(1), runtime.GDFloat32TypeRef, ""},
+		{runtime.GDInt(1), runtime.GDFloat64TypeRef, ""},
+		{runtime.GDInt(1), runtime.GDBoolTypeRef, ""},
+		{runtime.GDInt(1), runtime.GDStringTypeRef, ""},
+		{runtime.GDInt(1), runtime.GDComplex64TypeRef, ""},
+		{runtime.GDInt(math.MaxInt64), runtime.GDComplex64TypeRef, ""}, // Real part is always 64 bits
 		// Float cases
-		{runtime.GDFloat32(1.0), runtime.GDFloat32Type, ""},
-		{runtime.GDFloat32(1.0), runtime.GDFloat64Type, ""},
+		{runtime.GDFloat32(1.0), runtime.GDFloat32TypeRef, ""},
+		{runtime.GDFloat32(1.0), runtime.GDFloat64TypeRef, ""},
 		// Float is either Float32 or Float64 (There is no case for FloatType)
-		// {runtime.GDFloat32(1.0), runtime.GDFloatType, ""},
-		{runtime.GDFloat32(math.MaxFloat32), runtime.GDIntType, ""},
-		{runtime.GDFloat32(1.0), runtime.GDInt8Type, ""},
-		{runtime.GDFloat32(1.0), runtime.GDInt16Type, ""},
-		{runtime.GDFloat32(1.0), runtime.GDBoolType, ""},
-		{runtime.GDFloat32(1.0), runtime.GDStringType, ""},
-		{runtime.GDFloat32(1.0), runtime.GDComplex64Type, ""},
+		{runtime.GDFloat32(1.0), runtime.GDFloat32TypeRef, ""},
+		{runtime.GDFloat32(math.MaxFloat32), runtime.GDIntTypeRef, ""},
+		{runtime.GDFloat32(1.0), runtime.GDInt8TypeRef, ""},
+		{runtime.GDFloat32(1.0), runtime.GDInt16TypeRef, ""},
+		{runtime.GDFloat32(1.0), runtime.GDBoolTypeRef, ""},
+		{runtime.GDFloat32(1.0), runtime.GDStringTypeRef, ""},
+		{runtime.GDFloat32(1.0), runtime.GDComplex64TypeRef, ""},
 		// Complex type is either Complex64 or Complex128 (There is no case for ComplexType)
-		// {runtime.GDFloat32(1.0), runtime.GDComplexType, ""},
+		{runtime.GDFloat32(1.0), runtime.GDComplex64TypeRef, ""},
 		// Complex cases
-		{runtime.GDComplex64(1.0), runtime.GDComplex64Type, ""},
-		{runtime.GDComplex64(1.0), runtime.GDComplex128Type, ""},
-		// {runtime.GDComplex64(1.0), runtime.GDComplexType, ""},
-		{runtime.GDComplex64(math.MaxFloat32), runtime.GDIntType, ""},
-		{runtime.GDComplex64(1.0), runtime.GDInt8Type, ""},
-		{runtime.GDComplex64(1.0), runtime.GDInt16Type, ""},
-		{runtime.GDComplex64(1.0), runtime.GDBoolType, ""},
-		{runtime.GDComplex64(1.0), runtime.GDStringType, ""},
-		{runtime.GDComplex64(1.0), runtime.GDFloat32Type, ""},
+		{runtime.GDComplex64(1.0), runtime.GDComplex64TypeRef, ""},
+		{runtime.GDComplex64(1.0), runtime.GDComplex128TypeRef, ""},
+		{runtime.GDComplex64(math.MaxFloat32), runtime.GDIntTypeRef, ""},
+		{runtime.GDComplex64(1.0), runtime.GDInt8TypeRef, ""},
+		{runtime.GDComplex64(1.0), runtime.GDInt16TypeRef, ""},
+		{runtime.GDComplex64(1.0), runtime.GDBoolTypeRef, ""},
+		{runtime.GDComplex64(1.0), runtime.GDStringTypeRef, ""},
+		{runtime.GDComplex64(1.0), runtime.GDFloat32TypeRef, ""},
 		// Float requires 2 float32 values, but it uses only the real part
-		// {runtime.GDComplex64(math.MaxFloat32), runtime.GDFloatType, ""},
+		{runtime.GDComplex64(math.MaxFloat32), runtime.GDFloat64TypeRef, ""},
 		// Bool cases
-		{runtime.GDBool(true), runtime.GDBoolType, ""},
-		{runtime.GDBool(true), runtime.GDIntType, ""},
-		{runtime.GDBool(true), runtime.GDInt8Type, ""},
-		{runtime.GDBool(true), runtime.GDInt16Type, ""},
-		{runtime.GDBool(true), runtime.GDFloat32Type, ""},
-		{runtime.GDBool(true), runtime.GDFloat64Type, ""},
-		{runtime.GDBool(true), runtime.GDComplex64Type, ""},
-		{runtime.GDBool(true), runtime.GDComplex128Type, ""},
+		{runtime.GDBool(true), runtime.GDBoolTypeRef, ""},
+		{runtime.GDBool(true), runtime.GDIntTypeRef, ""},
+		{runtime.GDBool(true), runtime.GDInt8TypeRef, ""},
+		{runtime.GDBool(true), runtime.GDInt16TypeRef, ""},
+		{runtime.GDBool(true), runtime.GDFloat32TypeRef, ""},
+		{runtime.GDBool(true), runtime.GDFloat64TypeRef, ""},
+		{runtime.GDBool(true), runtime.GDComplex64TypeRef, ""},
+		{runtime.GDBool(true), runtime.GDComplex128TypeRef, ""},
 		// 1 fits in complex64
-		// {runtime.GDBool(true), runtime.GDComplexType, ""},
-		{runtime.GDBool(true), runtime.GDStringType, ""},
-		{runtime.GDBool(true), runtime.GDCharType, ""},
+		{runtime.GDBool(true), runtime.GDComplex64TypeRef, ""},
+		{runtime.GDBool(true), runtime.GDStringTypeRef, ""},
+		{runtime.GDBool(true), runtime.GDCharTypeRef, ""},
 		// Array cases
-		{runtime.NewGDArray(runtime.GDChar('h')), runtime.NewGDArrayType(runtime.GDStringType), ""},
-		{runtime.NewGDArray(runtime.GDString("hi")), runtime.NewGDArrayType(runtime.GDCharType), "error trying to cast `hi` into a `char`"},
-		{runtime.NewGDArray(runtime.GDString("h")), runtime.NewGDArrayType(runtime.GDCharType), ""},
-		{runtime.NewGDArray(runtime.NewGDArray(runtime.GDString("h"))), runtime.NewGDArrayType(runtime.GDStringType), ""},
-		{runtime.NewGDArray(runtime.NewGDArray(runtime.GDString("h"))), runtime.NewGDArrayType(runtime.GDIntType), "error while casting `[string]` to `int`"},
-		{runtime.NewGDArray(), runtime.NewGDArrayType(runtime.GDIntType), ""},
+		{runtime.NewGDArray(nil, runtime.GDChar('h')), runtime.NewGDArrayType(runtime.GDStringTypeRef), ""},
+		{runtime.NewGDArray(nil, runtime.GDString("hi")), runtime.NewGDArrayType(runtime.GDCharTypeRef), "error trying to cast `hi` into a `char`"},
+		{runtime.NewGDArray(nil, runtime.GDString("h")), runtime.NewGDArrayType(runtime.GDCharTypeRef), ""},
+		{runtime.NewGDArray(nil, runtime.NewGDArray(nil, runtime.GDString("h"))), runtime.NewGDArrayType(runtime.GDStringTypeRef), ""},
+		{runtime.NewGDArray(nil, runtime.NewGDArray(nil, runtime.GDString("h"))), runtime.NewGDArrayType(runtime.GDIntTypeRef), "error while casting `[string]` to `int`"},
+		{runtime.NewGDArray(nil), runtime.NewGDArrayType(runtime.GDIntTypeRef), ""},
 		// Tuple cases
-		{runtime.NewGDTuple(runtime.GDChar('h')), runtime.NewGDTupleType(runtime.GDStringType), ""},
+		{runtime.NewGDTuple(runtime.GDChar('h')), runtime.NewGDTupleType(runtime.GDStringTypeRef), ""},
 		// Struct cases
 		{userStruct, runtime.GDStructType{
-			{runtime.NewGDStrIdent("name"), runtime.GDStringType},
-			{runtime.NewGDStrIdent("age"), runtime.GDIntType},
+			{runtime.NewGDStrIdent("name"), runtime.GDStringTypeRef},
+			{runtime.NewGDStrIdent("age"), runtime.GDIntTypeRef},
 		}, ""},
 		{userStruct, runtime.GDStructType{
-			{runtime.NewGDStrIdent("name"), runtime.GDStringType},
+			{runtime.NewGDStrIdent("name"), runtime.GDStringTypeRef},
 		}, "attribute `age`, not found"},
 		{userStruct, runtime.GDStructType{
-			{runtime.NewGDStrIdent("name"), runtime.GDStringType},
-			{runtime.NewGDStrIdent("age"), runtime.GDStringType},
+			{runtime.NewGDStrIdent("name"), runtime.GDStringTypeRef},
+			{runtime.NewGDStrIdent("age"), runtime.GDStringTypeRef},
 		}, ""},
 	}
 
 	for _, tc := range testCases {
-		obj, err := tc.obj.CastToType(tc.toType, stack)
+		obj, err := tc.obj.CastToType(tc.toType)
 		if err != nil {
 			if tc.errMsg != "" {
 				if !strings.Contains(err.Error(), tc.errMsg) {
@@ -225,7 +224,7 @@ func TestCastObject(t *testing.T) {
 			objType = obj.GetSubType()
 		}
 
-		err = runtime.EqualTypes(objType, tc.toType, stack)
+		err = runtime.EqualTypes(objType, tc.toType, nil)
 		if err != nil {
 			t.Errorf("CastObject(%q) expect %q, but got %q", tc.obj.ToString(), tc.toType.ToString(), objType.ToString())
 		}

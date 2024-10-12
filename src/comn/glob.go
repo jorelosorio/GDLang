@@ -20,5 +20,5 @@
 package comn
 
 var (
-	PrettyPrintErrors = true
+	PrettyPrintErrors = false
 )

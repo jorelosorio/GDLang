@@ -26,28 +26,27 @@ import (
 )
 
 func TestSimpleStructType(t *testing.T) {
-	stack := runtime.NewRootGDSymbolStack()
-	subStructTypeWithInt := runtime.NewGDStructType(runtime.GDStructAttrType{bParamIdent, runtime.GDIntType})
-	subStructTypeWithArray := runtime.NewGDStructType(runtime.GDStructAttrType{bParamIdent, runtime.NewGDArrayType(runtime.GDIntType)})
+	stack := runtime.NewGDStack()
+
+	subStructTypeWithInt := runtime.NewGDStructType(&runtime.GDStructAttrType{bParamIdent, runtime.GDIntTypeRef})
+	subStructTypeWithArray := runtime.NewGDStructType(&runtime.GDStructAttrType{bParamIdent, runtime.NewGDArrayType(runtime.GDIntTypeRef)})
 
 	for _, test := range []struct {
-		attrs    []runtime.GDStructAttrType
+		attrs    []*runtime.GDStructAttrType
 		expected string
 		errMsg   string
 	}{
-		{[]runtime.GDStructAttrType{}, "{}", ""},
-		{[]runtime.GDStructAttrType{{aParamIdent, runtime.GDIntType}}, "{a: int}", ""},
-		{[]runtime.GDStructAttrType{{aParamIdent, runtime.GDIntType}, {bParamIdent, runtime.GDStringType}}, "{a: int, b: string}", ""},
-		{[]runtime.GDStructAttrType{{aParamIdent, runtime.GDIntType}, {bParamIdent, runtime.GDStringType}, {cParamIdent, runtime.GDBoolType}}, "{a: int, b: string, c: bool}", ""},
+		{[]*runtime.GDStructAttrType{}, "{}", ""},
+		{[]*runtime.GDStructAttrType{{aParamIdent, runtime.GDIntTypeRef}}, "{a: int}", ""},
+		{[]*runtime.GDStructAttrType{{aParamIdent, runtime.GDIntTypeRef}, {bParamIdent, runtime.GDStringTypeRef}}, "{a: int, b: string}", ""},
+		{[]*runtime.GDStructAttrType{{aParamIdent, runtime.GDIntTypeRef}, {bParamIdent, runtime.GDStringTypeRef}, {cParamIdent, runtime.GDBoolTypeRef}}, "{a: int, b: string, c: bool}", ""},
 		// Struct with nested struct
-		{[]runtime.GDStructAttrType{{aParamIdent, subStructTypeWithInt}}, "{a: {b: int}}", ""},
+		{[]*runtime.GDStructAttrType{{aParamIdent, subStructTypeWithInt}}, "{a: {b: int}}", ""},
 		// Struct with nested struct and array
-		{[]runtime.GDStructAttrType{{aParamIdent, subStructTypeWithArray}}, "{a: {b: [int]}}", ""},
-		// Wrong types
-		{[]runtime.GDStructAttrType{{aParamIdent, runtime.NewGDStrRefType("none")}}, "", "object `none` was not found"},
+		{[]*runtime.GDStructAttrType{{aParamIdent, subStructTypeWithArray}}, "{a: {b: [int]}}", ""},
 	} {
 		structType := runtime.NewGDStructType(test.attrs...)
-		err := runtime.CheckType(structType, stack)
+		_, err := runtime.InferType(structType, runtime.GDUntypedTypeRef, stack)
 		if err != nil {
 			if test.errMsg != "" {
 				if !strings.Contains(err.Error(), test.errMsg) {

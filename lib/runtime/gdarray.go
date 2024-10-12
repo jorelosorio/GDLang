@@ -20,67 +20,63 @@
 package runtime
 
 type GDArray struct {
-	Objects []GDObject
+	objects []GDObject
 	*GDArrayType
 }
 
 func (gd *GDArray) GetType() GDTypable    { return gd.GDArrayType }
 func (gd *GDArray) GetSubType() GDTypable { return nil }
 func (gd *GDArray) ToString() string {
-	vals := JoinSlice(gd.Objects, func(object GDObject, _ int) string {
-		return ObjectToStringForInternalData(object)
+	vals := JoinSlice(gd.objects, func(object GDObject, _ int) string {
+		return ConvertObjectToString(object)
 	}, ", ")
 
 	return Sprintf("[%@]", vals)
 }
-func (gd *GDArray) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
+func (gd *GDArray) CastToType(typ GDTypable) (GDObject, error) {
 	switch typ := typ.(type) {
-	case GDType:
-		switch typ {
-		case GDStringType:
-			return GDString(gd.ToString()), nil
-		}
+	case GDStringType:
+		return GDString(gd.ToString()), nil
 	case *GDArrayType:
-		for i, obj := range gd.Objects {
-			castObj, err := obj.CastToType(typ.SubType, stack)
+		objects := make([]GDObject, len(gd.objects))
+		for i, obj := range gd.objects {
+			castObj, err := obj.CastToType(typ.SubType)
 			if err != nil {
 				return nil, TypeCastingWrongTypeWithHierarchyError(typ, obj.GetType(), err)
 			}
 
-			gd.Objects[i] = castObj
+			objects[i] = castObj
 		}
 
-		gd.GDArrayType = typ
-
-		return gd, nil
+		return NewGDArrayWithTypeAndObjects(typ, objects), nil
 	}
 
 	return nil, InvalidCastingWrongTypeErr(typ, gd.GetType())
 }
 
-func (gd *GDArray) Length() int   { return len(gd.Objects) }
-func (gd *GDArray) IsEmpty() bool { return len(gd.Objects) == 0 }
-func (gd *GDArray) Get(index int) (GDObject, error) {
+func (gd *GDArray) Length() int   { return len(gd.objects) }
+func (gd *GDArray) IsEmpty() bool { return len(gd.objects) == 0 }
+func (gd *GDArray) GetObjectAt(index int) (GDObject, error) {
 	if err := gd.checkIndex(index); err != nil {
 		return nil, err
 	}
 
-	return gd.Objects[index], nil
+	return gd.objects[index], nil
 }
-func (gd *GDArray) GetObjects() []GDObject { return gd.Objects }
+func (gd *GDArray) GetObjects() []GDObject { return gd.objects }
 
-func (gd *GDArray) Dispose() { gd.Objects = nil }
-func (gd *GDArray) AddObject(object GDObject, stack *GDSymbolStack) error {
+func (gd *GDArray) Dispose() { gd.objects = nil }
+func (gd *GDArray) AddObject(object GDObject, stack *GDStack) error {
 	err := CanBeAssign(gd.SubType, object.GetType(), stack)
 	if err != nil {
 		return err
 	}
 
-	gd.Objects = append(gd.Objects, object)
+	gd.objects = append(gd.objects, object)
 
 	return nil
 }
-func (gd *GDArray) AddObjects(objects []GDObject, stack *GDSymbolStack) error {
+func (gd *GDArray) AddObjects(stack *GDStack, objects ...GDObject) error {
 	for _, object := range objects {
 		if err := gd.AddObject(object, stack); err != nil {
 			return err
@@ -94,69 +90,70 @@ func (gd *GDArray) Remove(index int) (GDObject, error) {
 		return nil, err
 	}
 
-	obj := gd.Objects[index]
-	gd.Objects = append(gd.Objects[:index], gd.Objects[index+1:]...)
+	obj := gd.objects[index]
+	gd.objects = append(gd.objects[:index], gd.objects[index+1:]...)
 
 	return obj, nil
 }
-func (gd *GDArray) Set(index int, object GDObject, stack *GDSymbolStack) error {
+func (gd *GDArray) Set(index int, object GDObject, stack *GDStack) error {
 	if err := gd.checkIndex(index); err != nil {
 		return err
 	}
 
-	err := CanBeAssign(gd.Objects[index].GetType(), object.GetType(), stack)
+	err := CanBeAssign(gd.objects[index].GetType(), object.GetType(), stack)
 	if err != nil {
 		return err
 	}
 
-	gd.Objects[index] = object
+	gd.objects[index] = object
 
 	return nil
 }
 
 func (gd *GDArray) checkIndex(index int) error {
-	if index < 0 || index >= len(gd.Objects) {
+	if index < 0 || index >= len(gd.objects) {
 		return IndexOutOfBoundsErr
 	}
 	return nil
 }
 
-func NewGDArray(values ...GDObject) *GDArray {
+func NewGDArray(stack *GDStack, objects ...GDObject) *GDArray {
+	typ := NewGDArrayType(ComputeTypeFromObjects(objects, stack))
 	return &GDArray{
-		Objects: values,
+		objects: objects,
 		// Determine array type by computing the object types.
-		GDArrayType: NewGDArrayType(ComputeTypeFromObjects(values)),
+		GDArrayType: typ,
 	}
 }
 
 func NewGDEmptyArray() *GDArray {
+	typ := NewGDEmptyArrayType()
 	return &GDArray{
-		Objects:     []GDObject{},
-		GDArrayType: NewGDEmptyArrayType(),
+		GDArrayType: typ,
+		objects:     []GDObject{},
 	}
 }
 
 func NewGDArrayWithType(subType GDTypable) *GDArray {
+	typ := NewGDArrayType(subType)
 	return &GDArray{
-		GDArrayType: NewGDArrayType(subType),
-		Objects:     make([]GDObject, 0),
+		GDArrayType: typ,
+		objects:     make([]GDObject, 0),
 	}
 }
 
-func NewGDArrayWithSubTypeAndObjects(subType GDTypable, values []GDObject, stack *GDSymbolStack) (*GDArray, error) {
+func NewGDArrayWithSubTypeAndObjects(subType GDTypable, values []GDObject, stack *GDStack) (*GDArray, error) {
 	arrayType := NewGDArrayType(subType)
 	array := GDArray{
 		GDArrayType: arrayType,
-		Objects:     make([]GDObject, len(values)),
+		objects:     make([]GDObject, 0),
 	}
 
-	for i, value := range values {
-		err := CanBeAssign(arrayType.SubType, value.GetType(), stack)
+	for _, value := range values {
+		err := array.AddObject(value, stack)
 		if err != nil {
-			return nil, WrongTypesErr(arrayType.SubType, value.GetType())
+			return nil, err
 		}
-
-		array.Objects[i] = value
 	}
 
 	return &array, nil
@@ -166,10 +163,10 @@ func NewGDArrayWithSubTypeAndObjects(subType GDTypable, values []GDObject, stack
 func NewGDArrayWithTypeAndObjects(arrayType *GDArrayType, objects []GDObject) *GDArray {
 	return &GDArray{
 		GDArrayType: arrayType,
-		Objects:     objects,
+		objects:     objects,
 	}
 }
 
-func NewGDArrayWithObjects(objects []GDObject, stack *GDSymbolStack) (*GDArray, error) {
-	return NewGDArrayWithSubTypeAndObjects(ComputeTypeFromObjects(objects), objects, stack)
+func NewGDArrayWithObjects(objects []GDObject, stack *GDStack) (*GDArray, error) {
+	return NewGDArrayWithSubTypeAndObjects(ComputeTypeFromObjects(objects, stack), objects, stack)
 }

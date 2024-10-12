@@ -20,6 +20,7 @@
 package ast
 
 import (
+	"gdlang/lib/runtime"
 	"gdlang/src/gd/scanner"
 )
 
@@ -52,4 +53,15 @@ func buildStartEndPos(firstItem, lastItem Node) scanner.Position {
 		ColStart: fp.ColStart,
 		ColEnd:   lp.ColEnd,
 	}
+}
+
+func buildFuncType(args []Node, variadic bool, returnType runtime.GDTypable) *runtime.GDLambdaType {
+	funcArgTypes := make(runtime.GDLambdaArgTypes, len(args))
+	for index, arg := range args {
+		typeIdent := arg.(*NodeIdentWithType)
+		ident := runtime.NewGDStrIdent(typeIdent.Ident.Lit)
+		funcArgTypes[index] = &runtime.GDLambdaArgType{Key: ident, Value: typeIdent.Type}
+	}
+
+	return runtime.NewGDLambdaType(funcArgTypes, returnType, variadic)
 }

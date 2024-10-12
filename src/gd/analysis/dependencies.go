@@ -441,7 +441,7 @@ func (d *PackageDependenciesAnalyzer) analyzeType(typ runtime.GDTypable, astNode
 		}
 
 		return d.analyzeType(typ.ReturnType, astNode, sourceFile)
-	case runtime.GDType:
+	case runtime.GDStringType, runtime.GDType:
 		// Nothing to do
 		return nil
 	default:
@@ -553,7 +553,7 @@ func (d *PackageDependenciesAnalyzer) analyzeNode(astNode ast.Node, sourceFile *
 	case *ast.NodeBreak:
 		// Nothing to do
 		return nil
-	case *ast.NodeIterIdxExpr:
+	case *ast.NodeIndexableExpr:
 		err := d.analyzeNode(astNode.Expr, sourceFile)
 		if err != nil {
 			return err
@@ -616,12 +616,12 @@ func (d *PackageDependenciesAnalyzer) analyzeNode(astNode ast.Node, sourceFile *
 	case *ast.NodeSharedExpr:
 		return d.analyzeNode(astNode.Expr, sourceFile)
 	case *ast.NodeUpdateSet:
-		err := d.analyzeNode(astNode.Expr, sourceFile)
+		err := d.analyzeNode(astNode.RhsExpr, sourceFile)
 		if err != nil {
 			return err
 		}
 
-		return d.analyzeNode(astNode.IdentExpr, sourceFile)
+		return d.analyzeNode(astNode.LhsExpr, sourceFile)
 	case *ast.NodeLabel:
 		// Nothing to do for now!
 		return nil

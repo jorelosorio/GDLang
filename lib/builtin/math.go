@@ -50,8 +50,9 @@ func MathPackage() (*runtime.GDPackage[*runtime.GDSymbol], error) {
 		"floor": floor(),
 		"round": round(),
 		// Constants
-		"pi": runtime.NewGDSymbol(true, false, runtime.GDFloatType, runtime.NewGDFloatNumber(runtime.GDFloat64(math.Pi))),
+		"pi": runtime.NewGDSymbol(true, false, runtime.GDFloatTypeRef, runtime.NewGDFloatNumber(runtime.GDFloat64(math.Pi))),
 	}
+
 	for ident, symbol := range symbols {
 		err := pkg.AddPublic(runtime.NewGDStrIdent(ident), symbol)
 		if err != nil {
@@ -307,24 +308,31 @@ func atan() *runtime.GDSymbol {
 }
 
 func atan2() *runtime.GDSymbol {
-	yParam := runtime.NewGDStrRefType("y")
-	xParam := runtime.NewGDStrRefType("x")
+	yParam := runtime.NewGDStrIdent("y")
+	xParam := runtime.NewGDStrIdent("x")
 
 	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{Key: yParam, Value: runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType)},
-			{Key: xParam, Value: runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType)},
+			{Key: yParam, Value: runtime.NewGDUnionType(runtime.GDIntTypeRef, runtime.GDFloatTypeRef)},
+			{Key: xParam, Value: runtime.NewGDUnionType(runtime.GDIntTypeRef, runtime.GDFloatTypeRef)},
 		},
-		runtime.GDFloatType,
+		runtime.GDFloatTypeRef,
 		false,
 	)
 
 	lambda := runtime.NewGDLambdaWithType(
 		typ,
 		nil,
-		func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
-			x := args.Get(xParam)
-			y := args.Get(yParam)
+		func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
+			x, err := args.Get(xParam)
+			if err != nil {
+				return nil, err
+			}
+
+			y, err := args.Get(yParam)
+			if err != nil {
+				return nil, err
+			}
 
 			xFloat, err := runtime.ToFloat(x)
 			if err != nil {
@@ -421,21 +429,25 @@ func round() *runtime.GDSymbol {
 }
 
 func mathOp(opFunc func(num runtime.GDObject) (runtime.GDObject, error)) *runtime.GDSymbol {
-	num := runtime.NewGDStrRefType("num")
+	num := runtime.NewGDStrIdent("num")
 
 	typ := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{Key: num, Value: runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType, runtime.GDComplexType)},
+			{Key: num, Value: runtime.NewGDUnionType(runtime.GDIntTypeRef, runtime.GDFloatTypeRef, runtime.GDComplexTypeRef)},
 		},
-		runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType, runtime.GDComplexType),
+		runtime.NewGDUnionType(runtime.GDIntTypeRef, runtime.GDFloatTypeRef, runtime.GDComplexTypeRef),
 		false,
 	)
 
 	lambda := runtime.NewGDLambdaWithType(
 		typ,
 		nil,
-		func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
-			num := args.Get(num)
+		func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
+			num, err := args.Get(num)
+			if err != nil {
+				return nil, err
+			}
+
 			return opFunc(num)
 		},
 	)

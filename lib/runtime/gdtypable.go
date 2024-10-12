@@ -23,5 +23,5 @@ type GDTypableCode uint8
 
 type GDTypable interface {
 	GetCode() GDTypableCode
-	GDPrintable
+	GDRawValue
 }

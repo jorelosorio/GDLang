@@ -74,7 +74,7 @@ func (p *GDPackage[T]) GetMember(ident GDIdent) (T, error) {
 
 func (p *GDPackage[T]) add(ident GDIdent, memberType GDMemberType, value T) error {
 	if _, ok := p.Members[ident.GetRawValue()]; ok {
-		return DuplicatedObjectCreationErr(ident)
+		return DuplicatedSymbolErr(ident)
 	}
 
 	p.Members[ident.GetRawValue()] = GDMember[T]{memberType, value}

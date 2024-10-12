@@ -30,9 +30,18 @@ import (
 	"gdlang/src/gd/scanner"
 )
 
+type Inference = ast.Inference
+
+func NewInference(ident runtime.GDIdent, typ runtime.GDTypable) *Inference {
+	return &Inference{Ident: ident, Type: typ, RuntimeIdent: nil}
+}
+
+type StaticStack = runtime.GDStack
+type StaticSymbol = runtime.GDSymbol
+
 type (
-	ObjectEvaluator           = Evaluator[runtime.GDObject, *runtime.GDSymbolStack]
-	ObjectExpressionEvaluator = ExpressionEvaluator[runtime.GDObject, *runtime.GDSymbolStack]
+	ObjectEvaluator           = Evaluator[*Inference, *StaticStack]
+	ObjectExpressionEvaluator = ExpressionEvaluator[*Inference, *StaticStack]
 )
 
 type StaticCheck struct {
@@ -42,11 +51,11 @@ type StaticCheck struct {
 	*analysis.PackageDependenciesAnalyzer
 }
 
-func (t *StaticCheck) Check(stack *runtime.GDSymbolStack) error {
+func (t *StaticCheck) Check(stack *StaticStack) error {
 	return t.EvalFileNodes(t.Nodes, stack)
 }
 
-func (t *StaticCheck) EvalAtom(a *ast.NodeLiteral, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalAtom(a *ast.NodeLiteral, stack *StaticStack) (*Inference, error) {
 	var obj runtime.GDObject
 	switch a.Token {
 	case scanner.STRING:
@@ -84,12 +93,16 @@ func (t *StaticCheck) EvalAtom(a *ast.NodeLiteral, stack *runtime.GDSymbolStack)
 		panic("unexpected literal token: " + a.Lit)
 	}
 
-	a.SetInferredObject(obj)
+	// Set the inferred object to the AST node, to avoid re-evaluating the same object
+	// in later stages of the static analysis.
+	a.InferredObject = obj
+	a.Inference = NewInference(nil, obj.GetType())
 
-	return obj, nil
+	return a.Inference, nil
 }
 
-func (t *StaticCheck) EvalIdent(i *ast.NodeIdent, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+// Mainly used to identify objects in the stack
+func (t *StaticCheck) EvalIdent(i *ast.NodeIdent, stack *StaticStack) (*Inference, error) {
 	ident := runtime.NewGDStrIdent(i.Lit)
 
 	symbol, err := stack.GetSymbol(ident)
@@ -97,20 +110,17 @@ func (t *StaticCheck) EvalIdent(i *ast.NodeIdent, stack *runtime.GDSymbolStack) 
 		return nil, comn.WrapFatalErr(err, i.GetPosition())
 	}
 
-	obj := runtime.NewGDIdObject(ident, symbol.Object)
+	inference := symbol.Value.(*Inference)
+	i.Inference = inference
 
-	i.SetInferredIdent(ident)
-	i.SetRuntimeIdent(symbol.Ident)
-	i.SetInferredObject(symbol.Object)
-
-	return obj, nil
+	return inference, nil
 }
 
-func (t *StaticCheck) EvalLambda(l *ast.NodeLambda, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	lambdaStack := stack.NewSymbolStack(runtime.LambdaCtx)
+func (t *StaticCheck) EvalLambda(l *ast.NodeLambda, stack *StaticStack) (*Inference, error) {
+	lambdaStack := stack.NewStack(runtime.LambdaCtx)
 	defer lambdaStack.Dispose()
 
-	lambda, err := t.evalNewLambdaWithObject(l, lambdaStack)
+	lambdaInf, err := t.evalLambda(l, lambdaStack)
 	if err != nil {
 		return nil, err
 	}
@@ -121,82 +131,70 @@ func (t *StaticCheck) EvalLambda(l *ast.NodeLambda, stack *runtime.GDSymbolStack
 		return nil, err
 	}
 
-	return lambda, nil
+	l.Inference = lambdaInf
+
+	return lambdaInf, nil
 }
 
-func (t *StaticCheck) evalNewLambdaWithObject(l *ast.NodeLambda, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	addArgSymbol := func(ident runtime.GDIdent, typ runtime.GDTypable) (*runtime.GDSymbol, error) {
-		obj, err := runtime.ZObjectForType(typ, stack)
-		if err != nil {
-			return nil, comn.WrapFatalErr(err, l.GetPosition())
-		}
-
-		// Functions arguments are always variables, not constants,
-		// and they are not public, because they are only accessible within the function,
-		// and they are not constants because they can be changed.
-		symbol, err := stack.AddSymbol(ident, false, false, typ, obj)
-		if err != nil {
-			return nil, comn.WrapFatalErr(err, l.GetPosition())
-		}
-
-		// Set internal identifier for the symbol
-		// It is used only internally to identify the symbol to map with the runtime identifier
-		symbol.Ident = t.NewIdent()
-
-		return symbol, nil
-	}
-
+func (t *StaticCheck) evalLambda(l *ast.NodeLambda, stack *StaticStack) (*Inference, error) {
+	argTypes := make([]*runtime.GDLambdaArgType, len(l.Type.ArgTypes))
 	funcArgsLen := len(l.Type.ArgTypes)
-
-	// Runtime lambda arguments
-	runtimeArgs := make(runtime.GDLambdaArgTypes, funcArgsLen)
-
 	if l.Type.IsVariadic {
 		funcArgsLen--
 		arg := l.Type.ArgTypes[funcArgsLen]
 
-		variadicArg := runtime.NewGDArrayType(arg.Value)
-
-		symbol, err := addArgSymbol(arg.Key, variadicArg)
+		// Functions arguments are always variables, not constants and not public
+		// because they are only accessible within the function.
+		symbol, err := t.addSymbol(arg.Key, false, false, runtime.NewGDArrayType(arg.Value), nil, stack)
 		if err != nil {
 			return nil, err
 		}
 
-		runtimeArgs[funcArgsLen] = runtime.GDLambdaArgType{Key: symbol.Ident, Value: arg.Value}
+		inference, isInf := symbol.Value.(*Inference)
+		if !isInf {
+			panic("expected an *Inference")
+		}
+
+		argTypes[funcArgsLen] = &runtime.GDLambdaArgType{Key: inference.RuntimeIdent, Value: inference.Type}
 	}
 
 	for i := 0; i < funcArgsLen; i++ {
 		funcArg := l.Type.ArgTypes[i]
-		symbol, err := addArgSymbol(funcArg.Key, funcArg.Value)
+
+		symbol, err := t.addSymbol(funcArg.Key, false, false, funcArg.Value, nil, stack)
 		if err != nil {
 			return nil, err
 		}
 
-		runtimeArgs[i] = runtime.GDLambdaArgType{Key: symbol.Ident, Value: funcArg.Value}
+		inference, isInf := symbol.Value.(*Inference)
+		if !isInf {
+			panic("expected an *Inference")
+		}
+
+		argTypes[i] = &runtime.GDLambdaArgType{Key: inference.RuntimeIdent, Value: inference.Type}
 	}
 
-	lambdaObj := runtime.NewGDLambdaWithType(l.Type, stack, nil)
+	inference := NewInference(nil, l.Type)
+	runtimeInference := NewInference(nil, runtime.NewGDLambdaType(argTypes, l.Type.ReturnType, l.Type.IsVariadic))
 
-	// A copy of the lambda type with the runtime arguments
-	runtimeLambdaType := runtime.NewGDLambdaType(runtimeArgs, l.Type.ReturnType, l.Type.IsVariadic)
-	l.SetRuntimeType(runtimeLambdaType)
+	l.Inference = inference
+	l.RuntimeInference = runtimeInference
 
-	// Set the inferred type for the lambda
-	l.SetInferredType(l.Type)
+	// Set the return type of the block
+	l.Block.ReturnType = l.Type.ReturnType
 
-	// Return type is the function type for lambda
-	return lambdaObj, nil
+	return inference, nil
 }
 
-func (t *StaticCheck) EvalExprOp(e *ast.NodeExprOperation, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	leftObj, err := t.EvalNode(e.L, stack)
+func (t *StaticCheck) EvalExprOp(e *ast.NodeExprOperation, stack *StaticStack) (*Inference, error) {
+	leftInf, err := t.EvalNode(e.L, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	var rightObj runtime.GDObject
+	var rightInf *Inference
 	if e.R != nil {
-		rightObj, err = t.EvalNode(e.R, stack)
+		rightInf, err = t.EvalNode(e.R, stack)
 		if err != nil {
 			return nil, err
 		}
@@ -204,99 +202,86 @@ func (t *StaticCheck) EvalExprOp(e *ast.NodeExprOperation, stack *runtime.GDSymb
 
 	// Unary operation
 	if e.R == nil {
-		return leftObj, nil
+		return leftInf, nil
 	}
 
-	evalObjectsFromUnion := func(a runtime.GDObject, b *runtime.GDUnion) ([]runtime.GDObject, error) {
-		objects := make([]runtime.GDObject, 0)
-		for _, obj := range b.Objects {
+	evalTypesFromUnion := func(a runtime.GDTypable, b runtime.GDUnionType) ([]runtime.GDTypable, error) {
+		types := make([]runtime.GDTypable, 0)
+		for _, obj := range b {
 			typ, err := runtime.TypeCheckExprOperation(e.Op, a, obj)
 			if err != nil {
 				return nil, err
 			}
 
-			obj, err = runtime.ZObjectForType(typ, stack)
-			if err != nil {
-				return nil, err
-			}
-			objects = append(objects, obj)
+			types = append(types, typ)
 		}
 
-		return objects, nil
+		return types, nil
 	}
 
-	evalObjectsBetweenUnions := func(a, b *runtime.GDUnion) ([]runtime.GDObject, error) {
-		objects := make([]runtime.GDObject, 0)
-		for _, a := range a.Objects {
-			objs, err := evalObjectsFromUnion(a, b)
+	evalTypesBetweenUnions := func(a, b runtime.GDUnionType) ([]runtime.GDTypable, error) {
+		types := make([]runtime.GDTypable, 0)
+		for _, a := range a {
+			unionTypes, err := evalTypesFromUnion(a, b)
 			if err != nil {
 				return nil, comn.WrapFatalErr(err, e.R.GetPosition())
 			}
 
-			objects = append(objects, objs...)
+			types = append(types, unionTypes...)
 		}
 
-		return objects, nil
+		return types, nil
 	}
 
-	objects := make([]runtime.GDObject, 0)
-	a, b := runtime.Unwrap(leftObj), runtime.Unwrap(rightObj)
-	switch a := a.(type) {
-	case *runtime.GDUnion:
-		switch b := b.(type) {
-		case *runtime.GDUnion:
-			objs, err := evalObjectsBetweenUnions(a, b)
+	types := make([]runtime.GDTypable, 0)
+	typeA, typeB := leftInf.Type, rightInf.Type
+	switch typeA := typeA.(type) {
+	case runtime.GDUnionType:
+		switch typeB := typeB.(type) {
+		case runtime.GDUnionType:
+			unionTypes, err := evalTypesBetweenUnions(typeA, typeB)
 			if err != nil {
 				return nil, comn.WrapFatalErr(err, e.R.GetPosition())
 			}
 
-			objects = append(objects, objs...)
+			types = append(types, unionTypes...)
 		}
 	default:
-		switch b := b.(type) {
-		case *runtime.GDUnion:
-			objs, err := evalObjectsFromUnion(a, b)
+		switch TypeB := typeB.(type) {
+		case runtime.GDUnionType:
+			unionTypes, err := evalTypesFromUnion(typeA, TypeB)
 			if err != nil {
 				return nil, comn.WrapFatalErr(err, e.GetPosition())
 			}
 
-			objects = append(objects, objs...)
+			types = append(types, unionTypes...)
 		default:
-			typ, err := runtime.TypeCheckExprOperation(e.Op, a, b)
+			typ, err := runtime.TypeCheckExprOperation(e.Op, typeA, TypeB)
 			if err != nil {
 				return nil, comn.WrapFatalErr(err, e.GetPosition())
 			}
 
-			obj, err := runtime.ZObjectForType(typ, stack)
-			if err != nil {
-				return nil, comn.WrapFatalErr(err, e.GetPosition())
-			}
-
-			objects = append(objects, obj)
+			types = append(types, typ)
 		}
 	}
 
-	typ := runtime.ComputeTypeFromObjects(objects)
-	if union, isUnion := typ.(runtime.GDUnionType); isUnion {
-		return runtime.NewGDUnion(union, objects...), nil
-	}
-
-	return objects[0], nil
+	return NewInference(nil, runtime.ComputeTypeFromTypes(types)), nil
 }
 
-func (t *StaticCheck) EvalExpEllipsis(e *ast.NodeEllipsisExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	obj, err := t.EvalNode(e.Expr, stack)
+func (t *StaticCheck) EvalExpEllipsis(e *ast.NodeEllipsisExpr, stack *StaticStack) (*Inference, error) {
+	exprInf, err := t.EvalNode(e.Expr, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	switch spreadable := runtime.Unwrap(obj).(type) {
-	case runtime.GDIterableCollection:
-		spreadObj := runtime.NewGDSpreadable(spreadable)
-		e.SetInferredType(spreadObj.GetType())
-		e.SetInferredObject(spreadObj)
+	switch typ := exprInf.Type.(type) {
+	case runtime.GDIterableCollectionType:
+		spreadType := runtime.NewGDSpreadableType(typ)
 
-		return spreadObj, nil
+		inference := NewInference(nil, spreadType)
+		e.Inference = inference
+
+		return inference, nil
 	}
 
 	return nil, comn.NewError(comn.InvalidSpreadableTypeErrCode, comn.InvalidArraySpreadExpressionErrorMsg, comn.FatalError, e.GetPosition(), nil)
@@ -304,22 +289,20 @@ func (t *StaticCheck) EvalExpEllipsis(e *ast.NodeEllipsisExpr, stack *runtime.GD
 
 // Structure of a function node:
 // func Ident(param: Type, ...) => Type { ... }
-func (t *StaticCheck) EvalFunc(f *ast.NodeFunc, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	lambdaStack := stack.NewSymbolStack(runtime.LambdaCtx)
+func (t *StaticCheck) EvalFunc(f *ast.NodeFunc, stack *StaticStack) (*Inference, error) {
+	lambdaStack := stack.NewStack(runtime.LambdaCtx)
 	defer lambdaStack.Dispose()
 
-	lambda, err := t.evalNewLambdaWithObject(f.NodeLambda, lambdaStack)
+	lambdaInf, err := t.evalLambda(f.NodeLambda, lambdaStack)
 	if err != nil {
 		return nil, err
 	}
 
 	ident := runtime.NewGDStrIdent(f.Ident.Lit)
-	symbol, err := stack.AddSymbol(ident, f.IsPub, true, f.Type, lambda)
+	symbol, err := t.addSymbol(ident, f.IsPub, true, lambdaInf.Type, nil, stack)
 	if err != nil {
 		return nil, comn.WrapFatalErr(err, f.Ident.Position)
 	}
-
-	symbol.Ident = t.NewIdent()
 
 	// Evaluate the block
 	_, err = t.evalBlock(f.NodeLambda.Block, lambdaStack)
@@ -327,241 +310,211 @@ func (t *StaticCheck) EvalFunc(f *ast.NodeFunc, stack *runtime.GDSymbolStack) (r
 		return nil, err
 	}
 
-	f.SetInferredIdent(ident)
-	f.SetRuntimeIdent(symbol.Ident)
+	inference := symbol.Value.(*Inference)
+	f.Inference = inference
 
-	f.SetInferredType(f.NodeLambda.InferredType())
-	f.SetRuntimeType(f.NodeLambda.RuntimeType())
-
-	f.SetInferredObject(lambda)
-
-	return lambda, nil
+	return inference, nil
 }
 
-func (t *StaticCheck) EvalTuple(tu *ast.NodeTuple, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalTuple(tu *ast.NodeTuple, stack *StaticStack) (*Inference, error) {
 	if len(tu.Nodes) == 0 {
-		tuple := runtime.NewGDTuple()
-		tu.SetInferredType(tuple.GetType())
-		tu.SetInferredObject(tuple)
-		return tuple, nil
+		inference := NewInference(nil, runtime.NewGDTupleType())
+		tu.Inference = inference
+		return inference, nil
 	}
 
-	objects := make([]runtime.GDObject, len(tu.Nodes))
+	types := make([]runtime.GDTypable, len(tu.Nodes))
 	for i, expr := range tu.Nodes {
-		obj, err := t.EvalNode(expr, stack)
+		typeInf, err := t.EvalNode(expr, stack)
 		if err != nil {
 			return nil, err
 		}
 
-		objects[i] = obj
+		types[i] = typeInf.Type
 	}
 
-	tuple := runtime.NewGDTuple(objects...)
+	tupleType := runtime.NewGDTupleType(types...)
 
-	tu.SetInferredType(tuple.GetType())
-	tu.SetInferredObject(tuple)
+	inference := NewInference(nil, tupleType)
+	tu.Inference = inference
 
-	return tuple, nil
+	return inference, nil
 }
 
-func (t *StaticCheck) EvalStruct(s *ast.NodeStruct, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	attrTypes := make([]runtime.GDStructAttrType, len(s.Nodes))
-	objects := make([]runtime.GDObject, len(s.Nodes))
+func (t *StaticCheck) EvalStruct(s *ast.NodeStruct, stack *StaticStack) (*Inference, error) {
+	attrTypes := make([]*runtime.GDStructAttrType, len(s.Nodes))
 	for i, expr := range s.Nodes {
 		switch expr := expr.(type) {
 		case *ast.NodeStructAttr:
-			obj, err := t.EvalNode(expr.Expr, stack)
+			exprInf, err := t.EvalNode(expr.Expr, stack)
 			if err != nil {
 				return nil, err
 			}
 
+			// Identifiers are always strings
 			ident := runtime.NewGDStrIdent(expr.Ident.Lit)
 
-			attrTypes[i] = runtime.GDStructAttrType{Ident: ident, Type: obj.GetType()}
-			objects[i] = obj
+			// Create a new attribute type
+			attrTypes[i] = &runtime.GDStructAttrType{Ident: ident, Type: exprInf.Type}
 
-			expr.SetInferredIdent(ident)
+			// Update the identifier of the inferred type
+			exprInf.Ident = ident
+
+			// Set the inferred type to the AST node
+			expr.Inference = exprInf
 		default:
 			panic("expected a struct attribute")
 		}
 	}
 
-	sType := runtime.NewGDStructType(attrTypes...)
-	structObj, err := runtime.NewGDStruct(sType, stack)
-	if err != nil {
-		return nil, comn.WrapFatalErr(err, s.GetPosition())
-	}
+	inference := NewInference(nil, runtime.NewGDStructType(attrTypes...))
+	s.Inference = inference
 
-	for i, obj := range objects {
-		_, err = structObj.SetAttr(attrTypes[i].Ident, obj)
-		if err != nil {
-			return nil, comn.WrapFatalErr(err, s.GetPosition())
-		}
-	}
-
-	s.SetInferredType(sType)
-	s.SetInferredObject(structObj)
-
-	return structObj, nil
+	return inference, nil
 }
 
-func (t *StaticCheck) EvalArray(a *ast.NodeArray, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalArray(a *ast.NodeArray, stack *StaticStack) (*Inference, error) {
 	if len(a.Nodes) == 0 {
-		array := runtime.NewGDEmptyArray()
-		a.SetInferredType(array.GetType())
-		a.SetInferredObject(array)
-		return array, nil
+		inference := NewInference(nil, runtime.NewGDEmptyArrayType())
+		a.Inference = inference
+		return inference, nil
 	}
 
-	objects := make([]runtime.GDObject, len(a.Nodes))
+	types := make([]runtime.GDTypable, len(a.Nodes))
 	for i, expr := range a.Nodes {
-		exprType, err := t.EvalNode(expr, stack)
+		exprInf, err := t.EvalNode(expr, stack)
 		if err != nil {
 			return nil, err
 		}
 
-		objects[i] = exprType
+		types[i] = exprInf.Type
 	}
 
-	array, err := runtime.NewGDArrayWithObjects(objects, stack)
-	if err != nil {
-		return nil, comn.WrapFatalErr(err, a.GetPosition())
-	}
+	inference := NewInference(nil, runtime.NewGDArrayTypeWithTypes(types, stack))
 
-	a.SetInferredType(array.GetType())
-	a.SetInferredObject(array)
+	a.Inference = inference
 
-	return array, nil
+	return inference, nil
 }
 
-func (t *StaticCheck) EvalReturn(r *ast.NodeReturn, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalReturn(r *ast.NodeReturn, stack *StaticStack) (*Inference, error) {
 	// Return with not expression
 	// For example: `return`
-	r.SetInferredObject(runtime.GDZNil)
 	if r.Expr == nil {
-		return r.InferredObject(), nil
+		retInf := NewInference(nil, runtime.GDNilTypeRef)
+		r.Inference = retInf
+		return retInf, nil
 	}
 
-	obj, err := t.EvalNode(r.Expr, stack)
+	exprInf, err := t.EvalNode(r.Expr, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	r.SetInferredType(obj.GetType())
-	r.SetInferredObject(obj)
+	inference := exprInf
+	r.Inference = inference
 
-	return obj, nil
+	return inference, nil
 }
 
-func (t *StaticCheck) EvalIterIdxExpr(a *ast.NodeIterIdxExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	exprObj, err := t.EvalNode(a.Expr, stack)
+func (t *StaticCheck) EvalIterIdxExpr(a *ast.NodeIndexableExpr, stack *StaticStack) (*Inference, error) {
+	exprInf, err := t.EvalNode(a.Expr, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	indexObj, err := t.EvalNode(a.IdxExpr, stack)
+	indexInf, err := t.EvalNode(a.IdxExpr, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := runtime.EqualTypes(indexObj.GetType(), runtime.GDIntType, stack); err != nil {
+	if err := runtime.EqualTypes(indexInf.Type, runtime.GDIntTypeRef, stack); err != nil {
 		return nil, comn.WrapFatalErr(err, a.IdxExpr.GetPosition())
 	}
 
-	if iterable, isIterable := runtime.Unwrap(exprObj).(runtime.GDIterableCollection); isIterable {
-		obj, err := runtime.ZObjectForType(iterable.GetIterableType(), stack)
-		if err != nil {
-			return nil, comn.WrapFatalErr(err, a.GetPosition())
-		}
-
-		return obj, nil
+	if iterable, isIterable := exprInf.Type.(runtime.GDIterableCollectionType); isIterable {
+		return NewInference(nil, iterable.GetIterableType()), nil
 	} else {
-		return nil, comn.WrapFatalErr(runtime.InvalidIterableTypeErr(exprObj.GetType()), a.Expr.GetPosition())
+		return nil, comn.WrapFatalErr(runtime.InvalidIterableTypeErr(exprInf.Type), a.Expr.GetPosition())
 	}
 }
 
-func (t *StaticCheck) EvalCallExpr(c *ast.NodeCallExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	exprObj, err := t.EvalNode(c.Expr, stack)
+func (t *StaticCheck) EvalCallExpr(c *ast.NodeCallExpr, stack *StaticStack) (*Inference, error) {
+	exprInf, err := t.EvalNode(c.Expr, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	exprType := exprObj.GetType()
-	funcType, isFuncType := exprType.(*runtime.GDLambdaType)
-	if !isFuncType {
-		return nil, comn.WrapFatalErr(runtime.InvalidCallableTypeErr(exprType), c.GetPosition())
+	lambdaType, isLambdaType := exprInf.Type.(*runtime.GDLambdaType)
+	if !isLambdaType {
+		return nil, comn.WrapFatalErr(runtime.InvalidCallableTypeErr(exprInf.Type), c.GetPosition())
 	}
 
-	err = funcType.CheckNumberOfArgs(uint(len(c.Args)))
+	err = lambdaType.CheckNumberOfArgs(uint(len(c.Args)))
 	if err != nil {
 		return nil, comn.WrapFatalErr(err, c.GetPosition())
 	}
 
 	for i := len(c.Args) - 1; i >= 0; i-- {
 		arg := c.Args[i]
-		argObj, err := t.EvalNode(arg, stack)
+		argInf, err := t.EvalNode(arg, stack)
 		if err != nil {
 			return nil, err
 		}
 
-		err = funcType.CheckArgAtIndex(i, argObj.GetType(), stack)
+		err = lambdaType.CheckLambdaArgAtIndex(i, argInf.Type, stack)
 		if err != nil {
 			return nil, comn.WrapFatalErr(err, arg.GetPosition())
 		}
 	}
 
-	obj, err := runtime.ZObjectForType(funcType.ReturnType, stack)
-	if err != nil {
-		return nil, comn.WrapFatalErr(err, c.GetPosition())
-	}
+	inference := NewInference(nil, lambdaType.ReturnType)
 
-	return obj, nil
+	c.Inference = inference
+
+	return inference, nil
 }
 
-func (t *StaticCheck) EvalSafeDotExpr(s *ast.NodeSafeDotExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalSafeDotExpr(s *ast.NodeSafeDotExpr, stack *StaticStack) (*Inference, error) {
 	switch identExpr := s.Ident.(type) {
 	case *ast.NodeTokenInfo:
-		idxExpr := ast.NewNodeIterIdxExpr(s.IsNilSafe, s.Expr, ast.NewNodeLiteral(identExpr))
+		idxExpr := ast.NewNodeIndexableExpr(s.IsNilSafe, s.Expr, ast.NewNodeLiteral(identExpr))
 		return t.EvalIterIdxExpr(idxExpr, stack)
 	case *ast.NodeIdent:
-		obj, err := t.EvalNode(s.Expr, stack)
+		exprInf, err := t.EvalNode(s.Expr, stack)
 		if err != nil {
 			return nil, err
 		}
 
 		attrIdent := runtime.NewGDStrIdent(identExpr.Lit)
-		s.SetInferredIdent(attrIdent)
-
-		obj = runtime.Unwrap(obj)
-		if obj == runtime.GDZNil {
+		if exprInf.Type == runtime.GDNilTypeRef {
 			if s.IsNilSafe {
-				return runtime.GDZNil, nil
+				s.Inference = NewInference(attrIdent, runtime.GDNilTypeRef)
+				return s.Inference, nil
 			} else {
 				return nil, comn.AnalysisErr(comn.NilAccessExceptionErrMsg, s.GetPosition())
 			}
 		}
 
-		if attributable, isAttributable := obj.(runtime.GDAttributable); isAttributable {
-			symbol, err := attributable.GetAttr(attrIdent)
+		if attributable, isAttributable := exprInf.Type.(runtime.GDAttributableType); isAttributable {
+			typ, err := attributable.GetAttrType(attrIdent)
 			if err != nil {
 				return nil, comn.WrapFatalErr(err, s.GetPosition())
 			}
 
-			zObj, err := runtime.ZObjectForType(symbol.Type, stack)
-			if err != nil {
-				return nil, comn.WrapFatalErr(err, s.GetPosition())
-			}
+			inference := NewInference(attrIdent, typ)
+			s.Inference = inference
 
-			return runtime.NewGDAttrIdObject(attrIdent, zObj, attributable), nil
+			return inference, nil
 		}
 
-		return nil, comn.WrapFatalErr(runtime.InvalidAttributableTypeErr(obj.GetType()), s.GetPosition())
+		return nil, comn.WrapFatalErr(runtime.InvalidAttributableTypeErr(exprInf.Type), s.Expr.GetPosition())
 	}
 
 	return nil, nil
 }
 
-func (t *StaticCheck) EvalSets(s *ast.NodeSets, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalSets(s *ast.NodeSets, stack *StaticStack) (*Inference, error) {
 	for _, node := range s.Nodes {
 		_, err := t.EvalNode(node, stack)
 		if err != nil {
@@ -572,77 +525,62 @@ func (t *StaticCheck) EvalSets(s *ast.NodeSets, stack *runtime.GDSymbolStack) (r
 	return nil, nil
 }
 
-func (t *StaticCheck) checkNodeSetExpr(set *ast.NodeSet, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	var exprObj runtime.GDObject = runtime.GDZNil
+func (t *StaticCheck) checkNodeSetExpr(set *ast.NodeSet, stack *StaticStack) (*Inference, error) {
+	var exprType runtime.GDTypable = runtime.GDNilTypeRef
 	if set.Expr != nil {
 		switch expr := set.Expr.(type) {
 		case *ast.NodeSharedExpr:
-			var sharedObj runtime.GDObject
-			if expr.InferredObject() == nil {
-				obj, err := t.EvalNode(expr.Expr, stack)
+			var sharedType runtime.GDTypable
+			if expr.Inference == nil {
+				exprInf, err := t.EvalNode(expr.Expr, stack)
 				if err != nil {
 					return nil, err
 				}
 
-				sharedObj = obj
+				sharedType = exprInf.Type
+
+				expr.Inference = NewInference(nil, sharedType)
 			} else {
-				sharedObj = expr.InferredObject()
+				sharedType = expr.Inference.Type
 			}
 
-			if iterable, ok := runtime.Unwrap(sharedObj).(runtime.GDIterableCollection); ok {
-				obj, err := iterable.Get(int(set.Index))
-				if err != nil {
-					return nil, comn.WrapFatalErr(err, set.GetPosition())
-				}
-
-				exprObj = obj
+			if iterable, itIterable := sharedType.(runtime.GDIterableCollectionType); itIterable {
+				exprType = iterable.GetTypeAt(int(set.Index))
 			} else {
-				return nil, comn.WrapFatalErr(runtime.InvalidIterableTypeErr(exprObj.GetType()), set.GetPosition())
+				return nil, comn.WrapFatalErr(runtime.InvalidIterableTypeErr(sharedType), set.GetPosition())
 			}
 		default:
-			obj, err := t.EvalNode(expr, stack)
+			exprInf, err := t.EvalNode(expr, stack)
 			if err != nil {
 				return nil, err
 			}
 
-			exprObj = obj
+			exprType = exprInf.Type
 		}
 	} else {
-		exprObj = runtime.GDZNil
+		exprType = runtime.GDNilTypeRef
 		set.Expr = ast.NewNodeNilLiteral(set.GetPosition())
 	}
 
-	return exprObj, nil
+	inference := NewInference(nil, exprType)
+
+	return inference, nil
 }
 
-func (t *StaticCheck) EvalSet(s *ast.NodeSet, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	exprObj, err := t.checkNodeSetExpr(s, stack)
+func (t *StaticCheck) EvalSet(s *ast.NodeSet, stack *StaticStack) (*Inference, error) {
+	exprInf, err := t.checkNodeSetExpr(s, stack)
 	if err != nil {
 		return nil, err
 	}
 
 	ident := runtime.NewGDStrIdent(s.IdentWithType.Ident.Lit)
 
-	inferredType, err := runtime.InferType(s.IdentWithType.Type, exprObj.GetType(), stack)
+	inferredType, err := runtime.InferType(s.IdentWithType.Type, exprInf.Type, stack)
 	if err != nil {
 		return nil, comn.WrapFatalErr(err, s.GetPosition())
 	}
 
-	exprObj, err = runtime.TypeCoercion(exprObj, inferredType, stack)
-	if err != nil {
-		return nil, comn.WrapFatalErr(err, s.GetPosition())
-	}
-
-	if s.Expr != nil {
-		switch s.Expr.(type) {
-		case *ast.NodeSharedExpr:
-		default:
-			s.Expr.SetInferredType(inferredType)
-			s.Expr.SetInferredObject(exprObj)
-		}
-	}
-
-	symbol, err := stack.AddSymbol(ident, s.IsPub, s.IsConst, inferredType, exprObj)
+	symbol, err := t.addSymbol(ident, s.IsPub, s.IsConst, inferredType, nil, stack)
 	if err != nil {
 		var err runtime.GDRuntimeErr
 		switch {
@@ -663,91 +601,99 @@ func (t *StaticCheck) EvalSet(s *ast.NodeSet, stack *runtime.GDSymbolStack) (run
 		return nil, comn.WrapFatalErr(err, s.GetPosition())
 	}
 
-	// Set internal identifier for the symbol
-	// It is used only internally to identify the symbol to map with the runtime identifier
-	symbol.Ident = t.NewIdent()
+	inference := symbol.Value.(*Inference)
+	s.Inference = inference
 
-	s.SetInferredIdent(ident)
-	s.SetRuntimeIdent(symbol.Ident)
-	s.SetInferredType(inferredType)
-	s.SetRuntimeType(s.RuntimeType())
-	s.SetInferredObject(exprObj)
-
-	return runtime.NewGDIdObject(ident, exprObj), nil
+	return inference, nil
 }
 
-func (t *StaticCheck) EvalUpdateSet(u *ast.NodeUpdateSet, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	assignObj, err := t.EvalNode(u.Expr, stack)
+func (t *StaticCheck) EvalUpdateSet(u *ast.NodeUpdateSet, stack *StaticStack) (*Inference, error) {
+	rhsExprInf, err := t.EvalNode(u.RhsExpr, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	switch identExpr := u.IdentExpr.(type) {
-	// identExpr.Expr[identExpr.IdxExpr] = assignType
-	case *ast.NodeIterIdxExpr:
-		expressionObj, err := t.EvalNode(identExpr.Expr, stack)
+	switch lhsExpr := u.LhsExpr.(type) {
+	// Expr[IdxExpr] = RhsExpr
+	case *ast.NodeIndexableExpr:
+		// Indexable expression type
+		exprInf, err := t.EvalNode(lhsExpr.Expr, stack)
 		if err != nil {
 			return nil, err
 		}
 
 		// Index type
-		indexObj, err := t.EvalNode(identExpr.IdxExpr, stack)
+		indexInf, err := t.EvalNode(lhsExpr.IdxExpr, stack)
 		if err != nil {
 			return nil, err
 		}
 
-		if indexObj.GetType() != runtime.GDIntType {
-			return nil, comn.WrapFatalErr(runtime.WrongTypesErr(runtime.GDIntType, indexObj.GetType()), identExpr.IdxExpr.GetPosition())
+		if indexInf.Type != runtime.GDIntTypeRef {
+			return nil, comn.WrapFatalErr(runtime.WrongTypesErr(runtime.GDIntTypeRef, indexInf.Type), lhsExpr.IdxExpr.GetPosition())
 		}
 
 		// Collectable
-		mutable, isMutableType := runtime.Unwrap(expressionObj).(runtime.GDMutableCollection)
+		mutable, isMutableType := exprInf.Type.(runtime.GDMutableCollectionType)
 		if isMutableType {
-			err := runtime.CanBeAssign(mutable.GetIterableType(), assignObj.GetType(), stack)
+			iterableType := mutable.GetIterableType()
+			err := runtime.CanBeAssign(iterableType, rhsExprInf.Type, stack)
 			if err != nil {
-				return nil, comn.WrapFatalErr(runtime.WrongTypesErr(expressionObj.GetType(), assignObj.GetType()), u.Expr.GetPosition())
+				return nil, comn.WrapFatalErr(runtime.WrongTypesErr(iterableType, rhsExprInf.Type), u.RhsExpr.GetPosition())
 			}
-
-			// Store the inferred type
-			u.SetInferredObject(expressionObj)
 		} else {
-			return nil, comn.WrapFatalErr(runtime.InvalidMutableCollectionTypeErr(expressionObj.GetType()), identExpr.Expr.GetPosition())
+			return nil, comn.WrapFatalErr(runtime.InvalidMutableCollectionTypeErr(exprInf.Type), lhsExpr.Expr.GetPosition())
 		}
+	// Expr.Ident = RhsExpr
+	case *ast.NodeSafeDotExpr:
+		exprInf, err := t.EvalNode(lhsExpr.Expr, stack)
+		if err != nil {
+			return nil, err
+		}
+		attributable, isAttributable := exprInf.Type.(runtime.GDAttributableType)
+		if !isAttributable {
+			return nil, comn.WrapFatalErr(runtime.InvalidAttributableTypeErr(exprInf.Type), lhsExpr.Expr.GetPosition())
+		}
+
+		nodeIdent, isNodeIdent := lhsExpr.Ident.(*ast.NodeIdent)
+		if !isNodeIdent {
+			panic("expected an *ast.NodeIdent")
+		}
+
+		ident := runtime.NewGDStrIdent(nodeIdent.Lit)
+		err = attributable.SetAttrType(ident, rhsExprInf.Type, stack)
+		if err != nil {
+			return nil, comn.WrapFatalErr(err, lhsExpr.Ident.GetPosition())
+		}
+
+		// Attributable type do not obfuscate the ids
+		lhsExpr.Ident.SetInference(NewInference(ident, nil))
 	// identExpr = assignObj
 	default:
-		idxExpr, err := t.EvalNode(identExpr, stack)
+		lhsExprInf, err := t.EvalNode(lhsExpr, stack)
 		if err != nil {
 			return nil, err
 		}
 
-		switch expr := idxExpr.(type) {
-		case *runtime.GDIdObject:
-			symbol, err := stack.GetSymbol(expr.Ident)
-			if err != nil {
-				return nil, comn.WrapFatalErr(err, identExpr.GetPosition())
-			}
+		symbol, err := stack.GetSymbol(lhsExprInf.Ident)
+		if err != nil {
+			return nil, comn.WrapFatalErr(err, lhsExpr.GetPosition())
+		}
 
-			err = symbol.SetObject(assignObj, stack)
-			if err != nil {
-				return nil, comn.WrapFatalErr(err, u.Expr.GetPosition())
-			}
-		case *runtime.GDAttrIdObject:
-			_, err := expr.SetAttr(expr.Ident, assignObj)
-			if err != nil {
-				return nil, comn.WrapFatalErr(err, u.Expr.GetPosition())
-			}
+		err = symbol.SetType(rhsExprInf.Type, stack)
+		if err != nil {
+			return nil, comn.WrapFatalErr(err, u.RhsExpr.GetPosition())
 		}
 	}
 
 	return nil, nil
 }
 
-func (t *StaticCheck) EvalLabel(l *ast.NodeLabel, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalLabel(l *ast.NodeLabel, stack *StaticStack) (*Inference, error) {
 	return nil, nil
 }
 
-func (t *StaticCheck) EvalIfElse(i *ast.NodeIfElse, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	evalIfNode := func(ifNode ast.Node, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalIfElse(i *ast.NodeIfElse, stack *StaticStack) (*Inference, error) {
+	evalIfNode := func(ifNode ast.Node, stack *StaticStack) (*Inference, error) {
 		if ifNode, isIfNode := ifNode.(*ast.NodeIf); isIfNode {
 			_, err := t.evalIfNode(ifNode, stack)
 			if err != nil {
@@ -778,61 +724,56 @@ func (t *StaticCheck) EvalIfElse(i *ast.NodeIfElse, stack *runtime.GDSymbolStack
 	return nil, nil
 }
 
-func (t *StaticCheck) EvalTernaryIf(tIf *ast.NodeTernaryIf, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	ifObj, err := t.EvalNode(tIf.Expr, stack)
+func (t *StaticCheck) EvalTernaryIf(tIf *ast.NodeTernaryIf, stack *StaticStack) (*Inference, error) {
+	ifInf, err := t.EvalNode(tIf.Expr, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	err = runtime.EqualTypes(runtime.GDBoolType, ifObj.GetType(), stack)
+	err = runtime.EqualTypes(runtime.GDBoolTypeRef, ifInf.Type, stack)
 	if err != nil {
 		return nil, comn.WrapFatalErr(err, tIf.Expr.GetPosition())
 	}
 
-	thenObj, err := t.EvalNode(tIf.Then, stack)
+	thenInf, err := t.EvalNode(tIf.Then, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	elseObj, err := t.EvalNode(tIf.Else, stack)
+	elseInf, err := t.EvalNode(tIf.Else, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	typ := runtime.ComputeTypeFromObjects([]runtime.GDObject{thenObj, elseObj})
+	typ := runtime.ComputeTypeFromTypes([]runtime.GDTypable{thenInf.Type, elseInf.Type})
 
-	obj, err := runtime.ZObjectForType(typ, stack)
-	if err != nil {
-		return nil, comn.WrapFatalErr(err, tIf.GetPosition())
-	}
+	inference := NewInference(nil, typ)
 
-	tIf.SetInferredObject(obj)
+	tIf.Inference = inference
 
-	return obj, nil
+	return inference, nil
 }
 
-func (t *StaticCheck) EvalForIn(f *ast.NodeForIn, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalForIn(f *ast.NodeForIn, stack *StaticStack) (*Inference, error) {
 	// Create a new stack for the for loop
-	forStack := stack.NewSymbolStack(runtime.ForCtx)
+	forStack := stack.NewStack(runtime.ForCtx)
 	defer forStack.Dispose()
 
 	// Evaluate the iterable expression inside the for loop
-	exprObj, err := t.EvalNode(f.Expr, forStack)
+	exprInf, err := t.EvalNode(f.Expr, forStack)
 	if err != nil {
 		return nil, err
 	}
 
-	f.SetInferredType(exprObj.GetType())
-
-	iterable, isIterable := runtime.Unwrap(exprObj).(runtime.GDIterableCollection)
+	iterable, isIterable := exprInf.Type.(runtime.GDIterableCollectionType)
 	if !isIterable {
-		return nil, comn.WrapFatalErr(runtime.InvalidIterableTypeErr(exprObj.GetType()), f.Expr.GetPosition())
+		return nil, comn.WrapFatalErr(runtime.InvalidIterableTypeErr(exprInf.Type), f.Expr.GetPosition())
 	}
 
 	// Type check for the sets
 	nodeSets, isSets := f.Sets.(*ast.NodeSets)
 	if !isSets {
-		panic("expected a NodeSets")
+		panic("expected an *ast.NodeSets")
 	}
 
 	// Resolve the sets, objects are assigned to the symbols stack
@@ -841,57 +782,51 @@ func (t *StaticCheck) EvalForIn(f *ast.NodeForIn, stack *runtime.GDSymbolStack) 
 		return nil, err
 	}
 
-	updateSymbolType := func(set ast.Node, toType runtime.GDTypable, obj runtime.GDObject) (*ast.NodeSet, error) {
+	updateSymbolType := func(set ast.Node, assignType runtime.GDTypable) (*ast.NodeSet, error) {
 		if set, isSet := set.(*ast.NodeSet); isSet {
-			ident := set.InferredIdent()
-			symbol, err := forStack.GetSymbol(ident)
+			symbol, err := forStack.GetSymbol(set.Inference.Ident)
 			if err != nil {
 				return nil, err
 			}
 
 			// It is expected that the type of the symbol is the same as
 			// the required type, and it can be either an Int or the iterable type
-			err = symbol.SetObject(obj, forStack)
+			err = symbol.SetType(assignType, stack)
 			if err != nil {
 				return nil, err
 			}
 
 			// Update the set according to the iterable type
-			set.SetInferredType(toType)
-			set.SetInferredObject(obj)
+			set.Inference.Type = symbol.Type
 
 			return set, nil
 		} else {
-			panic("expected a NodeSet")
+			panic("expected an *ast.NodeSet")
 		}
 	}
 
 	sets := nodeSets.Nodes
 
-	// An iterable object is created for the iterable type
-	iterableZObj, err := runtime.ZObjectForType(iterable.GetIterableType(), forStack)
-	if err != nil {
-		return nil, comn.WrapFatalErr(err, f.Expr.GetPosition())
-	}
-
 	// Check set types, it must allow int and the iterable type
 	sListLen := len(sets)
 	switch {
+	// for set (0) in iterable
 	case sListLen == 1:
-		set, err := updateSymbolType(sets[0], iterable.GetIterableType(), iterableZObj)
+		iterSet, err := updateSymbolType(sets[0], iterable.GetIterableType())
 		if err != nil {
 			return nil, comn.WrapFatalErr(err, sets[0].GetPosition())
 		}
 
-		f.InferredIterable = set
+		f.InferredIterable = iterSet
+	// for set (0), (1) in iterable
 	case sListLen > 1:
-		idxSet, err := updateSymbolType(sets[0], runtime.GDIntType, iterableZObj)
+		idxSet, err := updateSymbolType(sets[0], runtime.GDIntTypeRef)
 		if err != nil {
 			return nil, comn.WrapFatalErr(err, sets[0].GetPosition())
 		}
 		f.InferredIndex = idxSet
 
-		iterSet, err := updateSymbolType(sets[1], iterable.GetIterableType(), runtime.GDInt8(0))
+		iterSet, err := updateSymbolType(sets[1], iterable.GetIterableType())
 		if err != nil {
 			return nil, comn.WrapFatalErr(err, sets[1].GetPosition())
 		}
@@ -907,9 +842,9 @@ func (t *StaticCheck) EvalForIn(f *ast.NodeForIn, stack *runtime.GDSymbolStack) 
 	return nil, nil
 }
 
-func (t *StaticCheck) EvalForIf(f *ast.NodeForIf, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalForIf(f *ast.NodeForIf, stack *StaticStack) (*Inference, error) {
 	// Create a new stack for the for loop
-	forStack := stack.NewSymbolStack(runtime.ForCtx)
+	forStack := stack.NewStack(runtime.ForCtx)
 	defer forStack.Dispose()
 
 	if f.Sets != nil {
@@ -934,18 +869,18 @@ func (t *StaticCheck) EvalForIf(f *ast.NodeForIf, stack *runtime.GDSymbolStack) 
 	return nil, nil
 }
 
-func (t *StaticCheck) EvalCollectableOp(c *ast.NodeMutCollectionOp, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	exprLObj, err := t.EvalNode(c.L, stack)
+func (t *StaticCheck) EvalCollectableOp(c *ast.NodeMutCollectionOp, stack *StaticStack) (*Inference, error) {
+	exprLInf, err := t.EvalNode(c.L, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	exprRObj, err := t.EvalNode(c.R, stack)
+	exprRInf, err := t.EvalNode(c.R, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	if mutCollection, isMutCollection := runtime.Unwrap(exprLObj).(runtime.GDMutableCollection); isMutCollection {
+	if mutCollection, isMutCollection := exprLInf.Type.(runtime.GDMutableCollectionType); isMutCollection {
 		switch c.Op {
 		case ast.MutableCollectionAddOp:
 			if ident, ok := c.L.(*ast.NodeIdent); ok {
@@ -955,81 +890,77 @@ func (t *StaticCheck) EvalCollectableOp(c *ast.NodeMutCollectionOp, stack *runti
 					return nil, comn.WrapFatalErr(err, ident.GetPosition())
 				}
 
-				err = runtime.CanBeAssign(mutCollection.GetIterableType(), exprRObj.GetType(), stack)
+				err = runtime.CanBeAssign(mutCollection.GetIterableType(), exprRInf.Type, stack)
 				if err != nil {
 					return nil, comn.WrapFatalErr(err, c.GetPosition())
 				}
 
-				err = symbol.SetType(runtime.NewGDArrayType(exprRObj.GetType()), stack)
+				err = symbol.SetType(runtime.NewGDArrayType(exprRInf.Type), stack)
 				if err != nil {
 					return nil, comn.WrapFatalErr(err, c.GetPosition())
 				}
 
-				return exprRObj, nil
+				return exprRInf, nil
 			}
 
-			err := runtime.CanBeAssign(mutCollection.GetIterableType(), exprRObj.GetType(), stack)
+			err := runtime.CanBeAssign(mutCollection.GetIterableType(), exprRInf.Type, stack)
 			if err != nil {
 				return nil, comn.WrapFatalErr(err, c.GetPosition())
 			}
 
-			return exprRObj, nil
+			return exprRInf, nil
 		case ast.MutableCollectionRemoveOp:
-			err := runtime.EqualTypes(runtime.GDIntType, exprRObj.GetType(), stack)
+			err := runtime.EqualTypes(runtime.GDIntTypeRef, exprRInf.Type, stack)
 			if err != nil {
 				return nil, comn.WrapFatalErr(err, c.GetPosition())
 			}
 
-			err = runtime.CanBeAssign(mutCollection.GetIterableType(), exprRObj.GetType(), stack)
+			err = runtime.CanBeAssign(mutCollection.GetIterableType(), exprRInf.Type, stack)
 			if err != nil {
 				return nil, comn.WrapFatalErr(err, c.GetPosition())
 			}
 
-			zIterObj, err := runtime.ZObjectForType(mutCollection.GetIterableType(), stack)
-			if err != nil {
-				return nil, comn.WrapFatalErr(err, c.GetPosition())
-			}
-
-			return zIterObj, nil
+			return NewInference(nil, mutCollection.GetIterableType()), nil
 		}
 	}
 
-	return nil, comn.WrapFatalErr(runtime.InvalidMutableCollectionTypeErr(exprLObj.GetType()), c.GetPosition())
+	return nil, comn.WrapFatalErr(runtime.InvalidMutableCollectionTypeErr(exprLInf.Type), c.GetPosition())
 }
 
-func (t *StaticCheck) EvalTypeAlias(ta *ast.NodeTypeAlias, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalTypeAlias(ta *ast.NodeTypeAlias, stack *StaticStack) (*Inference, error) {
 	ident := runtime.NewGDStrIdent(ta.Ident.Lit)
-	_, err := stack.AddSymbol(ident, ta.IsPub, true, ta.Type, nil)
+	symbol, err := t.addSymbol(ident, ta.IsPub, true, ta.Type, nil, stack)
 	if err != nil {
 		return nil, comn.WrapFatalErr(err, ta.GetPosition())
 	}
 
-	ta.SetInferredIdent(ident)
+	inference := symbol.Value.(*Inference)
+
+	ta.Inference = inference
 
 	return nil, nil
 }
 
-func (t *StaticCheck) EvalCastExpr(c *ast.NodeCastExpr, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	exprObj, err := t.EvalNode(c.Expr, stack)
+func (t *StaticCheck) EvalCastExpr(c *ast.NodeCastExpr, stack *StaticStack) (*Inference, error) {
+	exprInf, err := t.EvalNode(c.Expr, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	castObj, err := exprObj.CastToType(c.Type, stack)
+	err = runtime.CheckCastToType(exprInf.Type, c.Type)
 	if err != nil {
 		return nil, comn.WrapFatalErr(err, c.GetPosition())
 	}
 
-	c.SetInferredType(c.Type)
-	c.SetInferredObject(castObj)
+	c.Inference = exprInf
 
-	return castObj, nil
+	return c.Inference, nil
 }
 
 // Register a new package in the symbol stack
 // NOTE: Package must exist before evaluation
 // Those checks are performed during the dependency analysis
-func (t *StaticCheck) EvalPackage(p *ast.NodePackage, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) EvalPackage(p *ast.NodePackage, stack *StaticStack) (*Inference, error) {
 	switch p.InferredMode {
 	case runtime.PackageModeBuiltin:
 		if pkg, found := builtin.Packages[p.InferredPath]; found {
@@ -1041,7 +972,7 @@ func (t *StaticCheck) EvalPackage(p *ast.NodePackage, stack *runtime.GDSymbolSta
 
 				ident := runtime.NewGDStrIdent(identNode.Lit)
 				if symbol, err := pkg.GetMember(ident); err == nil {
-					err := stack.AddSymbolStack(ident, symbol)
+					_, err := t.addSymbol(ident, symbol.IsPub, symbol.IsConst, symbol.Type, nil, stack)
 					if err != nil {
 						return nil, comn.WrapFatalErr(err, p.GetPosition())
 					}
@@ -1053,7 +984,7 @@ func (t *StaticCheck) EvalPackage(p *ast.NodePackage, stack *runtime.GDSymbolSta
 	return nil, nil
 }
 
-func (t *StaticCheck) evalIfNode(i *ast.NodeIf, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (t *StaticCheck) evalIfNode(i *ast.NodeIf, stack *StaticStack) (*Inference, error) {
 	err := t.checkIfConditions(i.Conditions, stack)
 	if err != nil {
 		return nil, err
@@ -1066,14 +997,14 @@ func (t *StaticCheck) evalIfNode(i *ast.NodeIf, stack *runtime.GDSymbolStack) (r
 // Checks that all the conditions are of type bool
 // and returns an error if any of them is not.
 // if condition, ... { ... }
-func (t *StaticCheck) checkIfConditions(conditions []ast.Node, stack *runtime.GDSymbolStack) error {
+func (t *StaticCheck) checkIfConditions(conditions []ast.Node, stack *StaticStack) error {
 	for _, cond := range conditions {
-		condObj, err := t.EvalNode(cond, stack)
+		condInf, err := t.EvalNode(cond, stack)
 		if err != nil {
 			return err
 		}
 
-		err = runtime.EqualTypes(condObj.GetType(), runtime.GDBoolType, stack)
+		err = runtime.EqualTypes(condInf.Type, runtime.GDBoolTypeRef, stack)
 		if err != nil {
 			return comn.WrapFatalErr(err, cond.GetPosition())
 		}
@@ -1082,12 +1013,12 @@ func (t *StaticCheck) checkIfConditions(conditions []ast.Node, stack *runtime.GD
 	return nil
 }
 
-func (t *StaticCheck) evalBlock(b *ast.NodeBlock, stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	funcStack := stack.NewSymbolStack(runtime.BlockCtx)
-	defer funcStack.Dispose()
+func (t *StaticCheck) evalBlock(b *ast.NodeBlock, stack *StaticStack) (*Inference, error) {
+	blockStack := stack.NewStack(runtime.BlockCtx)
+	defer blockStack.Dispose()
 
 	for _, node := range b.Nodes {
-		obj, err := t.EvalNode(node, funcStack)
+		nodeInf, err := t.EvalNode(node, blockStack)
 		if err != nil {
 			return nil, err
 		}
@@ -1100,17 +1031,12 @@ func (t *StaticCheck) evalBlock(b *ast.NodeBlock, stack *runtime.GDSymbolStack) 
 		case *ast.NodeReturn:
 			// If not a flow control block, then return type is expected
 			if b.Type != ast.ControlFlowBlockType {
-				inferredType, err := runtime.InferType(b.ReturnType, obj.GetType(), stack)
+				inferredType, err := runtime.InferType(b.ReturnType, nodeInf.Type, stack)
 				if err != nil {
 					return nil, comn.WrapFatalErr(err, node.GetPosition())
 				}
 
-				node.SetInferredType(inferredType)
-				if node.Expr != nil {
-					node.Expr.SetInferredType(inferredType)
-				}
-
-				node.SetInferredObject(obj)
+				b.Inference = NewInference(nil, inferredType)
 
 				continue
 			}
@@ -1118,6 +1044,24 @@ func (t *StaticCheck) evalBlock(b *ast.NodeBlock, stack *runtime.GDSymbolStack) 
 	}
 
 	return nil, nil
+}
+
+func (t *StaticCheck) addSymbol(ident runtime.GDIdent, isPub, isConst bool, typ, assignType runtime.GDTypable, stack *StaticStack) (*StaticSymbol, error) {
+	symbol, err := stack.AddNewSymbol(ident, isPub, isConst, typ, assignType, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set internal identifier for the symbol
+	staticInf := NewInference(ident, symbol.Type)
+
+	// It is used only internally to identify the symbol to map with the runtime identifier
+	staticInf.RuntimeIdent = t.NewIdent()
+
+	// Set the inference object to the symbol
+	symbol.Value = staticInf
+
+	return symbol, nil
 }
 
 func NewStaticCheck(analyzer *analysis.PackageDependenciesAnalyzer) *StaticCheck {

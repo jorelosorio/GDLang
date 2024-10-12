@@ -40,52 +40,25 @@ type Node interface {
 	SetParentNode(Node)
 	GetParentNode() Node
 	GetParentNodeByType(BaseNodeType) Node
-	Inferable
+	GetInference() *Inference
+	SetInference(*Inference)
 }
 
-type Inferable interface {
-	InferredType() runtime.GDTypable
-	SetInferredType(runtime.GDTypable)
+type Inference struct {
+	Ident        runtime.GDIdent
+	Type         runtime.GDTypable
+	RuntimeIdent runtime.GDIdent
+}
 
-	RuntimeType() runtime.GDTypable
-	SetRuntimeType(runtime.GDTypable)
-
-	RuntimeIdent() runtime.GDIdent
-	SetRuntimeIdent(runtime.GDIdent)
-
-	InferredObject() runtime.GDObject
-	SetInferredObject(runtime.GDObject)
-
-	InferredIdent() runtime.GDIdent
-	SetInferredIdent(runtime.GDIdent)
+func (i *Inference) ToString() string {
+	return i.Ident.ToString()
 }
 
 type BaseNode struct {
-	inferredType  runtime.GDTypable
-	runtimeType   runtime.GDTypable
-	inferredObj   runtime.GDObject
-	inferredIdent runtime.GDIdent
-	runtimeIdent  runtime.GDIdent
-	nodeType      BaseNodeType
-	parent        Node
+	nodeType BaseNodeType
+	parent   Node
+	*Inference
 }
-
-// Inferable interface implementation
-
-func (n *BaseNode) InferredType() runtime.GDTypable       { return n.inferredType }
-func (n *BaseNode) SetInferredType(typ runtime.GDTypable) { n.inferredType = typ }
-
-func (n *BaseNode) RuntimeType() runtime.GDTypable       { return n.runtimeType }
-func (n *BaseNode) SetRuntimeType(typ runtime.GDTypable) { n.runtimeType = typ }
-
-func (n *BaseNode) RuntimeIdent() runtime.GDIdent         { return n.runtimeIdent }
-func (n *BaseNode) SetRuntimeIdent(ident runtime.GDIdent) { n.runtimeIdent = ident }
-
-func (n *BaseNode) InferredObject() runtime.GDObject       { return n.inferredObj }
-func (n *BaseNode) SetInferredObject(obj runtime.GDObject) { n.inferredObj = obj }
-
-func (n *BaseNode) InferredIdent() runtime.GDIdent         { return n.inferredIdent }
-func (n *BaseNode) SetInferredIdent(ident runtime.GDIdent) { n.inferredIdent = ident }
 
 // Node interface implementation
 
@@ -93,6 +66,8 @@ func (n *BaseNode) GetNodeType() BaseNodeType { return n.nodeType }
 func (n *BaseNode) SetType(t BaseNodeType)    { n.nodeType = t }
 func (n *BaseNode) SetParentNode(p Node)      { n.parent = p }
 func (n *BaseNode) GetParentNode() Node       { return n.parent }
+func (n *BaseNode) SetInference(i *Inference) { n.Inference = i }
+func (n *BaseNode) GetInference() *Inference  { return n.Inference }
 
 // A function that look up for the parents and stop where a node type is found.
 func (n *BaseNode) GetParentNodeByType(t BaseNodeType) Node {

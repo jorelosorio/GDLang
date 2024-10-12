@@ -31,7 +31,7 @@ func (u *GDUnion) ToString() string {
 		return obj.ToString()
 	}, " | ")
 }
-func (u *GDUnion) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
+func (u *GDUnion) CastToType(typ GDTypable) (GDObject, error) {
 	return nil, InvalidCastingWrongTypeErr(typ, u.GetType())
 }
 

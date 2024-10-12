@@ -26,8 +26,8 @@ import (
 )
 
 func TestStructWithNilInitialization(t *testing.T) {
-	stack := runtime.NewRootGDSymbolStack()
-	sType := runtime.NewGDStructType(runtime.GDStructAttrType{attr1Ident, runtime.GDStringType})
+	stack := runtime.NewGDStack()
+	sType := runtime.NewGDStructType(&runtime.GDStructAttrType{attr1Ident, runtime.GDStringTypeRef})
 	structObj, err := runtime.NewGDStruct(sType, stack)
 	if err != nil {
 		t.Errorf("Error creating struct: %s", err.Error())
@@ -38,21 +38,21 @@ func TestStructWithNilInitialization(t *testing.T) {
 		t.Error("Attribute not found but it should be")
 	}
 
-	if symbol.Object != runtime.GDZNil {
-		t.Errorf("Wrong structure attribute value for attr1, expected nil but got %q", symbol.Object.ToString())
+	if symbol.Value != runtime.GDZNil {
+		t.Errorf("Wrong structure attribute value for attr1, expected nil but got %q", symbol.Value.(runtime.GDObject).ToString())
 	}
 }
 
 func TestChangeTheValueOfAnAttribute(t *testing.T) {
-	stack := runtime.NewRootGDSymbolStack()
-	sType := runtime.NewGDStructType(runtime.GDStructAttrType{attr1Ident, runtime.GDStringType})
+	stack := runtime.NewGDStack()
+	sType := runtime.NewGDStructType(&runtime.GDStructAttrType{attr1Ident, runtime.GDStringTypeRef})
 
 	structObj, err := runtime.NewGDStruct(sType, stack)
 	if err != nil {
 		t.Errorf("Error creating struct: %s", err.Error())
 	}
 
-	_, err = structObj.SetAttr(attr1Ident, runtime.GDString("new value"))
+	_, err = structObj.SetAttr(attr1Ident, runtime.GDStringTypeRef, runtime.GDString("new value"))
 	if err != nil && err.Error() == runtime.AttributeNotFoundErr("attr1").Error() {
 		t.Error("Attribute not found but it should be")
 	}
@@ -62,22 +62,22 @@ func TestChangeTheValueOfAnAttribute(t *testing.T) {
 		t.Errorf("Error getting attribute value: %s", err.Error())
 	}
 
-	if !runtime.EqualObjects(symbol.Object, runtime.GDString("new value")) {
-		t.Errorf("Wrong structure attribute value for attr1, expected 'new value' but got %q", symbol.Object.ToString())
+	if !runtime.EqualObjects(symbol.Value.(runtime.GDObject), runtime.GDString("new value")) {
+		t.Errorf("Wrong structure attribute value for attr1, expected 'new value' but got %q", symbol.Value.(runtime.GDObject).ToString())
 	}
 }
 
 func TestReturnedObjectFromStructAreCopies(t *testing.T) {
-	stack := runtime.NewRootGDSymbolStack()
+	stack := runtime.NewGDStack()
 
-	sType := runtime.NewGDStructType(runtime.GDStructAttrType{attr1Ident, runtime.GDStringType})
+	sType := runtime.NewGDStructType(&runtime.GDStructAttrType{attr1Ident, runtime.GDStringTypeRef})
 
 	structObj, err := runtime.NewGDStruct(sType, stack)
 	if err != nil {
 		t.Errorf("Error creating struct: %s", err.Error())
 	}
 
-	_, err = structObj.SetAttr(attr1Ident, runtime.GDString("test"))
+	_, err = structObj.SetAttr(attr1Ident, runtime.GDStringTypeRef, runtime.GDString("test"))
 	if err != nil {
 		t.Errorf("Error setting attribute value: %s", err.Error())
 	}
@@ -87,9 +87,9 @@ func TestReturnedObjectFromStructAreCopies(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error getting attribute value: %s", err.Error())
 	}
-	eObj1 := symbol1.Object
+	eObj1 := symbol1.Value.(runtime.GDObject)
 
-	_, err = structObj.SetAttr(attr1Ident, runtime.GDString("new value"))
+	_, err = structObj.SetAttr(attr1Ident, runtime.GDStringTypeRef, runtime.GDString("new value"))
 	if err != nil {
 		t.Errorf("Error setting attribute value: %s", err.Error())
 	}
@@ -101,42 +101,42 @@ func TestReturnedObjectFromStructAreCopies(t *testing.T) {
 	}
 
 	// Attr1Value1 and Attr1Value2 should be different objects
-	if runtime.EqualObjects(eObj1, symbol2.Object) {
-		t.Errorf("Returned object from struct is not a copy, was expecting %q but got %q", symbol1.Object.ToString(), symbol2.Object.ToString())
+	if runtime.EqualObjects(eObj1, symbol2.Value.(runtime.GDObject)) {
+		t.Errorf("Returned object from struct is not a copy, was expecting %q but got %q", symbol1.Value.ToString(), symbol2.Value.ToString())
 	}
 }
 
 func TestAddAttributeWithSameName(t *testing.T) {
-	stack := runtime.NewRootGDSymbolStack()
+	stack := runtime.NewGDStack()
 
-	sType := runtime.NewGDStructType(runtime.GDStructAttrType{attr1Ident, runtime.GDStringType}, runtime.GDStructAttrType{attr1Ident, runtime.GDIntType})
+	sType := runtime.NewGDStructType(&runtime.GDStructAttrType{attr1Ident, runtime.GDStringTypeRef}, &runtime.GDStructAttrType{attr1Ident, runtime.GDIntTypeRef})
 
 	_, err := runtime.NewGDStruct(sType, stack)
 	if err == nil {
 		t.Error("Expected error adding attribute with the same name but got nil")
 	}
 
-	if err != nil && err.Error() != runtime.DuplicatedObjectCreationErr("attr1").Error() {
+	if err != nil && err.Error() != runtime.DuplicatedSymbolErr("attr1").Error() {
 		t.Errorf("Expected error adding attribute with the same name but got %q", err.Error())
 	}
 }
 
 func TestSetAttrWithDifferentType(t *testing.T) {
-	stack := runtime.NewRootGDSymbolStack()
+	stack := runtime.NewGDStack()
 
-	sType := runtime.NewGDStructType(runtime.GDStructAttrType{attr1Ident, runtime.GDStringType})
+	sType := runtime.NewGDStructType(&runtime.GDStructAttrType{attr1Ident, runtime.GDStringTypeRef})
 
 	structObj, err := runtime.NewGDStruct(sType, stack)
 	if err != nil {
 		t.Errorf("Error creating struct: %s", err.Error())
 	}
 
-	_, err = structObj.SetAttr(attr1Ident, runtime.GDZInt)
+	_, err = structObj.SetAttr(attr1Ident, runtime.GDIntTypeRef, runtime.GDZInt)
 	if err == nil {
 		t.Error("Expected error setting attribute with different type but got nil")
 	}
 
-	errMsg := runtime.WrongTypesErr(runtime.GDStringType, runtime.GDIntType).Msg
+	errMsg := runtime.WrongTypesErr(runtime.GDStringTypeRef, runtime.GDIntTypeRef).Msg
 	if err != nil && !strings.Contains(err.Error(), errMsg) {
 		t.Errorf("Expected %q but got %q", errMsg, err.Error())
 	}

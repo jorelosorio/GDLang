@@ -32,8 +32,8 @@ var (
 	attr1Ident  = NewGDStringIdentType("attr1")
 
 	// Structs
-	structWithAttrAAsInt    = runtime.NewGDStructType(runtime.GDStructAttrType{aParamIdent, runtime.GDIntType})
-	structWithAttrAAsString = runtime.NewGDStructType(runtime.GDStructAttrType{aParamIdent, runtime.GDStringType})
-	structWithAttrsAStrBInt = runtime.NewGDStructType(runtime.GDStructAttrType{aParamIdent, runtime.GDStringType}, runtime.GDStructAttrType{bParamIdent, runtime.GDIntType})
-	structWithAttrsBIntAStr = runtime.NewGDStructType(runtime.GDStructAttrType{bParamIdent, runtime.GDIntType}, runtime.GDStructAttrType{aParamIdent, runtime.GDStringType})
+	structWithAttrAAsInt    = runtime.NewGDStructType(&runtime.GDStructAttrType{aParamIdent, runtime.GDIntTypeRef})
+	structWithAttrAAsString = runtime.NewGDStructType(&runtime.GDStructAttrType{aParamIdent, runtime.GDStringTypeRef})
+	structWithAttrsAStrBInt = runtime.NewGDStructType(&runtime.GDStructAttrType{aParamIdent, runtime.GDStringTypeRef}, &runtime.GDStructAttrType{bParamIdent, runtime.GDIntTypeRef})
+	structWithAttrsBIntAStr = runtime.NewGDStructType(&runtime.GDStructAttrType{bParamIdent, runtime.GDIntTypeRef}, &runtime.GDStructAttrType{aParamIdent, runtime.GDStringTypeRef})
 )

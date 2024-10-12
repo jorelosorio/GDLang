@@ -20,80 +20,34 @@
 package runtime
 
 type GDBuffer struct {
-	Parent  *GDBuffer
-	Objects []GDObject
+	objects []GDObject
+	isEmpty bool
 }
 
-func (b *GDBuffer) NewBuffer() *GDBuffer {
-	buffer := &GDBuffer{b, nil}
-	return buffer
-}
-
-func (b *GDBuffer) PopAll(gdType *GDArrayType) (*GDBuffer, *GDArray) {
-	objects := b.Objects
-	buffer := b.Parent
-
-	b.Parent = nil
-	b.Objects = nil
-
-	buffArray := NewGDArrayWithTypeAndObjects(gdType, objects)
-
-	return buffer, buffArray
-}
-
-func (b *GDBuffer) Push(obj GDObject) error {
-	if b.Objects == nil {
-		b.Objects = make([]GDObject, 0)
+func (b *GDBuffer) Push(obj GDObject) {
+	b.objects = append(b.objects, obj)
+	if b.isEmpty {
+		b.isEmpty = false
 	}
-
-	b.Objects = append(b.Objects, obj)
-
-	return nil
-}
-
-func (b *GDBuffer) Pull() GDObject {
-	if b.Objects == nil {
-		return GDZNil
-	}
-
-	if len(b.Objects) > 0 {
-		// Get and remove the first element
-		obj := b.Objects[0]
-		if len(b.Objects) == 1 {
-			b.Objects = nil
-		} else {
-			b.Objects = b.Objects[1:]
-		}
-
-		return obj
-	}
-
-	return nil
 }
 
 func (b *GDBuffer) Pop() GDObject {
-	if b.Objects == nil {
-		return GDZNil
-	}
-
-	if len(b.Objects) > 0 {
+	if !b.isEmpty {
 		// Get and remove the last element
-		obj := b.Objects[len(b.Objects)-1]
-		if len(b.Objects) == 1 {
-			b.Objects = nil
+		obj := b.objects[len(b.objects)-1]
+		if len(b.objects) == 1 {
+			b.objects = make([]GDObject, 0)
+			b.isEmpty = true
 		} else {
-			b.Objects = b.Objects[:len(b.Objects)-1]
+			b.objects = b.objects[:len(b.objects)-1]
 		}
 
 		return obj
 	}
 
-	return nil
+	return GDZNil
 }
 
-func NewGDBuffer() *GDBuffer {
-	return &GDBuffer{
-		Objects: nil,
-		Parent:  nil,
-	}
-}
+func (b *GDBuffer) IsEmpty() bool { return b.isEmpty }
+
+func NewGDBuffer() *GDBuffer { return &GDBuffer{make([]GDObject, 0), true} }

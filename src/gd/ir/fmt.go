@@ -22,50 +22,38 @@ package ir
 import (
 	"fmt"
 	"gdlang/lib/runtime"
+	"gdlang/src/cpu"
 )
 
-func IRObjectWithTypeToString(obj runtime.GDObject) string {
-	switch obj := obj.(type) {
-	case *runtime.GDIdObject:
+func IRObjectWithTypeToString(typ runtime.GDTypable, obj runtime.GDObject) string {
+	if obj == nil {
 		return IRObjectTypeToString(obj)
-	default:
-		return fmt.Sprintf("(%s: %s)", IRObjectTypeToString(obj), IRObjectWithoutTypeToString(obj))
 	}
+
+	return fmt.Sprintf("(%s: %s)", IRObjectTypeToString(obj), IRObjectWithoutTypeToString(obj))
 }
 
-func IRTypeToString(typ runtime.GDTypable) string {
-	return formatTypeToString(typ)
+func IRObjectToString(obj runtime.GDObject) string {
+	return fmt.Sprintf("(%s: %s)", IRObjectTypeToString(obj), IRObjectWithoutTypeToString(obj))
 }
 
 func IRObjectTypeToString(obj runtime.GDObject) string {
 	if typ := obj.GetSubType(); typ != nil {
-		return formatTypeToString(typ)
-	}
-
-	return formatTypeToString(obj.GetType())
-}
-
-func formatTypeToString(typ runtime.GDTypable) string {
-	typeCode := runtime.GDTypeCodeMap[typ.GetCode()]
-	switch typ := typ.(type) {
-	case runtime.GDRefType:
-		return fmt.Sprintf("(%s: %s)", typeCode, typ.ToString())
-	case runtime.GDObjRefType:
-		return fmt.Sprintf("(%s: %s)", typeCode, typ.ToString())
-	default:
 		return typ.ToString()
 	}
+
+	return IRTypeToString(obj.GetType())
 }
 
 func IRObjectWithoutTypeToString(obj runtime.GDObject) string {
 	switch obj := obj.(type) {
 	case *runtime.GDArray:
-		return fmt.Sprintf("[%s]", runtime.JoinSlice(obj.Objects, func(object runtime.GDObject, _ int) string {
-			return IRObjectWithTypeToString(object)
+		return fmt.Sprintf("[%s]", runtime.JoinSlice(obj.GetObjects(), func(obj runtime.GDObject, _ int) string {
+			return IRObjectToString(obj)
 		}, ", "))
 	case *runtime.GDTuple:
-		return fmt.Sprintf("(%s)", runtime.JoinSlice(obj.Objects, func(object runtime.GDObject, _ int) string {
-			return IRObjectWithTypeToString(object)
+		return fmt.Sprintf("(%s)", runtime.JoinSlice(obj.GetObjects(), func(obj runtime.GDObject, _ int) string {
+			return IRObjectToString(obj)
 		}, ", "))
 	case *runtime.GDStruct:
 		strObjs := make([]string, len(obj.Type))
@@ -75,16 +63,60 @@ func IRObjectWithoutTypeToString(obj runtime.GDObject) string {
 				panic(err)
 			}
 
-			strObjs[i] = IRObjectWithTypeToString(symbol.Object)
+			strObjs[i] = IRObjectWithTypeToString(symbol.Type, symbol.Value.(runtime.GDObject))
 		}
 		return fmt.Sprintf("{%s}", runtime.JoinSlice(strObjs, func(str string, _ int) string {
 			return str
 		}, ", "))
 	case *runtime.GDSpreadable:
-		return IRObjectWithTypeToString(obj.Iterable) + "..."
+		return IRObjectWithTypeToString(obj.GetType(), obj.Iterable) + "..."
 	case runtime.GDObject:
-		return runtime.ObjectToStringForInternalData(obj)
+		return runtime.ConvertObjectToString(obj)
 	}
 
 	panic(runtime.NewGDRuntimeErr(runtime.UnsupportedTypeCode, "Unsupported type when converting to string"))
+}
+
+func IRTypeToString(typ runtime.GDTypable) string {
+	return formatTypeToString(typ)
+}
+
+func formatTypeToString(typ runtime.GDTypable) string {
+	typeCode := runtime.GDTypeCodeMap[typ.GetCode()]
+	switch typ := typ.(type) {
+	case runtime.GDTypeRefType:
+		return fmt.Sprintf("%s:<%s>", typeCode, typ.ToString())
+	case runtime.GDObjectRefType:
+		switch typ.GDIdent.GetMode() {
+		case runtime.GDByteIdentMode:
+			rawValue, ok := typ.GDIdent.GetRawValue().(byte)
+			if !ok {
+				panic("GDIdent.GetRawValue() is not of type byte")
+			}
+
+			return fmt.Sprintf("%s:<%s>", typeCode, cpu.GetCPURegName(cpu.GDReg(rawValue)))
+		default:
+			return fmt.Sprintf("%s<%s>", typeCode, typ.ToString())
+		}
+	case *runtime.GDTypeAliasType:
+		return fmt.Sprintf("%s:<%s>", typeCode, typ.ToString())
+	case *runtime.GDArrayType:
+		return fmt.Sprintf("[%s]", formatTypeToString(typ.SubType))
+	case runtime.GDTupleType:
+		return fmt.Sprintf("(%s)", runtime.JoinSlice(typ, func(typ runtime.GDTypable, _ int) string {
+			return formatTypeToString(typ)
+		}, ", "))
+	case runtime.GDStructType:
+		return fmt.Sprintf("{%s}", runtime.JoinSlice(typ, func(typ *runtime.GDStructAttrType, _ int) string {
+			return fmt.Sprintf("%s: %s", typ.Ident.ToString(), formatTypeToString(typ.Type))
+		}, ", "))
+	case *runtime.GDLambdaType:
+		return fmt.Sprintf("func(%s) => %s", runtime.JoinSlice(typ.ArgTypes, func(arg *runtime.GDLambdaArgType, _ int) string {
+			return fmt.Sprintf("%s: %s", arg.Key.ToString(), formatTypeToString(arg.Value))
+		}, ", "), formatTypeToString(typ.ReturnType))
+	case runtime.GDSpreadableType:
+		return fmt.Sprintf("%s...", formatTypeToString(typ.GetIterableType()))
+	default:
+		return typ.ToString()
+	}
 }

@@ -20,7 +20,7 @@
 package runtime
 
 type GDAttributable interface {
-	GetStack() *GDSymbolStack
+	GetStack() *GDStack
 	GetAttr(ident GDIdent) (*GDSymbol, error)
-	SetAttr(ident GDIdent, object GDObject) (*GDSymbol, error)
+	SetAttr(ident GDIdent, typ GDTypable, object GDObject) (*GDSymbol, error)
 }

@@ -22,7 +22,7 @@ package runtime
 type GDIterableCollection interface {
 	Length() int
 	IsEmpty() bool
-	Get(index int) (GDObject, error)
+	GetObjectAt(index int) (GDObject, error)
 	GetObjects() []GDObject
 	GDObject
 	GDIterableCollectionType

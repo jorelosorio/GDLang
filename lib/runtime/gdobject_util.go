@@ -19,17 +19,6 @@
 
 package runtime
 
-func Unwrap(value GDObject) GDObject {
-	switch value := value.(type) {
-	case *GDIdObject:
-		return Unwrap(value.GDObject)
-	case *GDAttrIdObject:
-		return Unwrap(value.GDObject)
-	}
-
-	return value
-}
-
 func EqualObjects(a, b GDObject) bool {
 	switch a := a.(type) {
 	case *GDTuple:
@@ -40,7 +29,7 @@ func EqualObjects(a, b GDObject) bool {
 	// TODO: Add case for GDStruct, GDFunc
 	case *GDArray:
 		if b, ok := b.(*GDArray); ok {
-			return equalArray(a.Objects, b.Objects)
+			return equalArray(a.GetObjects(), b.GetObjects())
 		}
 		return false
 	}
@@ -48,8 +37,8 @@ func EqualObjects(a, b GDObject) bool {
 	return a == b
 }
 
-func ObjectToStringForInternalData(object GDObject) string {
-	switch object := object.(type) {
+func ConvertObjectToString(value GDRawValue) string {
+	switch object := value.(type) {
 	case GDString:
 		return Sprintf("\"%@\"", object)
 	case GDChar:
@@ -61,47 +50,47 @@ func ObjectToStringForInternalData(object GDObject) string {
 	panic(NewGDRuntimeErr(UnsupportedTypeCode, "Unsupported type when converting to string"))
 }
 
-// This function requires that the type was already checked or inferred
-// before calling it.
-func TypeCoercion(obj GDObject, typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
-	typ, err := UnwrapIdentType(typ, stack)
-	if err != nil {
-		return nil, err
-	}
+// // This function requires that the type was already checked or inferred
+// // before calling it.
+// func TypeCoercion(obj GDObject, typ GDTypable) (GDObject, error) {
+// 	switch obj := obj.(type) {
+// 	case *GDTuple:
+// 		if typ, ok := typ.(GDTupleType); ok {
+// 			obj.GDTupleType = typ
+// 			return obj, nil
+// 		}
+// 	case *GDArray:
+// 		if typ, isArrayType := typ.(*GDArrayType); isArrayType {
+// 			obj.GDArrayType = typ
+// 			return obj, nil
+// 		}
+// 	case *GDStruct:
+// 		if typ, isStructType := typ.(GDStructType); isStructType {
+// 			obj.Type = typ
+// 			for _, attr := range typ {
+// 				symbol, err := obj.GetAttr(attr.Ident)
+// 				if err != nil {
+// 					return nil, err
+// 				}
 
-	switch obj := obj.(type) {
-	case *GDTuple:
-		if typ, ok := typ.(GDTupleType); ok {
-			obj.GDTupleType = typ
-			return obj, nil
-		}
-	case *GDArray:
-		if typ, ok := typ.(*GDArrayType); ok {
-			obj.GDArrayType = typ
-			return obj, nil
-		}
-	case *GDStruct:
-		if typ, ok := typ.(GDStructType); ok {
-			obj.Type = typ
-			for _, attr := range typ {
-				symbol, err := obj.GetAttr(attr.Ident)
-				if err != nil {
-					return nil, err
-				}
+// 				symbolObj, isObject := symbol.Value
+// 				if !isObject {
+// 					return nil, NewGDRuntimeErr(UnsupportedTypeCode, "wrong stack symbol type")
+// 				}
 
-				obj, err := TypeCoercion(symbol.Object, attr.Type, stack)
-				if err != nil {
-					return nil, err
-				}
+// 				obj, err := TypeCoercion(symbolObj, attr.Type)
+// 				if err != nil {
+// 					return nil, err
+// 				}
 
-				symbol.Type = attr.Type
-				symbol.Object = obj
-			}
-		}
-	}
+// 				symbol.Type = attr.Type
+// 				symbol.Value = obj
+// 			}
+// 		}
+// 	}
 
-	return obj, nil
-}
+// 	return obj, nil
+// }
 
 func equalArray(a, b []GDObject) bool {
 	if len(a) != len(b) {

@@ -21,7 +21,7 @@ package vm
 
 import "gdlang/lib/runtime"
 
-func (p *GDVMProc) evalTif(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalTif(stack *runtime.GDStack) (runtime.GDObject, error) {
 	// Read the else expression
 	elseExpr, err := p.ReadObject(stack)
 	if err != nil {
@@ -54,7 +54,7 @@ func (p *GDVMProc) evalTif(stack *runtime.GDSymbolStack) (runtime.GDObject, erro
 	return nil, nil
 }
 
-func (p *GDVMProc) evalCompJump(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalCompJump(stack *runtime.GDStack) (runtime.GDObject, error) {
 	// Read the expression
 	expr, err := p.ReadObject(stack)
 	if err != nil {

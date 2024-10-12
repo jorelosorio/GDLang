@@ -21,9 +21,7 @@ package runtime
 
 type GDNil byte
 
-func (gd GDNil) GetType() GDTypable    { return GDNilType }
-func (gd GDNil) GetSubType() GDTypable { return nil }
-func (gd GDNil) ToString() string      { return GDNilType.ToString() }
-func (gd GDNil) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
-	return gd, nil
-}
+func (gd GDNil) GetType() GDTypable                         { return GDNilTypeRef }
+func (gd GDNil) GetSubType() GDTypable                      { return nil }
+func (gd GDNil) ToString() string                           { return GDNilTypeRef.ToString() }
+func (gd GDNil) CastToType(typ GDTypable) (GDObject, error) { return gd, nil }

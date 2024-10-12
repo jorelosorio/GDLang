@@ -19,14 +19,25 @@
 
 package runtime
 
-// This wrapper for GDIdent represents a type or object in the stack.
-type GDRefType struct{ GDIdent }
+// This wrapper for GDIdent represents a type, commonly for type alias.
+type GDTypeRefType struct{ GDIdent }
 
-func (t GDRefType) GetCode() GDTypableCode { return GDRefTypeCode }
-func (t GDRefType) ToString() string       { return t.GDIdent.ToString() }
+func (t GDTypeRefType) GetCode() GDTypableCode { return GDTypeRefTypeCode }
+func (t GDTypeRefType) ToString() string       { return t.GDIdent.ToString() }
 
-func NewGDRefType(ident GDIdent) GDRefType { return GDRefType{ident} }
+func NewGDTypeRefType(ident GDIdent) GDTypeRefType { return GDTypeRefType{ident} }
+func NewGDStrTypeRefType(ident string) GDTypeRefType {
+	return NewGDTypeRefType(NewGDStrIdent(ident))
+}
 
-func NewGDStrRefType(ident string) GDRefType {
-	return NewGDRefType(NewGDStrIdent(ident))
+// This wrapper for GDIdent represents a type, commonly for object reference.
+
+type GDObjectRefType struct{ GDIdent }
+
+func (t GDObjectRefType) GetCode() GDTypableCode { return GDObjectRefTypeCode }
+func (t GDObjectRefType) ToString() string       { return t.GDIdent.ToString() }
+
+func NewGDObjectRefType(ident GDIdent) GDObjectRefType { return GDObjectRefType{ident} }
+func NewGDStrObjectRefType(ident string) GDObjectRefType {
+	return NewGDObjectRefType(NewGDStrIdent(ident))
 }

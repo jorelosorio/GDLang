@@ -19,18 +19,12 @@
 
 package runtime
 
-type GDSpreadable struct {
-	Iterable GDIterableCollection
-}
+type GDSpreadable struct{ Iterable GDIterableCollection }
 
-func (o *GDSpreadable) GetType() GDTypable    { return GDSpreadableType{o.Iterable} }
-func (o *GDSpreadable) GetSubType() GDTypable { return nil }
-func (o *GDSpreadable) ToString() string {
-	return o.Iterable.ToString() + "..."
-}
-func (o *GDSpreadable) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
-	return nil, nil
-}
+func (o *GDSpreadable) GetType() GDTypable                         { return GDSpreadableType{o.Iterable} }
+func (o *GDSpreadable) GetSubType() GDTypable                      { return nil }
+func (o *GDSpreadable) ToString() string                           { return o.Iterable.ToString() + "..." }
+func (o *GDSpreadable) CastToType(typ GDTypable) (GDObject, error) { return nil, nil }
 
 func (o *GDSpreadable) GetObjects() []GDObject { return o.Iterable.GetObjects() }
 

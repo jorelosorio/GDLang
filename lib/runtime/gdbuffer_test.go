@@ -26,91 +26,47 @@ import (
 
 func TestBufferShouldBeEmpty(t *testing.T) {
 	b := runtime.NewGDBuffer()
-
-	if b.Objects != nil {
-		t.Errorf("Buffer should be empty")
-	}
-}
-
-func TestPushBuffer(t *testing.T) {
-	b := runtime.NewGDBuffer()
-	buffer := b.NewBuffer()
-
-	if buffer.Parent == nil {
-		t.Errorf("Buffer parent should not be nil")
-	}
-
-	if buffer.Objects != nil {
+	if !b.IsEmpty() {
 		t.Errorf("Buffer should be empty")
 	}
 }
 
 func TestPopBuffer(t *testing.T) {
 	b := runtime.NewGDBuffer()
-	buffer := b.NewBuffer()
+	b.Push(runtime.GDInt(0))
 
-	nBuffer, objects := buffer.PopAll(runtime.NewGDArrayType(runtime.GDUntypedType))
-	if len(objects.Objects) != 0 {
+	if b.IsEmpty() {
+		t.Errorf("Buffer should have 1 object")
+	}
+
+	obj := b.Pop()
+	if obj == runtime.GDZNil {
+		t.Errorf("Object should not be nil")
+	}
+
+	if !b.IsEmpty() {
 		t.Errorf("Buffer should be empty")
 	}
 
-	if nBuffer == nil {
-		t.Errorf("Buffer should not be nil")
+	if obj != runtime.GDInt(0) {
+		t.Errorf("Object should be an integer")
 	}
 }
 
 func TestPushBufferObject(t *testing.T) {
 	b := runtime.NewGDBuffer()
-
-	if b.Objects != nil {
-		t.Errorf("Buffer should be empty")
-	}
-
 	b.Push(runtime.GDInt(0))
 
-	if len(b.Objects) != 1 {
+	if b.IsEmpty() {
 		t.Errorf("Buffer should have 1 object")
 	}
 }
 
-func TestSubBufferPushObject(t *testing.T) {
+func TestPopEmptyBuffer(t *testing.T) {
 	b := runtime.NewGDBuffer()
-	buffer := b.NewBuffer()
-
-	if buffer.Objects != nil {
-		t.Errorf("Buffer should be empty")
-	}
-
-	buffer.Push(runtime.GDInt(0))
-
-	if len(buffer.Objects) != 1 {
-		t.Errorf("Buffer should have 1 object")
-	}
-
-	if buffer.Parent == nil {
-		t.Errorf("Buffer parent should not be nil")
-	}
-}
-
-func TestLastPopObj(t *testing.T) {
-	b := runtime.NewGDBuffer()
-
-	if b.Objects != nil {
-		t.Errorf("Buffer should be empty")
-	}
-
-	b.Push(runtime.GDInt(0))
-
-	if len(b.Objects) != 1 {
-		t.Errorf("Buffer should have 1 object")
-	}
-
 	obj := b.Pop()
-	if obj == nil {
-		t.Errorf("Object should not be nil")
-	}
 
-	if b.Objects != nil {
-		t.Errorf("Buffer should be empty")
+	if obj != runtime.GDZNil {
+		t.Errorf("Object should be nil")
 	}
 }

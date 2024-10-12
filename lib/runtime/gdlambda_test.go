@@ -27,12 +27,12 @@ import (
 
 func TestNilLambdaCall(t *testing.T) {
 	lambda := runtime.NewGDLambda(runtime.GDLambdaArgTypes{
-		{aParamIdent, runtime.GDIntType},
-	}, runtime.NewGDTupleType(), false, nil, func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
+		{aParamIdent, runtime.GDIntTypeRef},
+	}, runtime.NewGDTupleType(), false, nil, func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
 		return runtime.NewGDTuple(), nil
 	})
 
-	_, err := lambda.CheckArgValues(runtime.NewGDArray(runtime.NewGDIntNumber(1)))
+	_, err := lambda.CheckArgValues(runtime.NewGDArray(nil, runtime.NewGDIntNumber(1)))
 	if err != nil {
 		t.Errorf("Error calling lambda: %v", err)
 	}
@@ -40,13 +40,13 @@ func TestNilLambdaCall(t *testing.T) {
 
 func TestBuildTypedObjectForLambda(t *testing.T) {
 	lambda := runtime.NewGDLambda(runtime.GDLambdaArgTypes{
-		{aParamIdent, runtime.GDIntType},
-		{bParamIdent, runtime.GDStringType},
-	}, runtime.NewGDTupleType(), false, nil, func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
+		{aParamIdent, runtime.GDIntTypeRef},
+		{bParamIdent, runtime.GDStringTypeRef},
+	}, runtime.NewGDTupleType(), false, nil, func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
 		return runtime.NewGDTuple(), nil
 	})
 
-	args, err := lambda.CheckArgValues(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.GDString("hello")))
+	args, err := lambda.CheckArgValues(runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.GDString("hello")))
 
 	if err != nil {
 		t.Errorf("Error building typed object args: %v", err)
@@ -58,26 +58,38 @@ func TestBuildTypedObjectForLambda(t *testing.T) {
 		return
 	}
 
-	if !runtime.EqualObjects(args.Get(aParamIdent), runtime.NewGDIntNumber(1)) {
-		t.Errorf("Wrong type for arg `a`, got %v", args.Get(aParamIdent))
+	arg1, err := args.Get(aParamIdent)
+	if err != nil {
+		t.Errorf("Error getting arg `a`: %v", err)
 		return
 	}
 
-	if !runtime.EqualObjects(args.Get(bParamIdent), runtime.GDString("hello")) {
-		t.Errorf("Wrong type for arg `b`, got %v", args.Get(bParamIdent).ToString())
+	if !runtime.EqualObjects(arg1, runtime.NewGDIntNumber(1)) {
+		t.Errorf("Wrong type for arg `a`, got %v", arg1)
+		return
+	}
+
+	arg2, err := args.Get(bParamIdent)
+	if err != nil {
+		t.Errorf("Error getting arg `b`: %v", err)
+		return
+	}
+
+	if !runtime.EqualObjects(arg2, runtime.GDString("hello")) {
+		t.Errorf("Wrong type for arg `b`, got %v", arg2.ToString())
 		return
 	}
 }
 
 func TestStructWithWrongParameterTypes(t *testing.T) {
 	lambda := runtime.NewGDLambda(runtime.GDLambdaArgTypes{
-		{aParamIdent, runtime.GDIntType},
-		{bParamIdent, runtime.GDStringType},
-	}, runtime.NewGDTupleType(), false, nil, func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
+		{aParamIdent, runtime.GDIntTypeRef},
+		{bParamIdent, runtime.GDStringTypeRef},
+	}, runtime.NewGDTupleType(), false, nil, func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
 		return runtime.NewGDTuple(), nil
 	})
 
-	_, err := lambda.CheckArgValues(runtime.NewGDArray(runtime.GDString("hello"), runtime.NewGDIntNumber(1)))
+	_, err := lambda.CheckArgValues(runtime.NewGDArray(nil, runtime.GDString("hello"), runtime.NewGDIntNumber(1)))
 	if err == nil {
 		t.Errorf("Expected an error")
 	}
@@ -85,13 +97,13 @@ func TestStructWithWrongParameterTypes(t *testing.T) {
 
 func TestWithWrongNumberOfArgumentsLessThanAllowed(t *testing.T) {
 	lambda := runtime.NewGDLambda(runtime.GDLambdaArgTypes{
-		{aParamIdent, runtime.GDIntType},
-		{bParamIdent, runtime.GDStringType},
-	}, runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType), false, nil, func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
+		{aParamIdent, runtime.GDIntTypeRef},
+		{bParamIdent, runtime.GDStringTypeRef},
+	}, runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef), false, nil, func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
 		return runtime.NewGDTuple(), nil
 	})
 
-	_, err := lambda.CheckArgValues(runtime.NewGDArray(runtime.NewGDIntNumber(1)))
+	_, err := lambda.CheckArgValues(runtime.NewGDArray(nil, runtime.NewGDIntNumber(1)))
 	if err == nil {
 		t.Errorf("Expected an error")
 	}
@@ -99,13 +111,13 @@ func TestWithWrongNumberOfArgumentsLessThanAllowed(t *testing.T) {
 
 func TestWithWrongNumberOfArgumentsMoreThanAllowed(t *testing.T) {
 	lambda := runtime.NewGDLambda(runtime.GDLambdaArgTypes{
-		{aParamIdent, runtime.GDIntType},
-		{bParamIdent, runtime.GDStringType},
-	}, runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType), false, nil, func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
+		{aParamIdent, runtime.GDIntTypeRef},
+		{bParamIdent, runtime.GDStringTypeRef},
+	}, runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef), false, nil, func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
 		return runtime.NewGDTuple(), nil
 	})
 
-	_, err := lambda.CheckArgValues(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.GDString("hello"), runtime.GDString("hello")))
+	_, err := lambda.CheckArgValues(runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.GDString("hello"), runtime.GDString("hello")))
 	if err == nil {
 		t.Errorf("Expected an error")
 	}
@@ -113,13 +125,13 @@ func TestWithWrongNumberOfArgumentsMoreThanAllowed(t *testing.T) {
 
 func TestVariadicLambdaCallWithVariadicArguments(t *testing.T) {
 	lambda := runtime.NewGDLambda(runtime.GDLambdaArgTypes{
-		{aParamIdent, runtime.GDIntType},
-		{bParamIdent, runtime.GDStringType},
-	}, runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType), true, nil, func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
+		{aParamIdent, runtime.GDIntTypeRef},
+		{bParamIdent, runtime.GDStringTypeRef},
+	}, runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef), true, nil, func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
 		return runtime.NewGDTuple(), nil
 	})
 
-	args, err := lambda.CheckArgValues(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.GDString("hello"), runtime.GDString("hello")))
+	args, err := lambda.CheckArgValues(runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.GDString("hello"), runtime.GDString("hello")))
 	if err != nil {
 		t.Errorf("Error calling lambda: %v", err)
 	}
@@ -129,25 +141,37 @@ func TestVariadicLambdaCallWithVariadicArguments(t *testing.T) {
 		return
 	}
 
-	if !runtime.EqualObjects(args.Get(aParamIdent), runtime.NewGDIntNumber(1)) {
-		t.Errorf("Wrong type for arg `a`, got %v", args.Get(aParamIdent).ToString())
+	arg1, err := args.Get(aParamIdent)
+	if err != nil {
+		t.Errorf("Error getting arg `a`: %v", err)
 		return
 	}
 
-	if !runtime.EqualObjects(args.Get(bParamIdent), runtime.NewGDArray(runtime.GDString("hello"), runtime.GDString("hello"))) {
-		t.Errorf("Wrong type for arg `b`, got %v", args.Get(bParamIdent).ToString())
+	if !runtime.EqualObjects(arg1, runtime.NewGDIntNumber(1)) {
+		t.Errorf("Wrong type for arg `a`, got %v", arg1.ToString())
+		return
+	}
+
+	arg2, err := args.Get(bParamIdent)
+	if err != nil {
+		t.Errorf("Error getting arg `b`: %v", err)
+		return
+	}
+
+	if !runtime.EqualObjects(arg2, runtime.NewGDArray(nil, runtime.GDString("hello"), runtime.GDString("hello"))) {
+		t.Errorf("Wrong type for arg `b`, got %v", arg2.ToString())
 		return
 	}
 }
 
 func TestVariadicArgsSendingEmptyArgs(t *testing.T) {
 	lambda := runtime.NewGDLambda(runtime.GDLambdaArgTypes{
-		{aParamIdent, runtime.GDIntType},
-	}, runtime.NewGDTupleType(), true, nil, func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
+		{aParamIdent, runtime.GDIntTypeRef},
+	}, runtime.NewGDTupleType(), true, nil, func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
 		return runtime.NewGDTuple(), nil
 	})
 
-	args, err := lambda.CheckArgValues(runtime.NewGDArray())
+	args, err := lambda.CheckArgValues(runtime.NewGDArray(nil))
 	if err != nil {
 		t.Errorf("Error calling lambda: %v", err)
 		return
@@ -159,7 +183,13 @@ func TestVariadicArgsSendingEmptyArgs(t *testing.T) {
 	}
 
 	// Type should be compatible with empty arrays
-	err = runtime.CanBeAssign(args.Get(aParamIdent).GetType(), runtime.NewGDArray().GetType(), nil)
+	arg1, err := args.Get(aParamIdent)
+	if err != nil {
+		t.Errorf("Error getting arg `a`: %v", err)
+		return
+	}
+
+	err = runtime.CanBeAssign(arg1.GetType(), runtime.NewGDArray(nil).GetType(), nil)
 	if err != nil {
 		t.Errorf("Error checking if types are assignable: %v", err)
 		return
@@ -168,14 +198,14 @@ func TestVariadicArgsSendingEmptyArgs(t *testing.T) {
 
 func TestSimpleLambdaCallReturnTypesWrong(t *testing.T) {
 	lambda := runtime.NewGDLambda(runtime.GDLambdaArgTypes{
-		{aParamIdent, runtime.GDIntType},
-		{bParamIdent, runtime.GDStringType},
-	}, runtime.NewGDTupleType(runtime.GDStringType, runtime.GDStringType), false, nil, func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
+		{aParamIdent, runtime.GDIntTypeRef},
+		{bParamIdent, runtime.GDStringTypeRef},
+	}, runtime.NewGDTupleType(runtime.GDStringTypeRef, runtime.GDStringTypeRef), false, nil, func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
 		return runtime.NewGDTuple(runtime.GDString("test"), runtime.NewGDIntNumber(2)), nil
 	})
 
-	_, err := lambda.Call(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.GDString("hello")))
-	errMsg := runtime.WrongTypesErr(runtime.NewGDTupleType(runtime.GDStringType, runtime.GDStringType), runtime.NewGDTupleType(runtime.GDStringType, runtime.GDIntType)).Error()
+	_, err := lambda.Call(runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.GDString("hello")))
+	errMsg := runtime.WrongTypesErr(runtime.NewGDTupleType(runtime.GDStringTypeRef, runtime.GDStringTypeRef), runtime.NewGDTupleType(runtime.GDStringTypeRef, runtime.GDIntTypeRef)).Error()
 	if err != nil && !strings.Contains(err.Error(), errMsg) {
 		t.Errorf("Expected error message to contain %q, got  %q", errMsg, err.Error())
 		return
@@ -184,13 +214,13 @@ func TestSimpleLambdaCallReturnTypesWrong(t *testing.T) {
 
 func TestSimpleLambdaCallReturnTypes(t *testing.T) {
 	lambda := runtime.NewGDLambda(runtime.GDLambdaArgTypes{
-		{aParamIdent, runtime.GDIntType},
-		{bParamIdent, runtime.GDStringType},
-	}, runtime.NewGDTupleType(runtime.GDStringType, runtime.GDStringType), false, nil, func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
+		{aParamIdent, runtime.GDIntTypeRef},
+		{bParamIdent, runtime.GDStringTypeRef},
+	}, runtime.NewGDTupleType(runtime.GDStringTypeRef, runtime.GDStringTypeRef), false, nil, func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
 		return runtime.NewGDTuple(runtime.GDString("test"), runtime.GDString("test2")), nil
 	})
 
-	returns, err := lambda.Call(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.GDString("hello")))
+	returns, err := lambda.Call(runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.GDString("hello")))
 	if err != nil {
 		t.Errorf("Error calling lambda: %v", err)
 		return
@@ -215,13 +245,13 @@ func TestSimpleLambdaCallReturnTypes(t *testing.T) {
 
 func TestSimpleLambdaCallNilReturnTypesVariadic(t *testing.T) {
 	lambda := runtime.NewGDLambda(runtime.GDLambdaArgTypes{
-		{aParamIdent, runtime.GDIntType},
-		{bParamIdent, runtime.GDStringType},
-	}, runtime.GDNilType, true, nil, func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
+		{aParamIdent, runtime.GDIntTypeRef},
+		{bParamIdent, runtime.GDStringTypeRef},
+	}, runtime.GDNilTypeRef, true, nil, func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
 		return runtime.GDZNil, nil
 	})
 
-	nilReturn, err := lambda.Call(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.GDString("hello")))
+	nilReturn, err := lambda.Call(runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.GDString("hello")))
 	if err != nil {
 		t.Errorf("Error calling lambda: %v", err)
 		return
@@ -235,18 +265,18 @@ func TestSimpleLambdaCallNilReturnTypesVariadic(t *testing.T) {
 
 func TestLambdaStringsButReturnsNils(t *testing.T) {
 	lambda := runtime.NewGDLambda(runtime.GDLambdaArgTypes{
-		{aParamIdent, runtime.GDIntType},
-		{bParamIdent, runtime.GDStringType},
-	}, runtime.NewGDTupleType(runtime.GDStringType, runtime.GDStringType), false, nil, func(_ *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
+		{aParamIdent, runtime.GDIntTypeRef},
+		{bParamIdent, runtime.GDStringTypeRef},
+	}, runtime.NewGDTupleType(runtime.GDStringTypeRef, runtime.GDStringTypeRef), false, nil, func(args runtime.GDLambdaArgs, _ *runtime.GDStack) (runtime.GDObject, error) {
 		return runtime.NewGDTuple(runtime.GDZNil, runtime.GDZNil), nil
 	})
 
-	returns, err1 := lambda.Call(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.GDString("hello")))
+	returns, err1 := lambda.Call(runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.GDString("hello")))
 	if err1 != nil {
 		t.Errorf("Error calling lambda: %v", err1)
 	}
 
-	err := runtime.EqualTypes(returns.GetType(), runtime.NewGDTupleType(runtime.GDNilType, runtime.GDNilType), nil)
+	err := runtime.EqualTypes(returns.GetType(), runtime.NewGDTupleType(runtime.GDNilTypeRef, runtime.GDNilTypeRef), nil)
 	if err != nil {
 		t.Errorf("Error comparing types: %v", err)
 	}

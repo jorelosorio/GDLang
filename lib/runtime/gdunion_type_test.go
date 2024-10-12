@@ -25,53 +25,53 @@ import (
 )
 
 func TestCanBeAssignToTheLeft(t *testing.T) {
-	l := runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType)
-	r := runtime.GDFloatType
+	l := runtime.NewGDUnionType(runtime.GDIntTypeRef, runtime.GDFloatTypeRef)
+	r := runtime.GDFloatTypeRef
 	if err := runtime.CanBeAssign(l, r, nil); err != nil {
 		t.Errorf("Expected %q to be assignable to %q", r.ToString(), l.ToString())
 	}
 
-	r = runtime.GDIntType
+	r = runtime.GDIntTypeRef
 	if err := runtime.CanBeAssign(l, r, nil); err != nil {
 		t.Errorf("Expected %q to be assignable to %q", l.ToString(), r.ToString())
 	}
 }
 
 func TestWrongTypeAssign(t *testing.T) {
-	l := runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType)
-	r := runtime.GDStringType
+	l := runtime.NewGDUnionType(runtime.GDIntTypeRef, runtime.GDFloatTypeRef)
+	var r runtime.GDTypable = runtime.GDStringTypeRef
 	if err := runtime.CanBeAssign(l, r, nil); err == nil {
 		t.Errorf("Expected %q to be not assignable to %q", r.ToString(), l.ToString())
 	}
 
-	r = runtime.GDBoolType
+	r = runtime.GDBoolTypeRef
 	if err := runtime.CanBeAssign(l, r, nil); err == nil {
 		t.Errorf("Expected %q to be not assignable to %q", r.ToString(), l.ToString())
 	}
 }
 
 func TestArrayTypesWithUnionTypes(t *testing.T) {
-	l := runtime.NewGDUnionType(runtime.NewGDArrayType(runtime.GDIntType), runtime.NewGDArrayType(runtime.GDFloatType))
-	var r runtime.GDTypable = runtime.GDIntType
+	l := runtime.NewGDUnionType(runtime.NewGDArrayType(runtime.GDIntTypeRef), runtime.NewGDArrayType(runtime.GDFloatTypeRef))
+	var r runtime.GDTypable = runtime.GDIntTypeRef
 
 	if err := runtime.CanBeAssign(l, r, nil); err == nil {
 		t.Errorf("Expected %q to be not assignable to %q but got %v", r.ToString(), l.ToString(), err)
 	}
 
-	r = runtime.NewGDArrayType(runtime.GDIntType)
+	r = runtime.NewGDArrayType(runtime.GDIntTypeRef)
 	if err := runtime.CanBeAssign(l, r, nil); err != nil {
 		t.Errorf("Expected %q to be assignable to %q but got %v", r.ToString(), l.ToString(), err)
 	}
 
-	r = runtime.NewGDArrayType(runtime.GDFloatType)
+	r = runtime.NewGDArrayType(runtime.GDFloatTypeRef)
 	if err := runtime.CanBeAssign(l, r, nil); err != nil {
 		t.Errorf("Expected %q to be assignable to %q but got %v", r.ToString(), l.ToString(), err)
 	}
 }
 
 func TestComplexUnionTypes(t *testing.T) {
-	l := runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType))
-	var r runtime.GDTypable = runtime.GDIntType
+	l := runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.GDIntTypeRef, runtime.GDFloatTypeRef))
+	var r runtime.GDTypable = runtime.GDIntTypeRef
 
 	if err := runtime.CanBeAssign(l, r, nil); err == nil {
 		t.Errorf("Expected %q to be not assignable to %q", r.ToString(), l.ToString())
@@ -84,22 +84,22 @@ func TestComplexUnionTypes(t *testing.T) {
 }
 
 func TestTwoUnion(t *testing.T) {
-	l := runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType)
-	r := runtime.NewGDUnionType(runtime.GDIntType, runtime.GDFloatType)
+	l := runtime.NewGDUnionType(runtime.GDIntTypeRef, runtime.GDFloatTypeRef)
+	r := runtime.NewGDUnionType(runtime.GDIntTypeRef, runtime.GDFloatTypeRef)
 
 	if err := runtime.CanBeAssign(l, r, nil); err != nil {
 		t.Errorf("Expected %q to be assignable to %q", r.ToString(), l.ToString())
 	}
 
-	r = runtime.NewGDUnionType(runtime.GDFloatType, runtime.GDIntType)
+	r = runtime.NewGDUnionType(runtime.GDFloatTypeRef, runtime.GDIntTypeRef)
 	if err := runtime.CanBeAssign(l, r, nil); err != nil {
 		t.Errorf("Expected %q to be assignable to %q", r.ToString(), l.ToString())
 	}
 }
 
 func TestNoUnionWithUnion(t *testing.T) {
-	l := runtime.GDIntType
-	r := runtime.NewGDUnionType(runtime.GDIntType, runtime.GDStringType)
+	l := runtime.GDIntTypeRef
+	r := runtime.NewGDUnionType(runtime.GDIntTypeRef, runtime.GDStringTypeRef)
 
 	if err := runtime.CanBeAssign(l, r, nil); err == nil {
 		t.Errorf("Expected %q to be not assignable to %q", r.ToString(), l.ToString())

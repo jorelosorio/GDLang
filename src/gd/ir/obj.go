@@ -28,70 +28,83 @@ import (
 )
 
 type GDIRObject struct {
-	Type runtime.GDTypable
-	Obj  interface{}
+	Type  runtime.GDTypable
+	Value any
 	GDIRBaseNode
 }
 
 func (o *GDIRObject) BuildAssembly(padding string) string {
-	switch value := o.Obj.(type) {
-	case runtime.GDObject:
-		return IRObjectWithTypeToString(value)
-	case GDIRNode:
-		node := value.BuildAssembly("")
-		return fmt.Sprintf("(%s: %s)", IRTypeToString(o.Type), node)
-	case []GDIRNode:
-		nodes := runtime.JoinSlice(value, func(node GDIRNode, _ int) string {
-			return node.BuildAssembly("")
-		}, ", ")
+	switch {
+	case o.Type != nil && o.Value == nil:
+		return IRTypeToString(o.Type)
+	case o.Value != nil:
+		switch val := o.Value.(type) {
+		case runtime.GDObject:
+			return IRObjectToString(val)
+		case GDIRNode:
+			node := val.BuildAssembly("")
+			return fmt.Sprintf("(%s: %s)", IRTypeToString(o.Type), node)
+		case []GDIRNode:
+			nodes := runtime.JoinSlice(val, func(node GDIRNode, _ int) string {
+				return node.BuildAssembly("")
+			}, ", ")
 
-		return fmt.Sprintf("(%s: [%s])", IRTypeToString(o.Type), nodes)
+			return fmt.Sprintf("(%s: [%s])", IRTypeToString(o.Type), nodes)
+		}
 	}
 
-	return padding
+	return ""
 }
 
 func (o *GDIRObject) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) error {
 	ctx.AddMapping(bytecode, o.GetPosition())
 
-	switch obj := o.Obj.(type) {
-	case runtime.GDObject:
-		err := Write(bytecode, obj)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	case GDIRNode:
-		// Write the type
+	switch {
+	case o.Type != nil && o.Value == nil:
 		err := WriteType(bytecode, o.Type)
 		if err != nil {
 			return err
 		}
-
-		err = obj.BuildBytecode(bytecode, ctx)
-		if err != nil {
-			return err
-		}
-	case []GDIRNode:
-		// Write the type
-		err := WriteType(bytecode, o.Type)
-		if err != nil {
-			return err
-		}
-
-		// Write the length
-		err = WriteByte(bytecode, byte(len(obj)))
-		if err != nil {
-			return err
-		}
-
-		// Write the nodes
-		for i := len(obj) - 1; i >= 0; i-- {
-			node := obj[i]
-			err := node.BuildBytecode(bytecode, ctx)
+	case o.Value != nil:
+		switch obj := o.Value.(type) {
+		case runtime.GDObject:
+			err := Write(bytecode, obj)
 			if err != nil {
 				return err
+			}
+
+			return nil
+		case GDIRNode:
+			// Write the type
+			err := WriteType(bytecode, o.Type)
+			if err != nil {
+				return err
+			}
+
+			err = obj.BuildBytecode(bytecode, ctx)
+			if err != nil {
+				return err
+			}
+		case []GDIRNode:
+			// Write the type
+			err := WriteType(bytecode, o.Type)
+			if err != nil {
+				return err
+			}
+
+			// Write the length
+			err = WriteByte(bytecode, byte(len(obj)))
+			if err != nil {
+				return err
+			}
+
+			// Write the nodes
+			for i := len(obj) - 1; i >= 0; i-- {
+				node := obj[i]
+				err := node.BuildBytecode(bytecode, ctx)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -100,26 +113,25 @@ func (o *GDIRObject) BuildBytecode(bytecode *bytes.Buffer, ctx *GDIRContext) err
 }
 
 func NewGDIRObject(obj runtime.GDObject, node ast.Node) *GDIRObject {
-	return &GDIRObject{obj.GetType(), obj, GDIRBaseNode{node}}
-}
-
-func NewGDIRIdentObject(ident runtime.GDIdent, obj runtime.GDObject, node ast.Node) *GDIRObject {
-	identObj := runtime.NewGDIdObject(ident, obj)
-	return &GDIRObject{identObj.GetType(), identObj, GDIRBaseNode{node}}
-}
-
-func NewGDIRRegObject(reg cpu.GDReg, node ast.Node) *GDIRObject {
-	ident := runtime.NewGDObjRefType(runtime.NewGDByteIdent(byte(reg)))
-	identObj := runtime.NewGDIdObject(ident, runtime.GDString(cpu.GetCPURegName(reg)))
-	return NewGDIRObject(identObj, node)
-}
-
-func NewGDIRIterableObject(typ runtime.GDTypable, values []GDIRNode) *GDIRObject {
-	return &GDIRObject{typ, values, GDIRBaseNode{}}
+	return &GDIRObject{nil, obj, GDIRBaseNode{node}}
 }
 
 // Used for special cases where the type wraps an object
 // like the spreadable type.
 func NewGDIRObjectWithType(typ runtime.GDTypable, obj interface{}, node ast.Node) *GDIRObject {
 	return &GDIRObject{typ, obj, GDIRBaseNode{node}}
+}
+
+func NewGDIRRegObject(reg cpu.GDReg, node ast.Node) *GDIRObject {
+	identTyp := runtime.NewGDObjectRefType(runtime.NewGDByteIdent(byte(reg)))
+	return &GDIRObject{identTyp, nil, GDIRBaseNode{node}}
+}
+
+func NewGDIRObjectRef(ident runtime.GDIdent, node ast.Node) *GDIRObject {
+	identTyp := runtime.NewGDObjectRefType(ident)
+	return &GDIRObject{identTyp, nil, GDIRBaseNode{node}}
+}
+
+func NewGDIRObjects(typ runtime.GDTypable, values []GDIRNode) *GDIRObject {
+	return &GDIRObject{typ, values, GDIRBaseNode{}}
 }

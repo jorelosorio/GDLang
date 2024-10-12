@@ -21,7 +21,7 @@ package vm
 
 import "gdlang/lib/runtime"
 
-func (p *GDVMProc) evalCSet(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalCSet(stack *runtime.GDStack) (runtime.GDObject, error) {
 	idx, err := p.ReadIntObj(stack)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (p *GDVMProc) evalCSet(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 	return nil, nil
 }
 
-func (p *GDVMProc) evalCAdd(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalCAdd(stack *runtime.GDStack) (runtime.GDObject, error) {
 	left, err := p.ReadMutCollectionObj(stack)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (p *GDVMProc) evalCAdd(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 	return nil, nil
 }
 
-func (p *GDVMProc) evalCRemove(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalCRemove(stack *runtime.GDStack) (runtime.GDObject, error) {
 	left, err := p.ReadMutCollectionObj(stack)
 	if err != nil {
 		return nil, err

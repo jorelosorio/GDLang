@@ -20,14 +20,21 @@
 package runtime
 
 type GDSymbol struct {
-	Ident   GDIdent // TODO: Remove this field
 	IsPub   bool
 	IsConst bool
 	Type    GDTypable
-	Object  GDObject
+	Value   GDRawValue
 }
 
-func (s *GDSymbol) SetType(typ GDTypable, stack *GDSymbolStack) error {
+func (s *GDSymbol) GetType() GDTypable {
+	return s.Type
+}
+
+func (s *GDSymbol) SetType(typ GDTypable, stack *GDStack) error {
+	if s.IsConst {
+		return SetConstObjectErr()
+	}
+
 	if IsUntypedType(s.Type) {
 		sType, err := InferType(typ, s.Type, stack)
 		if err != nil {
@@ -45,21 +52,17 @@ func (s *GDSymbol) SetType(typ GDTypable, stack *GDSymbolStack) error {
 	return nil
 }
 
-func (s *GDSymbol) SetObject(object GDObject, stack *GDSymbolStack) error {
-	if s.IsConst {
-		return SetConstObjectErr()
-	}
-
-	err := s.SetType(object.GetType(), stack)
+func (s *GDSymbol) SetObject(typ GDTypable, value GDRawValue, stack *GDStack) error {
+	err := s.SetType(typ, stack)
 	if err != nil {
 		return err
 	}
 
-	s.Object = object
+	s.Value = value
 
 	return nil
 }
 
-func NewGDSymbol(isPub, isConst bool, typ GDTypable, object GDObject) *GDSymbol {
-	return &GDSymbol{nil, isPub, isConst, typ, object}
+func NewGDSymbol(isPub, isConst bool, typ GDTypable, value GDRawValue) *GDSymbol {
+	return &GDSymbol{isPub, isConst, typ, value}
 }

@@ -26,9 +26,10 @@ import (
 )
 
 type GDVMProc struct {
-	Stack       *runtime.GDSymbolStack
+	Stack       *runtime.GDStack
 	CInstOffset uint
 	CInst       cpu.GDInst
+	PrevCInst   cpu.GDInst
 	*GDVMReader
 }
 
@@ -39,12 +40,21 @@ type GDVMDisc struct {
 
 func (p *GDVMProc) Init(bytes []byte) error {
 	p.GDVMReader = NewGDVMReader(bytes)
-	p.Stack = runtime.NewRootGDSymbolStack()
+	p.Stack = runtime.NewGDStack()
 
 	// Import builtins into the main stack
-	err := builtin.ImportCoreBuiltins(p.Stack)
-	if err != nil {
-		return err
+	coreBuiltins := builtin.GetCoreBuiltins()
+	for strIdent, builtin := range coreBuiltins {
+		symbol, err := builtin()
+		if err != nil {
+			return err
+		}
+
+		ident := runtime.NewGDStrIdent(strIdent)
+		err = p.Stack.AddSymbol(ident, symbol)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -72,7 +82,7 @@ func (p *GDVMProc) Run() error {
 	return nil
 }
 
-func (p *GDVMProc) evalInst(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalInst(stack *runtime.GDStack) (runtime.GDObject, error) {
 	instByte, err := p.ReadByte()
 	if err != nil {
 		return nil, err
@@ -80,6 +90,8 @@ func (p *GDVMProc) evalInst(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 
 	p.CInst = cpu.GDInst(instByte)
 	p.CInstOffset = p.Off - 1
+
+	p.PrevCInst = p.CInst
 
 	switch p.CInst {
 	case cpu.BBegin:
@@ -112,6 +124,8 @@ func (p *GDVMProc) evalInst(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 	// Attributable
 	case cpu.AGet:
 		return p.evalAGet(stack)
+	case cpu.ASet:
+		return p.evalASet(stack)
 
 	// Mutable collections
 	case cpu.CSet:
@@ -156,8 +170,8 @@ func (p *GDVMProc) evalDisc() (*GDVMDisc, error) {
 	return &GDVMDisc{ident, isPub, isConst}, nil
 }
 
-func (p *GDVMProc) evalBlock(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
-	blockStack := stack.NewSymbolStack(runtime.BlockCtx)
+func (p *GDVMProc) evalBlock(stack *runtime.GDStack) (runtime.GDObject, error) {
+	blockStack := stack.NewStack(runtime.BlockCtx)
 	defer blockStack.Dispose()
 
 	bLen, err := p.ReadUInt16()
@@ -209,7 +223,7 @@ walk:
 	return obj, nil
 }
 
-func (p *GDVMProc) evalLambda(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalLambda(stack *runtime.GDStack) (runtime.GDObject, error) {
 	// Read lambda type
 	typ, err := p.ReadType(stack)
 	if err != nil {
@@ -223,14 +237,14 @@ func (p *GDVMProc) evalLambda(stack *runtime.GDSymbolStack) (runtime.GDObject, e
 
 	funcBlockStart := p.Off
 
-	lambda := runtime.NewGDLambdaWithType(lambdaType, stack, func(stack *runtime.GDSymbolStack, args runtime.GDLambdaArgs) (runtime.GDObject, error) {
-		lambdaStack := stack.NewSymbolStack(runtime.LambdaCtx)
+	lambda := runtime.NewGDLambdaWithType(lambdaType, stack, func(args runtime.GDLambdaArgs, stack *runtime.GDStack) (runtime.GDObject, error) {
+		lambdaStack := stack.NewStack(runtime.LambdaCtx)
 		defer lambdaStack.Dispose()
 
 		for _, arg := range args {
 			// Arguments are not public and not constant
 			symbol := runtime.NewGDSymbol(false, false, arg.Value.GetType(), arg.Value)
-			err := lambdaStack.AddSymbolStack(arg.Key, symbol)
+			err := lambdaStack.AddSymbol(arg.Key, symbol)
 			if err != nil {
 				return nil, err
 			}
@@ -280,7 +294,7 @@ func (p *GDVMProc) evalLambda(stack *runtime.GDSymbolStack) (runtime.GDObject, e
 	return nil, nil
 }
 
-func (p *GDVMProc) evalReturn(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalReturn(stack *runtime.GDStack) (runtime.GDObject, error) {
 	obj, err := p.ReadObject(stack)
 	if err != nil {
 		return nil, err
@@ -289,7 +303,7 @@ func (p *GDVMProc) evalReturn(stack *runtime.GDSymbolStack) (runtime.GDObject, e
 	return obj, nil
 }
 
-func (p *GDVMProc) evalCall(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalCall(stack *runtime.GDStack) (runtime.GDObject, error) {
 	lambda, err := p.ReadLambdaObj(stack)
 	if err != nil {
 		return nil, err
@@ -311,7 +325,7 @@ func (p *GDVMProc) evalCall(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 	return nil, nil
 }
 
-func (p *GDVMProc) evalSet(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalSet(stack *runtime.GDStack) (runtime.GDObject, error) {
 	disc, err := p.evalDisc()
 	if err != nil {
 		return nil, err
@@ -328,7 +342,7 @@ func (p *GDVMProc) evalSet(stack *runtime.GDSymbolStack) (runtime.GDObject, erro
 	}
 
 	symbol := runtime.NewGDSymbol(disc.isPub, disc.isConst, typ, expr)
-	err = stack.AddSymbolStack(disc.ident, symbol)
+	err = stack.AddSymbol(disc.ident, symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +350,7 @@ func (p *GDVMProc) evalSet(stack *runtime.GDSymbolStack) (runtime.GDObject, erro
 	return nil, nil
 }
 
-func (p *GDVMProc) evalMove(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalMove(stack *runtime.GDStack) (runtime.GDObject, error) {
 	// Read the target where the expression will be stored
 	target, err := p.ReadType(stack)
 	if err != nil {
@@ -350,32 +364,33 @@ func (p *GDVMProc) evalMove(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 
 	switch ident.GetMode() {
 	case runtime.GDByteIdentMode:
-		byte := ident.GetRawValue().(byte)
-		switch cpu.GDReg(byte) {
+		byt := ident.GetRawValue().(byte)
+		switch cpu.GDReg(byt) {
 		case cpu.RPop:
 			obj := stack.PopBuffer()
 
 			// Value must be captured after the pop from the stack
 			// it is because value also might require to be popped
-			value, err := p.ReadObject(stack)
-			if err != nil {
-				return nil, err
-			}
+			// obj, err := p.ReadObject(stack)
+			// if err != nil {
+			// 	return nil, err
+			// }
 
-			switch obj := obj.(type) {
-			case *runtime.GDAttrIdObject:
-				_, err := obj.SetAttr(obj.Ident, value)
-				if err != nil {
-					return nil, err
-				}
-			}
+			// switch obj := obj.(type) {
+			// case *runtime.GDAttrIdObject:
+			// 	_, err := obj.SetAttr(obj.Ident, value)
+			// 	if err != nil {
+			// 		return nil, err
+			// 	}
+			// }
+			print(obj)
 		default:
 			value, err := p.ReadObject(stack)
 			if err != nil {
 				return nil, err
 			}
 
-			err = stack.AddOrSetSymbol(ident, value)
+			err = stack.AddOrSetSymbol(ident, value.GetType(), value)
 			if err != nil {
 				return nil, err
 			}
@@ -386,7 +401,7 @@ func (p *GDVMProc) evalMove(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 			return nil, err
 		}
 
-		err = stack.SetSymbol(ident, value, stack)
+		err = stack.SetSymbol(ident, value.GetType(), value)
 		if err != nil {
 			return nil, err
 		}
@@ -395,7 +410,7 @@ func (p *GDVMProc) evalMove(stack *runtime.GDSymbolStack) (runtime.GDObject, err
 	return nil, nil
 }
 
-func (p *GDVMProc) evalJump(_ *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalJump(_ *runtime.GDStack) (runtime.GDObject, error) {
 	labelOff, err := p.ReadUInt16()
 	if err != nil {
 		return nil, err
@@ -406,7 +421,7 @@ func (p *GDVMProc) evalJump(_ *runtime.GDSymbolStack) (runtime.GDObject, error) 
 	return VMJump(jumpOff), nil
 }
 
-func (p *GDVMProc) evalOperation(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalOperation(stack *runtime.GDStack) (runtime.GDObject, error) {
 	opByte, err := p.ReadByte()
 	if err != nil {
 		return nil, err
@@ -424,7 +439,6 @@ func (p *GDVMProc) evalOperation(stack *runtime.GDSymbolStack) (runtime.GDObject
 		return nil, err
 	}
 
-	left, right = runtime.Unwrap(left), runtime.Unwrap(right)
 	obj, err := runtime.PerformExprOperation(op, left, right)
 	if err != nil {
 		return nil, err
@@ -435,7 +449,7 @@ func (p *GDVMProc) evalOperation(stack *runtime.GDSymbolStack) (runtime.GDObject
 	return nil, nil
 }
 
-func (p *GDVMProc) evalTypeAlias(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalTypeAlias(stack *runtime.GDStack) (runtime.GDObject, error) {
 	disc, err := p.evalDisc()
 	if err != nil {
 		return nil, err
@@ -446,7 +460,7 @@ func (p *GDVMProc) evalTypeAlias(stack *runtime.GDSymbolStack) (runtime.GDObject
 		return nil, err
 	}
 
-	_, err = stack.AddSymbol(disc.ident, disc.isPub, disc.isConst, typ, nil)
+	_, err = stack.AddNewSymbol(disc.ident, disc.isPub, disc.isConst, typ, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -454,7 +468,7 @@ func (p *GDVMProc) evalTypeAlias(stack *runtime.GDSymbolStack) (runtime.GDObject
 	return nil, nil
 }
 
-func (p *GDVMProc) evalCastObj(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalCastObj(stack *runtime.GDStack) (runtime.GDObject, error) {
 	typ, err := p.ReadType(stack)
 	if err != nil {
 		return nil, err
@@ -465,7 +479,7 @@ func (p *GDVMProc) evalCastObj(stack *runtime.GDSymbolStack) (runtime.GDObject, 
 		return nil, err
 	}
 
-	castObj, err := obj.CastToType(typ, stack)
+	castObj, err := obj.CastToType(typ)
 	if err != nil {
 		return nil, err
 	}
@@ -475,7 +489,7 @@ func (p *GDVMProc) evalCastObj(stack *runtime.GDSymbolStack) (runtime.GDObject, 
 	return nil, nil
 }
 
-func (p *GDVMProc) evalUse(stack *runtime.GDSymbolStack) (runtime.GDObject, error) {
+func (p *GDVMProc) evalUse(stack *runtime.GDStack) (runtime.GDObject, error) {
 	mode, err := p.ReadByte()
 	if err != nil {
 		return nil, err
@@ -512,7 +526,7 @@ func (p *GDVMProc) evalUse(stack *runtime.GDSymbolStack) (runtime.GDObject, erro
 					return nil, err
 				}
 
-				err = stack.AddSymbolStack(ident, symbol)
+				err = stack.AddSymbol(ident, symbol)
 				if err != nil {
 					return nil, err
 				}

@@ -21,7 +21,7 @@ package runtime
 
 type GDLambdaArgType GDKeyValue[GDIdent, GDTypable]
 
-type GDLambdaArgTypes []GDLambdaArgType
+type GDLambdaArgTypes []*GDLambdaArgType
 
 type GDLambdaType struct {
 	// Stores the ArgTypes and their types
@@ -38,7 +38,7 @@ func (gd *GDLambdaType) GetCode() GDTypableCode {
 }
 
 func (gd *GDLambdaType) ToString() string {
-	argsStr := JoinSlice(gd.ArgTypes, func(argType GDLambdaArgType, _ int) string {
+	argsStr := JoinSlice(gd.ArgTypes, func(argType *GDLambdaArgType, _ int) string {
 		return Sprintf("%@: %@", argType.Key, argType.Value.ToString())
 	}, ", ")
 
@@ -48,10 +48,10 @@ func (gd *GDLambdaType) ToString() string {
 	}
 
 	if gd.IsVariadic {
-		return Sprintf("(%@, ...)%@", argsStr, returnTypes)
+		return Sprintf("func(%@, ...)%@", argsStr, returnTypes)
 	}
 
-	return Sprintf("(%@)%@", argsStr, returnTypes)
+	return Sprintf("func(%@)%@", argsStr, returnTypes)
 }
 
 func (gd *GDLambdaType) CheckNumberOfArgs(argsLen uint) error {
@@ -67,17 +67,16 @@ func (gd *GDLambdaType) CheckNumberOfArgs(argsLen uint) error {
 	return nil
 }
 
-func (gd *GDLambdaType) CheckArgAtIndex(index int, typ GDTypable, stack *GDSymbolStack) error {
+func (gd *GDLambdaType) CheckLambdaArgAtIndex(index int, typ GDTypable, stack *GDStack) error {
 	argTypesCount := len(gd.ArgTypes) - 1
-	var lambdaArg GDLambdaArgType
+	var lambdaArg *GDLambdaArgType
 	var lambdaErrArg GDTypable
-	var inferredType = typ
 	if index >= argTypesCount && gd.IsVariadic {
 		lambdaArg = gd.ArgTypes[argTypesCount]
 
 		switch ttype := typ.(type) {
 		case GDSpreadableType:
-			inferredType = ttype.GetIterableType()
+			typ = ttype.GetIterableType()
 		}
 
 		lambdaErrArg = NewGDSpreadableType(NewGDArrayType(lambdaArg.Value))
@@ -87,7 +86,7 @@ func (gd *GDLambdaType) CheckArgAtIndex(index int, typ GDTypable, stack *GDSymbo
 	}
 
 	// Check if the array elements are of the right type
-	err := CanBeAssign(lambdaArg.Value, inferredType, stack)
+	err := CanBeAssign(lambdaArg.Value, typ, stack)
 	if err != nil {
 		return InvalidArgumentTypeErr(lambdaArg.Key.ToString(), lambdaErrArg, typ)
 	}
@@ -95,7 +94,7 @@ func (gd *GDLambdaType) CheckArgAtIndex(index int, typ GDTypable, stack *GDSymbo
 	return nil
 }
 
-func (gd *GDLambdaType) CheckReturn(retObject GDTypable, stack *GDSymbolStack) error {
+func (gd *GDLambdaType) CheckLambdaReturnType(retObject GDTypable, stack *GDStack) error {
 	err := CanBeAssign(gd.ReturnType, retObject, stack)
 	if err != nil {
 		return err

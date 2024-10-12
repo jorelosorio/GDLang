@@ -20,5 +20,6 @@
 package runtime
 
 type GDMutableCollectionType interface {
+	SetTypeAt(index int, typ GDTypable, stack *GDStack) error
 	GDIterableCollectionType
 }

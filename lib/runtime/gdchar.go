@@ -21,24 +21,24 @@ package runtime
 
 type GDChar rune
 
-func (gd GDChar) GetType() GDTypable    { return GDCharType }
+func (gd GDChar) GetType() GDTypable    { return GDCharTypeRef }
 func (gd GDChar) GetSubType() GDTypable { return nil }
 func (gd GDChar) ToString() string      { return string(gd) }
-func (gd GDChar) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
+func (gd GDChar) CastToType(typ GDTypable) (GDObject, error) {
 	switch typ := typ.(type) {
+	case GDStringType:
+		return GDString(gd.ToString()), nil
 	case GDType:
 		switch typ {
-		case GDCharType:
+		case GDCharTypeRef:
 			return gd, nil
-		case GDBoolType:
+		case GDBoolTypeRef:
 			return GDBool(gd != 0), nil
-		case GDStringType:
-			return GDString(gd.ToString()), nil
-		case GDIntType:
+		case GDIntTypeRef:
 			return GDInt(int(gd)), nil
-		case GDInt8Type:
+		case GDInt8TypeRef:
 			return GDInt8(int8(gd)), nil
-		case GDInt16Type:
+		case GDInt16TypeRef:
 			return GDInt16(int16(gd)), nil
 		}
 	}
@@ -48,7 +48,7 @@ func (gd GDChar) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, erro
 
 func GDCharFromString(value string) (GDChar, error) {
 	if len(value) != 1 {
-		return GDChar(0), InvalidCastingLitErr(value, GDCharType)
+		return GDChar(0), InvalidCastingLitErr(value, GDCharTypeRef)
 	}
 
 	return GDChar(rune(value[0])), nil

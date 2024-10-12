@@ -48,7 +48,7 @@ func TestNilToString(t *testing.T) {
 }
 
 func TestNilType(t *testing.T) {
-	if runtime.GDZNil.GetType() != runtime.GDNilType {
+	if runtime.GDZNil.GetType() != runtime.GDNilTypeRef {
 		t.Errorf("Expected nil, got %v", runtime.GDZNil.GetType())
 	}
 }

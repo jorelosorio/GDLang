@@ -24,15 +24,15 @@ type GDStructAttrType struct {
 	Type  GDTypable
 }
 
-func (t GDStructAttrType) GetCode() GDTypableCode { return GDNilTypeCode }
-func (t GDStructAttrType) ToString() string       { return t.Ident.ToString() + ": " + t.Type.ToString() }
+func (t *GDStructAttrType) GetCode() GDTypableCode { return GDNilTypeCode }
+func (t *GDStructAttrType) ToString() string       { return t.Ident.ToString() + ": " + t.Type.ToString() }
 
-type GDStructType []GDStructAttrType
+type GDStructType []*GDStructAttrType
 
 func (t GDStructType) GetCode() GDTypableCode { return GDStructTypeCode }
 
 func (t GDStructType) ToString() string {
-	return "{" + JoinSlice(t, func(attr GDStructAttrType, _ int) string {
+	return "{" + JoinSlice(t, func(attr *GDStructAttrType, _ int) string {
 		return attr.ToString()
 	}, ", ") + "}"
 }
@@ -47,9 +47,19 @@ func (t GDStructType) GetAttrType(ident GDIdent) (GDTypable, error) {
 	return nil, AttributeNotFoundErr(ident.ToString())
 }
 
+func (t GDStructType) SetAttrType(ident GDIdent, typ GDTypable, stack *GDStack) error {
+	for _, attr := range t {
+		if attr.Ident.GetRawValue() == ident.GetRawValue() {
+			return CanBeAssign(attr.Type, typ, stack)
+		}
+	}
+
+	return AttributeNotFoundErr(ident.ToString())
+}
+
 // An empty struct type is a struct type with no attributes
 // This is useful to represent an empty struct
-func NewGDStructType(attrs ...GDStructAttrType) GDStructType {
+func NewGDStructType(attrs ...*GDStructAttrType) GDStructType {
 	return attrs
 }
 
@@ -59,7 +69,7 @@ func QuickGDStructType(elements ...interface{}) GDStructType {
 		panic("invalid number of arguments, must be even")
 	}
 
-	var attrs []GDStructAttrType
+	var attrs []*GDStructAttrType
 	for i := 0; i < len(elements); i += 2 {
 		ident, ok := elements[i].(string)
 		if !ok {
@@ -71,7 +81,7 @@ func QuickGDStructType(elements ...interface{}) GDStructType {
 			panic("expected GDTypable")
 		}
 
-		attrs = append(attrs, GDStructAttrType{
+		attrs = append(attrs, &GDStructAttrType{
 			Ident: NewGDStrIdent(ident),
 			Type:  typable,
 		})

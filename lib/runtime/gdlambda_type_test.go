@@ -27,7 +27,7 @@ import (
 func TestBasicFunctionType(t *testing.T) {
 	funcType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{aParamIdent, runtime.GDIntType},
+			{aParamIdent, runtime.GDIntTypeRef},
 		},
 		runtime.NewGDTupleType(),
 		false,
@@ -38,13 +38,13 @@ func TestBasicFunctionType(t *testing.T) {
 	}
 
 	funcTypeStr := funcType.ToString()
-	if funcTypeStr != "(a: int) => (untyped,)" {
-		t.Errorf("Expected (a: int) => (untyped,), got %v", funcTypeStr)
+	if funcTypeStr != "func(a: int) => (untyped,)" {
+		t.Errorf("Expected func(a: int) => (untyped,), got %v", funcTypeStr)
 	}
 
 	sameFuncType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{bParamIdent, runtime.GDIntType},
+			{bParamIdent, runtime.GDIntTypeRef},
 		},
 		runtime.NewGDTupleType(),
 		false,
@@ -59,10 +59,10 @@ func TestBasicFunctionType(t *testing.T) {
 func TestComplexFunctionType(t *testing.T) {
 	funcType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{aParamIdent, runtime.GDIntType},
-			{bParamIdent, runtime.GDStringType},
+			{aParamIdent, runtime.GDIntTypeRef},
+			{bParamIdent, runtime.GDStringTypeRef},
 		},
-		runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef),
 		false,
 	)
 
@@ -71,18 +71,18 @@ func TestComplexFunctionType(t *testing.T) {
 	}
 
 	funcTypeStr := funcType.ToString()
-	if funcTypeStr != "(a: int, b: string) => (int, string)" {
-		t.Errorf("Expected (a: int, b: string) => (int, string), got %v", funcTypeStr)
+	if funcTypeStr != "func(a: int, b: string) => (int, string)" {
+		t.Errorf("Expected func(a: int, b: string) => (int, string), got %v", funcTypeStr)
 	}
 }
 
 func TestVariadicFunctionType(t *testing.T) {
 	funcType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{aParamIdent, runtime.GDIntType},
-			{bParamIdent, runtime.GDStringType},
+			{aParamIdent, runtime.GDIntTypeRef},
+			{bParamIdent, runtime.GDStringTypeRef},
 		},
-		runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef),
 		true,
 	)
 
@@ -91,21 +91,21 @@ func TestVariadicFunctionType(t *testing.T) {
 	}
 
 	funcTypeStr := funcType.ToString()
-	if funcTypeStr != "(a: int, b: string, ...) => (int, string)" {
-		t.Errorf("Expected (a: int, b: string, ...) => (int, string), got %v", funcTypeStr)
+	if funcTypeStr != "func(a: int, b: string, ...) => (int, string)" {
+		t.Errorf("Expected func(a: int, b: string, ...) => (int, string), got %v", funcTypeStr)
 	}
 }
 
 func TestFunctionWithNoArguments(t *testing.T) {
 	funcType := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{},
-		runtime.NewGDTupleType(runtime.GDIntType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef),
 		false,
 	)
 
 	funcTypeStr := funcType.ToString()
-	if funcTypeStr != "() => (int,)" {
-		t.Errorf("Expected () => (int,) got %v", funcTypeStr)
+	if funcTypeStr != "func() => (int,)" {
+		t.Errorf("Expected func() => (int,) got %v", funcTypeStr)
 	}
 }
 
@@ -117,27 +117,27 @@ func TestVoidFunction(t *testing.T) {
 	)
 
 	funcTypeStr := funcType.ToString()
-	if funcTypeStr != "() => (untyped,)" {
-		t.Errorf("Expected () => (untyped,), got %v", funcTypeStr)
+	if funcTypeStr != "func() => (untyped,)" {
+		t.Errorf("Expected func() => (untyped,), got %v", funcTypeStr)
 	}
 }
 
 func TestCompareFunctionTypes(t *testing.T) {
 	funcType1 := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{aParamIdent, runtime.GDIntType},
-			{bParamIdent, runtime.GDStringType},
+			{aParamIdent, runtime.GDIntTypeRef},
+			{bParamIdent, runtime.GDStringTypeRef},
 		},
-		runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef),
 		false,
 	)
 
 	funcType2 := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{aParamIdent, runtime.GDIntType},
-			{bParamIdent, runtime.GDStringType},
+			{aParamIdent, runtime.GDIntTypeRef},
+			{bParamIdent, runtime.GDStringTypeRef},
 		},
-		runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef),
 		false,
 	)
 
@@ -150,17 +150,17 @@ func TestCompareFunctionTypes(t *testing.T) {
 func TestCompareFunctionTypesWithVariadic(t *testing.T) {
 	funcType1 := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{aParamIdent, runtime.GDIntType},
+			{aParamIdent, runtime.GDIntTypeRef},
 		},
-		runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef),
 		true,
 	)
 
 	funcType2 := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{aParamIdent, runtime.GDIntType},
+			{aParamIdent, runtime.GDIntTypeRef},
 		},
-		runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef),
 		true,
 	)
 
@@ -173,17 +173,17 @@ func TestCompareFunctionTypesWithVariadic(t *testing.T) {
 func TestCompareFunctionTypesWithDifferentVariadic(t *testing.T) {
 	funcType1 := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{aParamIdent, runtime.GDIntType},
+			{aParamIdent, runtime.GDIntTypeRef},
 		},
-		runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef),
 		true,
 	)
 
 	funcType2 := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{aParamIdent, runtime.GDIntType},
+			{aParamIdent, runtime.GDIntTypeRef},
 		},
-		runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef),
 		false,
 	)
 
@@ -196,19 +196,19 @@ func TestCompareFunctionTypesWithDifferentVariadic(t *testing.T) {
 func TestCompareFunctionTypesWithDifferentArgs(t *testing.T) {
 	funcType1 := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{aParamIdent, runtime.GDStringType},
-			{bParamIdent, runtime.GDStringType},
+			{aParamIdent, runtime.GDStringTypeRef},
+			{bParamIdent, runtime.GDStringTypeRef},
 		},
-		runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef),
 		false,
 	)
 
 	funcType2 := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{
-			{aParamIdent, runtime.GDIntType},
-			{bParamIdent, runtime.GDStringType},
+			{aParamIdent, runtime.GDIntTypeRef},
+			{bParamIdent, runtime.GDStringTypeRef},
 		},
-		runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef),
 		false,
 	)
 
@@ -221,13 +221,13 @@ func TestCompareFunctionTypesWithDifferentArgs(t *testing.T) {
 func TestCompareFunctionTypesWithDifferentReturns(t *testing.T) {
 	funcType1 := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{},
-		runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef),
 		false,
 	)
 
 	funcType2 := runtime.NewGDLambdaType(
 		runtime.GDLambdaArgTypes{},
-		runtime.NewGDTupleType(runtime.GDIntType, runtime.GDStringType, runtime.GDStringType),
+		runtime.NewGDTupleType(runtime.GDIntTypeRef, runtime.GDStringTypeRef, runtime.GDStringTypeRef),
 		false,
 	)
 

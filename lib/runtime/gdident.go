@@ -30,7 +30,7 @@ const (
 type GDIdent interface {
 	GetMode() GDIdentMode
 	GetRawValue() any
-	GDPrintable
+	GDRawValue
 }
 
 type GDByteIdent byte

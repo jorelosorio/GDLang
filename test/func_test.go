@@ -35,7 +35,7 @@ func TestFunctionWithParameters(t *testing.T) {
 
 func TestUnknownTypesWhileCreatingFunction(t *testing.T) {
 	RunTest(t, Test{`
-	func add(a: test) {
+	func add(a: test) => int {
 		return 0
 	}
 	pub func main() {

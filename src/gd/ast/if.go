@@ -30,7 +30,7 @@ type NodeTernaryIf struct {
 	Expr Node
 	Then Node
 	Else Node
-	BaseNode
+	*BaseNode
 }
 
 func (e *NodeTernaryIf) GetPosition() scanner.Position {
@@ -38,7 +38,7 @@ func (e *NodeTernaryIf) GetPosition() scanner.Position {
 }
 
 func NewNodeTernaryIf(expr Node, then Node, elseNode Node) *NodeTernaryIf {
-	return &NodeTernaryIf{expr, then, elseNode, BaseNode{nodeType: NodeTypeIf}}
+	return &NodeTernaryIf{expr, then, elseNode, &BaseNode{nodeType: NodeTypeIf}}
 }
 
 // If
@@ -47,7 +47,7 @@ type NodeIf struct {
 	Conditions []Node
 	Block      *NodeBlock
 	Ident      runtime.GDIdent
-	BaseNode
+	*BaseNode
 }
 
 func (i *NodeIf) GetPosition() scanner.Position {
@@ -55,7 +55,7 @@ func (i *NodeIf) GetPosition() scanner.Position {
 }
 
 func NewNodeIf(ifConditions []Node, block *NodeBlock) *NodeIf {
-	nodeIf := &NodeIf{ifConditions, block, nil, BaseNode{nodeType: NodeTypeIf}}
+	nodeIf := &NodeIf{ifConditions, block, nil, &BaseNode{nodeType: NodeTypeIf}}
 	// Set the block as a control flow block if it is not nil.
 	// Nil block it is used of ternary if and conditions validation
 	if block != nil {
@@ -70,7 +70,7 @@ type NodeIfElse struct {
 	If     Node
 	ElseIf []Node
 	Else   Node
-	BaseNode
+	*BaseNode
 }
 
 func (i *NodeIfElse) GetPosition() scanner.Position {
@@ -78,7 +78,7 @@ func (i *NodeIfElse) GetPosition() scanner.Position {
 }
 
 func NewNodeIfElse(nodIf Node, nodIfs []Node, nodeElse Node) *NodeIfElse {
-	nodeElseIf := &NodeIfElse{nodIf, nodIfs, nodeElse, BaseNode{nodeType: NodeTypeIf}}
+	nodeElseIf := &NodeIfElse{nodIf, nodIfs, nodeElse, &BaseNode{nodeType: NodeTypeIf}}
 	// Set parent node for the main if
 	nodIf.SetParentNode(nodeElseIf)
 	// Set parent node for the else if

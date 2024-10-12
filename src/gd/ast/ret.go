@@ -17,18 +17,20 @@
  * along with GDLang.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package runtime
+package ast
 
-// Interal usage ident in the compiler and analyzer tools
-type GDIdObject struct {
-	Ident GDIdent
-	GDObject
+import "gdlang/src/gd/scanner"
+
+// Return
+
+type NodeReturn struct {
+	*NodeTokenInfo
+	Expr Node // Expression to return
+	*BaseNode
 }
 
-func (i *GDIdObject) GetType() GDTypable    { return i.GDObject.GetType() }
-func (i *GDIdObject) GetSubType() GDTypable { return NewGDObjRefType(i.Ident) }
+func (r *NodeReturn) GetPosition() scanner.Position { return r.Position }
 
-func NewGDIdObject(ident GDIdent, obj GDObject) *GDIdObject { return &GDIdObject{ident, obj} }
-func NewGDByteIdObject(ident byte, obj GDObject) *GDIdObject {
-	return &GDIdObject{NewGDByteIdent(ident), obj}
+func NewNodeReturn(token *NodeTokenInfo, expr Node) *NodeReturn {
+	return &NodeReturn{token, expr, &BaseNode{}}
 }

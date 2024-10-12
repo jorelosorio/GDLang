@@ -26,7 +26,7 @@ import (
 )
 
 func TestArrayOfNumbers(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3), runtime.NewGDFloatNumber(3.1))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3), runtime.NewGDFloatNumber(3.1))
 
 	if array.ToString() != "[1, 2, 3, 3.1]" {
 		t.Error("Wrong array string representation, got", array.ToString())
@@ -34,7 +34,7 @@ func TestArrayOfNumbers(t *testing.T) {
 }
 
 func TestArrayOfStrings(t *testing.T) {
-	array := runtime.NewGDArray(runtime.GDString("one"), runtime.GDString("two"), runtime.GDString("three"))
+	array := runtime.NewGDArray(nil, runtime.GDString("one"), runtime.GDString("two"), runtime.GDString("three"))
 
 	if array.ToString() != `["one", "two", "three"]` {
 		t.Error("Wrong array string representation, got", array.ToString())
@@ -42,21 +42,21 @@ func TestArrayOfStrings(t *testing.T) {
 }
 
 func TestArrayOfBool(t *testing.T) {
-	array := runtime.NewGDArray(runtime.GDBool(true), runtime.GDBool(false), runtime.GDBool(true))
+	array := runtime.NewGDArray(nil, runtime.GDBool(true), runtime.GDBool(false), runtime.GDBool(true))
 	if array.ToString() != "[true, false, true]" {
 		t.Error("Wrong array string representation, got", array.ToString())
 	}
 }
 
 func TestArrayOfChars(t *testing.T) {
-	array := runtime.NewGDArray(runtime.GDChar('a'), runtime.GDChar('b'), runtime.GDChar('c'))
+	array := runtime.NewGDArray(nil, runtime.GDChar('a'), runtime.GDChar('b'), runtime.GDChar('c'))
 	if array.ToString() != `['a', 'b', 'c']` {
 		t.Error("Wrong array string representation, got", array.ToString())
 	}
 }
 
 func TestArrayOfArrays(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2)), runtime.NewGDArray(runtime.NewGDIntNumber(3), runtime.NewGDIntNumber(4)))
+	array := runtime.NewGDArray(nil, runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2)), runtime.NewGDArray(nil, runtime.NewGDIntNumber(3), runtime.NewGDIntNumber(4)))
 
 	if array.ToString() != `[[1, 2], [3, 4]]` {
 		t.Error("Wrong array string representation, got", array.ToString())
@@ -64,7 +64,7 @@ func TestArrayOfArrays(t *testing.T) {
 }
 
 func TestArrayOfMixedTypes(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.GDChar('j'), runtime.GDString("two"), runtime.NewGDArray(runtime.NewGDIntNumber(3), runtime.GDString("four")))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.GDChar('j'), runtime.GDString("two"), runtime.NewGDArray(nil, runtime.NewGDIntNumber(3), runtime.GDString("four")))
 
 	if array.ToString() != `[1, 'j', "two", [3, "four"]]` {
 		t.Error("Wrong array string representation, got", array.ToString())
@@ -72,9 +72,9 @@ func TestArrayOfMixedTypes(t *testing.T) {
 }
 
 func TestArrayGet(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1))
 
-	object, err := array.Get(0)
+	object, err := array.GetObjectAt(0)
 	if err != nil {
 		t.Error("Error getting value")
 	}
@@ -85,14 +85,14 @@ func TestArrayGet(t *testing.T) {
 }
 
 func TestArraySet(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1))
 
 	err := array.Set(0, runtime.NewGDIntNumber(2), nil)
 	if err != nil {
 		t.Error("Error setting value")
 	}
 
-	value, err := array.Get(0)
+	value, err := array.GetObjectAt(0)
 	if err != nil {
 		t.Error("Error getting value")
 	}
@@ -103,7 +103,7 @@ func TestArraySet(t *testing.T) {
 }
 
 func TestArrayAppend(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1))
 
 	err := array.AddObject(runtime.NewGDIntNumber(2), nil)
 	if err != nil {
@@ -114,7 +114,7 @@ func TestArrayAppend(t *testing.T) {
 		t.Errorf("Wrong length got %v but expected 2", array.Length())
 	}
 
-	value, err := array.Get(1)
+	value, err := array.GetObjectAt(1)
 	if err != nil {
 		t.Error("Error getting value")
 	}
@@ -125,7 +125,7 @@ func TestArrayAppend(t *testing.T) {
 }
 
 func TestArrayRemove(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3))
 
 	_, err := array.Remove(1)
 	if err != nil && err.Error() == runtime.IndexOutOfBoundsErr.Error() {
@@ -136,7 +136,7 @@ func TestArrayRemove(t *testing.T) {
 		t.Errorf("Wrong length got %v but expected 2", array.Length())
 	}
 
-	value, err := array.Get(1)
+	value, err := array.GetObjectAt(1)
 	if err != nil && err.Error() == runtime.IndexOutOfBoundsErr.Error() {
 		t.Errorf("Error when getting value after removing, expected no error: %v", err)
 	}
@@ -147,7 +147,7 @@ func TestArrayRemove(t *testing.T) {
 }
 
 func TestArrayLength(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3))
 
 	if array.Length() != 3 {
 		t.Errorf("Wrong length got %v but expected 3", array.Length())
@@ -155,7 +155,7 @@ func TestArrayLength(t *testing.T) {
 }
 
 func TestArrayIsEmpty(t *testing.T) {
-	array := runtime.NewGDArray()
+	array := runtime.NewGDArray(nil)
 
 	if !array.IsEmpty() {
 		t.Error("Array should be empty")
@@ -163,16 +163,16 @@ func TestArrayIsEmpty(t *testing.T) {
 }
 
 func TestGetIndexOutOfBounds(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1))
 
-	_, err := array.Get(1)
+	_, err := array.GetObjectAt(1)
 	if !errors.Is(err, runtime.IndexOutOfBoundsErr) {
 		t.Error("Expected error when getting index out of bounds")
 	}
 }
 
 func TestSetIndexOutOfBounds(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1))
 
 	err := array.Set(1, runtime.NewGDIntNumber(2), nil)
 	if !errors.Is(err, runtime.IndexOutOfBoundsErr) {
@@ -181,7 +181,7 @@ func TestSetIndexOutOfBounds(t *testing.T) {
 }
 
 func TestRemoveIndexOutOfBounds(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1))
 
 	_, err := array.Remove(1)
 	if !errors.Is(err, runtime.IndexOutOfBoundsErr) {
@@ -190,72 +190,72 @@ func TestRemoveIndexOutOfBounds(t *testing.T) {
 }
 
 func TestAppendIndexOutOfBounds(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1))
 
 	err := array.AddObject(runtime.NewGDIntNumber(2), nil)
 	if err != nil {
 		t.Errorf("Error when appending value, expected no error: %v", err)
 	}
 
-	_, err = array.Get(2)
+	_, err = array.GetObjectAt(2)
 	if !errors.Is(err, runtime.IndexOutOfBoundsErr) {
 		t.Error("Expected error when getting index out of bounds")
 	}
 }
 
 func TestGDArrayWithAutoTypeForString(t *testing.T) {
-	array := runtime.NewGDArray(runtime.GDString("one"), runtime.GDString("two"), runtime.GDString("three"))
+	array := runtime.NewGDArray(nil, runtime.GDString("one"), runtime.GDString("two"), runtime.GDString("three"))
 
-	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.GDStringType), nil)
+	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.GDStringTypeRef), nil)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestGDArrayWithAutoTypeForNumber(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3))
 
-	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.GDIntType), nil)
+	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.GDIntTypeRef), nil)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestGDArrayWithMixedAnySubArrayTypes(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2)), runtime.NewGDArray(runtime.GDString("three"), runtime.GDString("four")))
-	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.NewGDArrayType(runtime.GDIntType), runtime.NewGDArrayType(runtime.GDStringType))), nil)
+	array := runtime.NewGDArray(nil, runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2)), runtime.NewGDArray(nil, runtime.GDString("three"), runtime.GDString("four")))
+	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.NewGDArrayType(runtime.GDIntTypeRef), runtime.NewGDArrayType(runtime.GDStringTypeRef))), nil)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestGDArrayWithMixedSubArrayTypes(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2)), runtime.GDString("three"), runtime.GDString("four"))
-	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.NewGDArrayType(runtime.GDIntType), runtime.GDStringType)), nil)
+	array := runtime.NewGDArray(nil, runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2)), runtime.GDString("three"), runtime.GDString("four"))
+	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.NewGDArrayType(runtime.GDIntTypeRef), runtime.GDStringTypeRef)), nil)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestGDArrayWithAutoTypeForArray(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2)), runtime.NewGDArray(runtime.NewGDIntNumber(3), runtime.NewGDIntNumber(4)))
-	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.NewGDArrayType(runtime.GDIntType)), nil)
+	array := runtime.NewGDArray(nil, runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2)), runtime.NewGDArray(nil, runtime.NewGDIntNumber(3), runtime.NewGDIntNumber(4)))
+	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.NewGDArrayType(runtime.GDIntTypeRef)), nil)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestGDArrayWithAutoTypeForMixedArrayTypes(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.GDString("two")), runtime.NewGDArray(runtime.GDString("three"), runtime.GDBool(true)))
-	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.GDIntType, runtime.GDStringType)), runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.GDBoolType, runtime.GDStringType)))), nil)
+	array := runtime.NewGDArray(nil, runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.GDString("two")), runtime.NewGDArray(nil, runtime.GDString("three"), runtime.GDBool(true)))
+	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.GDIntTypeRef, runtime.GDStringTypeRef)), runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.GDBoolTypeRef, runtime.GDStringTypeRef)))), nil)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestGDArrayWithAutoTypeForEmptyArray(t *testing.T) {
-	array := runtime.NewGDArray()
-	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.GDUntypedType), nil)
+	array := runtime.NewGDArray(nil)
+	err := runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.GDUntypedTypeRef), nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -264,7 +264,7 @@ func TestGDArrayWithAutoTypeForEmptyArray(t *testing.T) {
 // Array append operations with type checking
 
 func TestAppendNumberToArrayOfNumbers(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3))
 	err := array.AddObject(runtime.NewGDIntNumber(4), nil)
 	if err != nil {
 		t.Errorf("Error when appending number to array of numbers, expected no error: %v", err)
@@ -276,7 +276,7 @@ func TestAppendNumberToArrayOfNumbers(t *testing.T) {
 }
 
 func TestAppendStringToArrayOfStrings(t *testing.T) {
-	array := runtime.NewGDArray(runtime.GDString("one"), runtime.GDString("two"), runtime.GDString("three"))
+	array := runtime.NewGDArray(nil, runtime.GDString("one"), runtime.GDString("two"), runtime.GDString("three"))
 	err := array.AddObject(runtime.GDString("four"), nil)
 	if err != nil {
 		t.Errorf("Error when appending string to array of strings, expected no error: %v", err)
@@ -288,8 +288,8 @@ func TestAppendStringToArrayOfStrings(t *testing.T) {
 }
 
 func TestAppendArrayToArrayOfArrays(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2)), runtime.NewGDArray(runtime.NewGDIntNumber(3), runtime.NewGDIntNumber(4)))
-	err := array.AddObjects([]runtime.GDObject{runtime.NewGDArray(runtime.NewGDIntNumber(5), runtime.NewGDIntNumber(6))}, nil)
+	array := runtime.NewGDArray(nil, runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2)), runtime.NewGDArray(nil, runtime.NewGDIntNumber(3), runtime.NewGDIntNumber(4)))
+	err := array.AddObjects(nil, runtime.NewGDArray(nil, runtime.NewGDIntNumber(5), runtime.NewGDIntNumber(6)))
 
 	if err != nil {
 		t.Errorf("Error when appending array to array of arrays, expected no error: %v", err)
@@ -301,9 +301,9 @@ func TestAppendArrayToArrayOfArrays(t *testing.T) {
 }
 
 func TestAppendMixedTypesToArrayOfNumbers(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3))
 	err := array.AddObject(runtime.GDString("four"), nil)
-	errMsg := runtime.WrongTypesErr(array.GDArrayType.SubType, runtime.GDStringType).Error()
+	errMsg := runtime.WrongTypesErr(array.SubType, runtime.GDStringTypeRef).Error()
 	if err != nil && err.Error() != errMsg {
 		t.Errorf("Error when appending string to array of numbers, expected error: %q but got %q", errMsg, err)
 	}
@@ -314,9 +314,9 @@ func TestAppendMixedTypesToArrayOfNumbers(t *testing.T) {
 }
 
 func TestAppendMixedTypesToArrayOfStrings(t *testing.T) {
-	array := runtime.NewGDArray(runtime.GDString("one"), runtime.GDString("two"), runtime.GDString("three"))
+	array := runtime.NewGDArray(nil, runtime.GDString("one"), runtime.GDString("two"), runtime.GDString("three"))
 	err := array.AddObject(runtime.NewGDIntNumber(4), nil)
-	if err != nil && err.Error() != runtime.WrongTypesErr(array.GDArrayType.SubType, runtime.GDIntType).Error() {
+	if err != nil && err.Error() != runtime.WrongTypesErr(array.SubType, runtime.GDIntTypeRef).Error() {
 		t.Errorf("Error when appending int to array of strings, expected error: %v", err)
 	}
 
@@ -326,9 +326,9 @@ func TestAppendMixedTypesToArrayOfStrings(t *testing.T) {
 }
 
 func TestAppendMixedTypesToArrayOfArrays(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2)), runtime.NewGDArray(runtime.NewGDIntNumber(3), runtime.NewGDIntNumber(4)))
+	array := runtime.NewGDArray(nil, runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2)), runtime.NewGDArray(nil, runtime.NewGDIntNumber(3), runtime.NewGDIntNumber(4)))
 	err := array.AddObject(runtime.GDString("five"), nil)
-	if err != nil && err.Error() != runtime.WrongTypesErr(array.GDArrayType.SubType, runtime.GDStringType).Error() {
+	if err != nil && err.Error() != runtime.WrongTypesErr(array.GDArrayType.SubType, runtime.GDStringTypeRef).Error() {
 		t.Errorf("Error when appending string to array of arrays, expected error: %v", err)
 	}
 
@@ -338,7 +338,7 @@ func TestAppendMixedTypesToArrayOfArrays(t *testing.T) {
 }
 
 func TestAppendMixedTypesToArrayOfMixedTypes(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.GDString("two"), runtime.NewGDArray(runtime.NewGDIntNumber(3), runtime.GDString("four")))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.GDString("two"), runtime.NewGDArray(nil, runtime.NewGDIntNumber(3), runtime.GDString("four")))
 	err := array.AddObject(runtime.GDBool(true), nil)
 
 	if err == nil {
@@ -347,8 +347,8 @@ func TestAppendMixedTypesToArrayOfMixedTypes(t *testing.T) {
 }
 
 func TestAppendMixedTypesToArrayOfAnyWithOneLevel(t *testing.T) {
-	array := runtime.NewGDArrayWithType(runtime.GDAnyType)
-	err := array.AddObjects([]runtime.GDObject{runtime.GDBool(true), runtime.GDString("two"), runtime.NewGDIntNumber(3)}, nil)
+	array := runtime.NewGDArrayWithType(runtime.GDAnyTypeRef)
+	err := array.AddObjects(nil, runtime.GDBool(true), runtime.GDString("two"), runtime.NewGDIntNumber(3))
 	if err != nil {
 		t.Errorf("Error when appending boolean to array of mixed types, expected no error: %v", err)
 	}
@@ -359,8 +359,8 @@ func TestAppendMixedTypesToArrayOfAnyWithOneLevel(t *testing.T) {
 }
 
 func TestAppendMixedTypesToArrayOfAnyWithTwoLevel(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDArrayWithType(runtime.GDAnyType))
-	err := array.AddObjects([]runtime.GDObject{runtime.NewGDArray(runtime.GDBool(true), runtime.GDString("two"), runtime.NewGDIntNumber(3))}, nil)
+	array := runtime.NewGDArray(nil, runtime.NewGDArrayWithType(runtime.GDAnyTypeRef))
+	err := array.AddObjects(nil, runtime.NewGDArray(nil, runtime.GDBool(true), runtime.GDString("two"), runtime.NewGDIntNumber(3)))
 	if err != nil {
 		t.Errorf("Error when appending boolean to array of mixed types, expected no error: %v", err)
 	}
@@ -371,8 +371,8 @@ func TestAppendMixedTypesToArrayOfAnyWithTwoLevel(t *testing.T) {
 }
 
 func TestAppendMixedTypesToArrayOfAnyWithThreeLevel(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDArray(runtime.NewGDArrayWithType(runtime.GDAnyType)))
-	err := array.AddObjects([]runtime.GDObject{runtime.NewGDArray(runtime.NewGDArray(runtime.GDBool(true), runtime.GDString("two"), runtime.NewGDIntNumber(3)))}, nil)
+	array := runtime.NewGDArray(nil, runtime.NewGDArray(nil, runtime.NewGDArrayWithType(runtime.GDAnyTypeRef)))
+	err := array.AddObjects(nil, runtime.NewGDArray(nil, runtime.NewGDArray(nil, runtime.GDBool(true), runtime.GDString("two"), runtime.NewGDIntNumber(3))))
 	if err != nil {
 		t.Errorf("Error when appending boolean to array of mixed types, expected no error: %v", err)
 	}
@@ -383,12 +383,12 @@ func TestAppendMixedTypesToArrayOfAnyWithThreeLevel(t *testing.T) {
 }
 
 func TestCreateArrayWithValidType(t *testing.T) {
-	array, err := runtime.NewGDArrayWithSubTypeAndObjects(runtime.GDIntType, []runtime.GDObject{runtime.NewGDIntNumber(1)}, nil)
+	array, err := runtime.NewGDArrayWithSubTypeAndObjects(runtime.GDIntTypeRef, []runtime.GDObject{runtime.NewGDIntNumber(1)}, nil)
 	if err != nil {
 		t.Errorf("Error creating array with allowed type, expected no error: %v", err)
 	}
 
-	err = runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.GDIntType), nil)
+	err = runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.GDIntTypeRef), nil)
 	if err != nil {
 		t.Error(err)
 		return
@@ -400,19 +400,19 @@ func TestCreateArrayWithValidType(t *testing.T) {
 }
 
 func TestAppendWrongObjectTypeOnArrayWithTypeOnInitialization(t *testing.T) {
-	_, err := runtime.NewGDArrayWithSubTypeAndObjects(runtime.GDIntType, []runtime.GDObject{runtime.GDString("two")}, nil)
-	if err != nil && err.Error() != runtime.WrongTypesErr(runtime.GDIntType, runtime.GDStringType).Error() {
+	_, err := runtime.NewGDArrayWithSubTypeAndObjects(runtime.GDIntTypeRef, []runtime.GDObject{runtime.GDString("two")}, nil)
+	if err != nil && err.Error() != runtime.WrongTypesErr(runtime.GDIntTypeRef, runtime.GDStringTypeRef).Error() {
 		t.Errorf("Error when appending string to array of numbers, expected error: %v", err)
 	}
 }
 
 func TestAppendWrongObjectTypeOnArrayWithTypeOnInitializationWithAnyType(t *testing.T) {
-	array, err := runtime.NewGDArrayWithSubTypeAndObjects(runtime.GDAnyType, []runtime.GDObject{runtime.GDString("two")}, nil)
+	array, err := runtime.NewGDArrayWithSubTypeAndObjects(runtime.GDAnyTypeRef, []runtime.GDObject{runtime.GDString("two")}, nil)
 	if err != nil {
 		t.Errorf("Error when appending string to array of any, expected no error: %v", err)
 	}
 
-	err = runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.GDAnyType), nil)
+	err = runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.GDAnyTypeRef), nil)
 	if err != nil {
 		t.Error(err)
 		return
@@ -424,12 +424,12 @@ func TestAppendWrongObjectTypeOnArrayWithTypeOnInitializationWithAnyType(t *test
 }
 
 func TestAppendWrongObjectTypeOnArrayWithTypeOnInitializationWithAnyTypeAndTwoLevel(t *testing.T) {
-	array, err := runtime.NewGDArrayWithSubTypeAndObjects(runtime.GDAnyType, []runtime.GDObject{runtime.NewGDArray(runtime.NewGDArray(runtime.GDString("two")))}, nil)
+	array, err := runtime.NewGDArrayWithSubTypeAndObjects(runtime.GDAnyTypeRef, []runtime.GDObject{runtime.NewGDArray(nil, runtime.NewGDArray(nil, runtime.GDString("two")))}, nil)
 	if err != nil {
 		t.Errorf("Error when appending array to array of any, expected no error: %v", err)
 	}
 
-	err = runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.GDAnyType), nil)
+	err = runtime.EqualTypes(array.GetType(), runtime.NewGDArrayType(runtime.GDAnyTypeRef), nil)
 	if err != nil {
 		t.Error(err)
 		return
@@ -441,9 +441,9 @@ func TestAppendWrongObjectTypeOnArrayWithTypeOnInitializationWithAnyTypeAndTwoLe
 }
 
 func TestComputeArrayType(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.NewGDIntNumber(2), runtime.NewGDIntNumber(3))
 
-	err := runtime.EqualTypes(runtime.NewGDArrayType(runtime.ComputeTypeFromObjects(array.Objects)), runtime.NewGDArrayType(runtime.GDIntType), nil)
+	err := runtime.EqualTypes(runtime.NewGDArrayType(runtime.ComputeTypeFromObjects(array.GetObjects(), nil)), runtime.NewGDArrayType(runtime.GDIntTypeRef), nil)
 	if err != nil {
 		t.Error(err)
 		return
@@ -451,10 +451,10 @@ func TestComputeArrayType(t *testing.T) {
 }
 
 func TestComputeArrayTypeWithMixedTypes(t *testing.T) {
-	array := runtime.NewGDArray(runtime.NewGDIntNumber(1), runtime.GDString("two"), runtime.GDBool(true))
+	array := runtime.NewGDArray(nil, runtime.NewGDIntNumber(1), runtime.GDString("two"), runtime.GDBool(true))
 
-	aT := runtime.ComputeTypeFromObjects(array.Objects)
-	err := runtime.EqualTypes(runtime.NewGDArrayType(aT), runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.GDIntType, runtime.GDStringType, runtime.GDBoolType)), nil)
+	aT := runtime.ComputeTypeFromObjects(array.GetObjects(), nil)
+	err := runtime.EqualTypes(runtime.NewGDArrayType(aT), runtime.NewGDArrayType(runtime.NewGDUnionType(runtime.GDIntTypeRef, runtime.GDStringTypeRef, runtime.GDBoolTypeRef)), nil)
 	if err != nil {
 		t.Error(err)
 		return

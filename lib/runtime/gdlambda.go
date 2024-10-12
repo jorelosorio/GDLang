@@ -25,30 +25,28 @@ type GDLambdaArg GDKeyValue[GDIdent, GDObject]
 // func (a: int, b: int) => int
 type GDLambdaArgs []*GDLambdaArg
 
-func (gd GDLambdaArgs) Get(ident GDIdent) GDObject {
+func (gd GDLambdaArgs) Get(ident GDIdent) (GDObject, error) {
 	for _, arg := range gd {
 		if arg.Key == ident {
-			return arg.Value
+			return arg.Value, nil
 		}
 	}
 
-	return GDZNil
+	return nil, AttributeNotFoundErr(ident.ToString())
 }
 
-type GDLambdaCallback func(stack *GDSymbolStack, args GDLambdaArgs) (GDObject, error)
+type GDLambdaCallback func(args GDLambdaArgs, stack *GDStack) (GDObject, error)
 
 type GDLambda struct {
 	Type     *GDLambdaType
-	stack    *GDSymbolStack   // A reference to the stack where the function was created
+	stack    *GDStack         // A reference to the stack where the function was created
 	callback GDLambdaCallback // The Callback function that represents the function
 }
 
-func (gd *GDLambda) GetType() GDTypable    { return gd.Type }
-func (gd *GDLambda) GetSubType() GDTypable { return nil }
-func (gd *GDLambda) ToString() string      { return gd.Type.ToString() }
-func (gd *GDLambda) CastToType(typ GDTypable, stack *GDSymbolStack) (GDObject, error) {
-	return nil, nil
-}
+func (gd *GDLambda) GetType() GDTypable                         { return gd.Type }
+func (gd *GDLambda) GetSubType() GDTypable                      { return nil }
+func (gd *GDLambda) ToString() string                           { return gd.Type.ToString() }
+func (gd *GDLambda) CastToType(typ GDTypable) (GDObject, error) { return nil, nil }
 
 func (gd *GDLambda) Call(args *GDArray) (GDObject, error) {
 	if gd.callback == nil {
@@ -60,12 +58,12 @@ func (gd *GDLambda) Call(args *GDArray) (GDObject, error) {
 		return nil, err
 	}
 
-	returnObj, err := gd.callback(gd.stack, mappedArgValues)
+	returnObj, err := gd.callback(mappedArgValues, gd.stack)
 	if err != nil {
 		return nil, err
 	}
 
-	err = gd.Type.CheckReturn(returnObj.GetType(), gd.stack)
+	err = gd.Type.CheckLambdaReturnType(returnObj.GetType(), any(gd.stack).(*GDStack))
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +73,7 @@ func (gd *GDLambda) Call(args *GDArray) (GDObject, error) {
 
 func (gd *GDLambda) CheckArgValues(args *GDArray) (GDLambdaArgs, error) {
 	funcArgsLen := len(gd.Type.ArgTypes)
-	err := gd.Type.CheckNumberOfArgs(uint(len(args.Objects)))
+	err := gd.Type.CheckNumberOfArgs(uint(len(args.GetObjects())))
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +82,13 @@ func (gd *GDLambda) CheckArgValues(args *GDArray) (GDLambdaArgs, error) {
 	if gd.Type.IsVariadic {
 		funcArgsLen--
 		var vargs = make([]GDObject, 0)
-		for i := funcArgsLen; i < len(args.Objects); i++ {
-			switch argObj := args.Objects[i].(type) {
+		for i := funcArgsLen; i < len(args.GetObjects()); i++ {
+			obj, err := args.GetObjectAt(i)
+			if err != nil {
+				return nil, err
+			}
+
+			switch argObj := obj.(type) {
 			case *GDSpreadable:
 				vargs = append(vargs, argObj.GetObjects()...)
 			case GDObject:
@@ -102,9 +105,12 @@ func (gd *GDLambda) CheckArgValues(args *GDArray) (GDLambdaArgs, error) {
 	}
 	for i := 0; i < funcArgsLen; i++ {
 		funcArg := gd.Type.ArgTypes[i]
-		argObj := args.Objects[i]
+		argObj, err := args.GetObjectAt(i)
+		if err != nil {
+			return nil, err
+		}
 
-		err := CanBeAssign(funcArg.Value, argObj.GetType(), gd.stack)
+		err = CanBeAssign(funcArg.Value, argObj.GetType(), gd.stack)
 		if err != nil {
 			return nil, InvalidArgumentTypeErr(funcArg.Key.ToString(), funcArg.Value, argObj.GetType())
 		}
@@ -115,10 +121,10 @@ func (gd *GDLambda) CheckArgValues(args *GDArray) (GDLambdaArgs, error) {
 	return gdFuncArgObjects, nil
 }
 
-func NewGDLambda(args GDLambdaArgTypes, returns GDTypable, isVariadic bool, stack *GDSymbolStack, funcCb GDLambdaCallback) *GDLambda {
+func NewGDLambda(args GDLambdaArgTypes, returns GDTypable, isVariadic bool, stack *GDStack, funcCb GDLambdaCallback) *GDLambda {
 	return &GDLambda{NewGDLambdaType(args, returns, isVariadic), stack, funcCb}
 }
 
-func NewGDLambdaWithType(typ *GDLambdaType, stack *GDSymbolStack, funcCb GDLambdaCallback) *GDLambda {
+func NewGDLambdaWithType(typ *GDLambdaType, stack *GDStack, funcCb GDLambdaCallback) *GDLambda {
 	return &GDLambda{typ, stack, funcCb}
 }
